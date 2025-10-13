@@ -1026,7 +1026,6 @@ export default function AdminDashboard() {
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <ConnectWallet theme="dark" />
           <button
             onClick={() => window.location.reload()}
             style={{
@@ -1043,38 +1042,72 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => {
-              setEmergencyStop(true);
-              setEmergencyFlag(true);
+              if (emergencyStop) {
+                setEmergencyStop(false);
+                setEmergencyFlag(false);
+              } else {
+                setEmergencyStop(true);
+                setEmergencyFlag(true);
+              }
             }}
             style={{
-              background: emergencyStop ? "#b91c1c" : "#dc2626",
+              background: emergencyStop ? "#16a34a" : "#dc2626",
               color: "#fff",
               border: "none",
               borderRadius: 8,
               padding: "6px 12px",
               fontWeight: 800,
               cursor: "pointer",
+              minWidth: 100,
             }}
           >
-            {emergencyStop ? "システム停止中" : "緊急停止"}
+            {emergencyStop ? "🟢 稼働再開" : "🛑 緊急停止"}
           </button>
+        </div>
+      </div>
+
+      {/* ウォレット接続・管理者権限パネル */}
+      <div style={{
+        background: "rgba(255,255,255,.04)",
+        borderRadius: 8,
+        padding: 12,
+        margin: "12px auto",
+        width: "min(1120px, 96vw)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}>
+          🔗 ウォレット接続・管理権限
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <ConnectWallet theme="dark" />
           <button
-            onClick={() => {
-              setEmergencyStop(false);
-              setEmergencyFlag(false);
-            }}
-            disabled={!emergencyStop}
+            onClick={() => setShowAdminModal(true)}
             style={{
-              background: emergencyStop ? "#16a34a" : "#525252",
+              background: "#6366f1",
               color: "#fff",
               border: "none",
               borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: emergencyStop ? "pointer" : "not-allowed",
+              padding: "10px 16px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              whiteSpace: "nowrap",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "#4f46e5";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "#6366f1";
             }}
           >
-            Resume
+            🔒 管理者権限
           </button>
         </div>
       </div>
@@ -1086,13 +1119,11 @@ export default function AdminDashboard() {
         padding: 12,
         margin: "12px auto",
         width: "min(1120px, 96vw)",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: 12,
         fontSize: 12
       }}>
-        {/* システム状況アイテム */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, flex: 1 }}>
           <div>
             <div style={{ opacity: 0.7, marginBottom: 4 }}>🛡️ システム</div>
             <div style={{ fontWeight: 600, color: emergencyStop ? '#ef4444' : '#10b981' }}>
@@ -1122,35 +1153,6 @@ export default function AdminDashboard() {
               {filtered.length}件 / {uniqueUsers}人
             </div>
           </div>
-        </div>
-        
-        {/* 管理者権限管理ボタン */}
-        <button
-          onClick={() => setShowAdminModal(true)}
-          style={{
-            background: "#6366f1",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "10px 16px",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap",
-            transition: "all 0.2s ease",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "#4f46e5";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "#6366f1";
-          }}
-        >
-          🔒 管理者権限
-        </button>
       </div>
 
       {/* 期間タブ */}
