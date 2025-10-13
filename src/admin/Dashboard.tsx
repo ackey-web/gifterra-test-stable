@@ -32,6 +32,13 @@ type TipItem = {
   txHash?: string;
 };
 
+type AdData = {
+  src: string;
+  href: string;
+};
+
+type PageType = "dashboard" | "reward-ui-management";
+
 const fmt18 = (v: bigint) => {
   try {
     const s = ethers.utils.formatUnits(v.toString(), TOKEN.DECIMALS);
@@ -202,6 +209,10 @@ function LoadingOverlay() {
 export default function AdminDashboard() {
   const address = useAddress();
   
+  // ページ状態管理
+  const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
+  const [adManagementData, setAdManagementData] = useState<AdData[]>([]);
+  
   // 動的管理者リスト管理
   const [adminWallets, setAdminWallets] = useState<string[]>(() => {
     try {
@@ -253,6 +264,45 @@ export default function AdminDashboard() {
   const [emergencyStop, setEmergencyStop] = useState(false);
   useEffect(() => {
     setEmergencyStop(readEmergencyFlag());
+  }, []);
+
+  // 広告データの読み込み
+  const loadAdData = () => {
+    try {
+      const saved = localStorage.getItem('gifterra-ads');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.ads && Array.isArray(parsed.ads)) {
+          setAdManagementData(parsed.ads);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load ad data:', error);
+    }
+    // デフォルトデータ
+    setAdManagementData([
+      { src: "/ads/ad1.png", href: "https://example.com/1" },
+      { src: "/ads/ad2.png", href: "https://example.com/2" },
+      { src: "/ads/ad3.png", href: "https://example.com/3" }
+    ]);
+  };
+
+  // 広告データの保存
+  const saveAdData = (ads: AdData[]) => {
+    try {
+      localStorage.setItem('gifterra-ads', JSON.stringify({ ads }));
+      setAdManagementData(ads);
+      alert('広告設定を保存しました！');
+    } catch (error) {
+      console.error('Failed to save ad data:', error);
+      alert('保存に失敗しました。');
+    }
+  };
+
+  // 初期化でデータ読み込み
+  useEffect(() => {
+    loadAdData();
   }, []);
 
   const [fillEmptyDays, setFillEmptyDays] = useState<boolean>(true);
@@ -956,6 +1006,176 @@ export default function AdminDashboard() {
 
 
 
+  // リワードUI管理ページコンポーネント
+  const RewardUIManagementPage = () => {
+    const [editingAds, setEditingAds] = useState<AdData[]>(adManagementData);
+
+    const handleSave = () => {
+      saveAdData(editingAds);
+    };
+
+    const updateAd = (index: number, field: 'src' | 'href', value: string) => {
+      const updated = [...editingAds];
+      updated[index] = { ...updated[index], [field]: value };
+      setEditingAds(updated);
+    };
+
+    const addAdSlot = () => {
+      if (editingAds.length < 3) {
+        setEditingAds([...editingAds, { src: '', href: '' }]);
+      }
+    };
+
+    const removeAdSlot = (index: number) => {
+      setEditingAds(editingAds.filter((_, i) => i !== index));
+    };
+
+    return (
+      <div style={{
+        width: "min(800px, 96vw)",
+        margin: "20px auto",
+        background: "rgba(255,255,255,.04)",
+        borderRadius: 12,
+        padding: 24,
+      }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+          📱 リワードUI 広告管理
+        </h2>
+        
+        <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>💡 使用方法</h3>
+          <ul style={{ margin: 0, paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
+            <li>最大3つの広告スロットを設定できます</li>
+            <li>画像URL: 表示する広告画像のパスまたはURL</li>
+            <li>リンクURL: クリック時に開くWebサイトのURL</li>
+            <li>設定はブラウザのlocalStorageに保存されます</li>
+          </ul>
+        </div>
+
+        {editingAds.map((ad, index) => (
+          <div key={index} style={{
+            marginBottom: 16,
+            padding: 16,
+            background: "rgba(255,255,255,.06)",
+            borderRadius: 8,
+            position: "relative"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h4 style={{ margin: 0, fontSize: 16 }}>広告スロット {index + 1}</h4>
+              {editingAds.length > 1 && (
+                <button
+                  onClick={() => removeAdSlot(index)}
+                  style={{
+                    background: "#dc2626",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    cursor: "pointer"
+                  }}
+                >
+                  削除
+                </button>
+              )}
+            </div>
+            
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                画像URL:
+              </label>
+              <input
+                type="text"
+                value={ad.src}
+                onChange={(e) => updateAd(index, 'src', e.target.value)}
+                placeholder="/ads/ad1.png または https://example.com/image.png"
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  background: "rgba(255,255,255,.1)",
+                  border: "1px solid rgba(255,255,255,.2)",
+                  borderRadius: 4,
+                  color: "#fff",
+                  fontSize: 14
+                }}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                リンクURL:
+              </label>
+              <input
+                type="text"
+                value={ad.href}
+                onChange={(e) => updateAd(index, 'href', e.target.value)}
+                placeholder="https://example.com/"
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  background: "rgba(255,255,255,.1)",
+                  border: "1px solid rgba(255,255,255,.2)",
+                  borderRadius: 4,
+                  color: "#fff",
+                  fontSize: 14
+                }}
+              />
+            </div>
+          </div>
+        ))}
+
+        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          {editingAds.length < 3 && (
+            <button
+              onClick={addAdSlot}
+              style={{
+                background: "#059669",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 16px",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              ➕ 広告スロット追加
+            </button>
+          )}
+          
+          <button
+            onClick={handleSave}
+            style={{
+              background: "#0ea5e9",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 20px",
+              fontWeight: 800,
+              cursor: "pointer",
+              marginLeft: "auto"
+            }}
+          >
+            💾 保存
+          </button>
+        </div>
+
+        <div style={{ marginTop: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: 14 }}>📊 現在の設定プレビュー:</h4>
+          <pre style={{ 
+            background: "rgba(0,0,0,.3)", 
+            padding: 12, 
+            borderRadius: 4, 
+            fontSize: 12, 
+            overflow: "auto",
+            margin: 0
+          }}>
+            {JSON.stringify({ ads: editingAds }, null, 2)}
+          </pre>
+        </div>
+      </div>
+    );
+  };
+
   /* ---------- 画面 ---------- */
   if (!isAdmin) {
     return (
@@ -1022,10 +1242,24 @@ export default function AdminDashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
-            GIFTERRA admin : on-chain (Tipped イベント)
+            {currentPage === "dashboard" ? "GIFTERRA admin : on-chain (Tipped イベント)" : "GIFTERRA admin : リワードUI管理"}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setCurrentPage(currentPage === "dashboard" ? "reward-ui-management" : "dashboard")}
+            style={{
+              background: "#7c3aed",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 12px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            {currentPage === "dashboard" ? "📱 リワードUI管理" : "📊 ダッシュボード"}
+          </button>
           <button
             onClick={() => window.location.reload()}
             style={{
@@ -1153,8 +1387,13 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      {/* 期間タブ */}
-      <header style={{ textAlign: "center", position: "relative" }}>
+      {/* ページ切り替え */}
+      {currentPage === "reward-ui-management" ? (
+        <RewardUIManagementPage />
+      ) : (
+        <>
+          {/* 期間タブ */}
+          <header style={{ textAlign: "center", position: "relative" }}>
         <div style={{ marginTop: 6, display: "inline-flex", gap: 8 }}>
           {(["all", "day", "week", "month"] as Period[]).map((p) => {
             const active = p === period;
@@ -2000,6 +2239,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* フッター */}
