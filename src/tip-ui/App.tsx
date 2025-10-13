@@ -512,23 +512,26 @@ export default function TipApp() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(8px)",
+            background: "rgba(0, 0, 0, 0.1)", // 非常に薄い背景
+            backdropFilter: "none", // ブラーエフェクトを削除
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
             animation: "fadeIn 0.3s ease",
+            pointerEvents: "none", // コンフェッティとの相互作用を妨げない
           }}
         >
           <div
             style={{
-              background: "linear-gradient(145deg, #1e293b, #0f172a)",
+              background: "linear-gradient(145deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.85))", // 半透明に変更
               borderRadius: 20,
               padding: "40px",
               textAlign: "center",
               maxWidth: "90vw",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)", // 影も薄く
+              border: "1px solid rgba(255, 255, 255, 0.1)", // 輪郭を明確に
+              pointerEvents: "auto", // モーダル自体はクリック可能に
             }}
           >
             {sentimentState === "analyzing" ? (
