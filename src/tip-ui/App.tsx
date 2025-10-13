@@ -392,7 +392,22 @@ export default function TipApp() {
         <h1 style={{ fontSize: "clamp(22px, 2.4vw, 28px)", margin: "10px 0 6px" }}>💝 Send Your Support</h1>
         <p style={{ opacity: 0.85, margin: "0 0 4px", fontSize: 13 }}>あなたの応援が、カタチになる。</p>
         <div style={{ fontSize: 13, fontWeight: address ? 800 : 500, color: address ? "#22c55e" : "rgba(255,255,255,0.75)", marginTop: 8 }}>
-          {address ? "ウォレット接続中" : "ウォレット未接続"}
+          {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
+        </div>
+        
+        {/* デバッグ情報 */}
+        <div style={{ 
+          fontSize: 11, 
+          opacity: 0.6, 
+          marginTop: 8,
+          padding: 6,
+          background: "rgba(255,255,255,0.05)",
+          borderRadius: 4,
+          maxWidth: 400
+        }}>
+          <div>アドレス: {address || "未接続"}</div>
+          <div>チェーン: {chain?.name || "未設定"} (ID: {chain?.chainId || "N/A"})</div>
+          <div>期待チェーンID: 80002</div>
         </div>
       </header>
 

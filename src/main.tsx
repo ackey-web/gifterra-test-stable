@@ -9,7 +9,7 @@ import AdminDashboard from "./admin/Dashboard";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================
-// Polygon Amoy Testnet 定義
+// Polygon Amoy Testnet 定義 (ThirdWeb v4互換)
 // =============================
 const polygonAmoy = {
   chainId: 80002,
@@ -19,7 +19,7 @@ const polygonAmoy = {
   shortName: "amoy",
   nativeCurrency: {
     name: "MATIC",
-    symbol: "MATIC",
+    symbol: "MATIC", 
     decimals: 18,
   },
   rpc: [
@@ -35,6 +35,12 @@ const polygonAmoy = {
     },
   ],
   testnet: true,
+  icon: {
+    url: "https://cryptologos.cc/logos/polygon-matic-logo.svg",
+    width: 512,
+    height: 512,
+    format: "svg",
+  },
 };
 
 // =============================
@@ -63,6 +69,14 @@ root.render(
       clientId="779fcfff75c8b7ed91ea029f8783fd8e" // ← あなたの Client ID
       supportedChains={[polygonAmoy]} // ← Polygon Amoy を使用
       activeChain={polygonAmoy}
+      dAppMeta={{
+        name: "Gifterra",
+        description: "Web3 Community Rewards Platform",
+        logoUrl: "/gifterra-logo.png",
+        url: "https://gifterra.vercel.app",
+        isDarkMode: true,
+      }}
+      autoConnect={true}
     >
       {wantsAdmin ? (
         <AdminDashboard />
