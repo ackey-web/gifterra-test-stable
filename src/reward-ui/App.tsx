@@ -319,21 +319,6 @@ export default function App() {
         >
           {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレットを接続してください"}
         </p>
-        
-        {/* デバッグ情報 */}
-        <div style={{ 
-          fontSize: 12, 
-          opacity: 0.6, 
-          marginBottom: 8,
-          padding: 8,
-          background: "rgba(255,255,255,0.05)",
-          borderRadius: 4 
-        }}>
-          <div>アドレス: {address || "未接続"}</div>
-          <div>チェーン: {chain?.name || "未設定"} (ID: {chain?.chainId || "N/A"})</div>
-          <div>期待チェーンID: 80002 (Polygon Amoy)</div>
-          <div>Client ID: 779fcfff75c8b7ed91ea029f8783fd8e</div>
-        </div>
 
         {/* ボタン行（高さ・gapなど元のまま） */}
         <div
