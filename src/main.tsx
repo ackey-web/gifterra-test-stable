@@ -70,14 +70,14 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ThirdwebProvider
-      clientId="779fcfff75c8b7ed91ea029f8783fd8e" // ← あなたの Client ID
-      supportedChains={[polygonAmoy]} // ← Polygon Amoy を使用
+      clientId={import.meta.env.VITE_THIRDWEB_CLIENT_ID || "779fcfff75c8b7ed91ea029f8783fd8e"}
+      supportedChains={[polygonAmoy]}
       activeChain={polygonAmoy}
       dAppMeta={{
         name: "Gifterra",
         description: "Web3 Community Rewards Platform",
         logoUrl: "/gifterra-logo.png",
-        url: "https://gifterra.vercel.app",
+        url: typeof window !== "undefined" ? window.location.origin : "https://gifterra-test-stable.vercel.app",
         isDarkMode: true,
       }}
       autoConnect={true}
