@@ -45,64 +45,90 @@ const short = (addr: string) =>
   addr ? `${addr.slice(0, 10)}…${addr.slice(-4)}` : "—";
 
 /* ---------- RPC Helpers ---------- */
-const AMOY_RPC = 
-  (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL || 
-  "https://rpc-amoy.polygon.technology";
-async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
+const ALCHEMY_RPC = (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL;
+const PUBLIC_RPC = "https://rpc-amoy.polygon.technology";
+async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcUrl: string): Promise<T> {
   const requestBody = { jsonrpc: "2.0", id: 1, method, params };
-  console.log("🔗 RPC call:", { 
-    method, 
-    paramsLength: params.length,
-    url: AMOY_RPC,
-    fullRequest: method === "eth_getLogs" ? requestBody : { method, paramsCount: params.length }
-  });
   
   try {
-    const res = await fetch(AMOY_RPC, {
+    const res = await fetch(rpcUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(requestBody),
     });
     
     console.log("📡 HTTP Response:", {
+      url: rpcUrl,
       status: res.status,
       statusText: res.statusText,
-      ok: res.ok,
-      headers: Object.fromEntries(res.headers.entries())
+      ok: res.ok
     });
     
     if (!res.ok) {
       const errorText = await res.text();
       console.error("❌ HTTP Error Response Body:", errorText);
+      
+      // Parse Alchemy error for block range limits
+      if (errorText.includes("10 block range") && rpcUrl.includes("alchemy.com")) {
+        const error = new Error(`Alchemy Free tier limit: ${errorText}`);
+        (error as any).isAlchemyLimit = true;
+        throw error;
+      }
+      
       throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
     }
     
     const j = await res.json();
     
     if (j.error) {
-      console.error("❌ RPC error response:", {
-        error: j.error,
-        method,
-        params: method === "eth_getLogs" ? params : "[hidden]"
-      });
+      console.error("❌ RPC error response:", j.error);
       throw new Error(`RPC Error: ${j.error.message} (code: ${j.error.code})`);
     }
     
-    const resultInfo = method === "eth_getLogs" && Array.isArray(j.result) 
-      ? { method, resultType: "array", length: j.result.length }
-      : { method, resultType: typeof j.result };
-    
-    console.log("✅ RPC success:", resultInfo);
     return j.result as T;
   } catch (error: any) {
     console.error("❌ RPC call failed:", {
       method,
-      paramsCount: params.length,
-      url: AMOY_RPC,
-      error: error.message,
-      stack: error.stack?.split('\n').slice(0, 3)
+      url: rpcUrl,
+      error: error.message
     });
     throw error;
+  }
+}
+
+async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
+  const requestBody = { jsonrpc: "2.0", id: 1, method, params };
+  console.log("🔗 RPC call:", { 
+    method, 
+    paramsLength: params.length,
+    primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
+    fullRequest: method === "eth_getLogs" ? requestBody : { method, paramsCount: params.length }
+  });
+  
+  // Try Alchemy first (if configured)
+  if (ALCHEMY_RPC) {
+    try {
+      const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
+      console.log("✅ RPC success (Alchemy):", { method, resultType: typeof result });
+      return result;
+    } catch (error: any) {
+      console.warn("⚠️ Alchemy failed, trying public RPC:", error.message);
+      
+      // If it's an Alchemy limit error for eth_getLogs, fall back to public RPC
+      if (error.isAlchemyLimit && method === "eth_getLogs") {
+        console.log("🔄 Falling back to public RPC due to Alchemy limits");
+      }
+    }
+  }
+  
+  // Fallback to public RPC
+  try {
+    const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
+    console.log("✅ RPC success (Public):", { method, resultType: typeof result });
+    return result;
+  } catch (publicError: any) {
+    console.error("❌ All RPC endpoints failed");
+    throw publicError;
   }
 }
 async function getLatestBlockNumber(): Promise<number> {
@@ -220,7 +246,7 @@ export default function AdminDashboard() {
           latestBlock: latest,
           lookback: lookback.toString(),
           fromBlock: fb.toString(),
-          RPC_URL: AMOY_RPC
+          primaryRPC: ALCHEMY_RPC || PUBLIC_RPC
         });
         
         if (!cancelled) setFromBlock(fb);
@@ -248,7 +274,7 @@ export default function AdminDashboard() {
           fromBlock: fromBlock.toString(),
           fromBlockHex,
           TOPIC_TIPPED,
-          RPC_URL: AMOY_RPC,
+          primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
           period
         });
 
@@ -315,7 +341,7 @@ export default function AdminDashboard() {
         console.error("Error details:", {
           message: e?.message || "Unknown error",
           stack: e?.stack,
-          RPC_URL: AMOY_RPC,
+          primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
           CONTRACT_ADDRESS,
           fromBlock: fromBlock.toString(),
           period
@@ -950,12 +976,12 @@ export default function AdminDashboard() {
         <div>
           <div style={{ opacity: 0.7, marginBottom: 4 }}>🔗 RPC状況</div>
           <div style={{ fontWeight: 600, fontSize: 11 }}>
-            {AMOY_RPC.includes('alchemy.com') && AMOY_RPC.includes('/v2/') && !AMOY_RPC.includes('/demo') 
-              ? '✅ Alchemy (設定済み)' 
-              : '🔄 Public RPC'}
+            {ALCHEMY_RPC 
+              ? '✅ Alchemy + Public RPC' 
+              : '🔄 Public RPC Only'}
           </div>
           <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-            {AMOY_RPC.includes('rpc-amoy.polygon.technology') ? 'Polygon公式' : 'カスタム'}
+            {ALCHEMY_RPC ? 'Alchemy Free (10ブロック制限)' : 'Polygon公式'}
           </div>
         </div>
         <div>
