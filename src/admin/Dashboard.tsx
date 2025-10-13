@@ -1119,9 +1119,6 @@ export default function AdminDashboard() {
           justifyContent: "center",
           gap: 12,
         }}>
-          <div style={{ fontSize: 14, fontWeight: 600, textAlign: "center", opacity: 0.9 }}>
-            🔗 ウォレット・権限管理
-          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
             <ConnectWallet theme="dark" />
             <button
@@ -1196,17 +1193,17 @@ export default function AdminDashboard() {
             gap: 10,
           }}
         >
-          <div style={card}>
+          <div style={{...card, textAlign: "center"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>合計</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>
               {fmt18(total)} {TOKEN.SYMBOL}
             </div>
           </div>
-          <div style={card}>
+          <div style={{...card, textAlign: "center"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>ユーザー数</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{uniqueUsers}</div>
           </div>
-          <div style={card}>
+          <div style={{...card, textAlign: "center"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>件数</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{filtered.length}</div>
           </div>
