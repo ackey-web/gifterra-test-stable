@@ -1345,38 +1345,7 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 10 }}>
-            <button
-              onClick={exportRankingCSV}
-              style={{
-                background: "#22c55e",
-                color: "#000",
-                border: "none",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontWeight: 800,
-                cursor: "pointer",
-                fontSize: 12,
-              }}
-            >
-              ⬇ CSV エクスポート
-            </button>
-            <button
-              onClick={exportRankingJSON}
-              style={{
-                background: "#3b82f6",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontWeight: 800,
-                cursor: "pointer",
-                fontSize: 12,
-              }}
-            >
-              ⬇ JSON エクスポート
-            </button>
-          </div>
+
         </div>
 
         {/* Recent */}
@@ -1607,45 +1576,8 @@ export default function AdminDashboard() {
 
               {/* 熱量ランキング */}
               <div style={tableBox}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#8b5cf6" }}>
-                    🔥 AI分析詳細 ({heatResults.length}件)
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>
-                      {analysisPage * ANALYSIS_ITEMS_PER_PAGE + 1}-{Math.min((analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE, heatResults.length)} / {heatResults.length}
-                    </span>
-                    <button
-                      onClick={() => setAnalysisPage(Math.max(0, analysisPage - 1))}
-                      disabled={analysisPage === 0}
-                      style={{
-                        background: analysisPage === 0 ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
-                        color: analysisPage === 0 ? "rgba(255,255,255,.3)" : "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "4px 8px",
-                        fontSize: 12,
-                        cursor: analysisPage === 0 ? "default" : "pointer",
-                      }}
-                    >
-                      ←
-                    </button>
-                    <button
-                      onClick={() => setAnalysisPage(analysisPage + 1)}
-                      disabled={(analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length}
-                      style={{
-                        background: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
-                        color: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.3)" : "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "4px 8px",
-                        fontSize: 12,
-                        cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "default" : "pointer",
-                      }}
-                    >
-                      →
-                    </button>
-                  </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#8b5cf6", marginBottom: 10 }}>
+                  🔥 AI分析詳細 ({heatResults.length}件)
                 </div>
                 <table style={tableStyle}>
                   <thead style={{ opacity: 0.8 }}>
@@ -1701,6 +1633,61 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+
+              {/* ページネーション */}
+              {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE) > 1 && (
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "center", 
+                  alignItems: "center", 
+                  gap: 10, 
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: "1px solid rgba(255,255,255,.08)"
+                }}>
+                  <button
+                    onClick={() => setAnalysisPage(Math.max(0, analysisPage - 1))}
+                    disabled={analysisPage === 0}
+                    style={{
+                      background: analysisPage === 0 ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
+                      color: analysisPage === 0 ? "rgba(255,255,255,.3)" : "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: analysisPage === 0 ? "default" : "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    ← 前へ
+                  </button>
+                  <span style={{ 
+                    fontSize: 13, 
+                    opacity: 0.7,
+                    padding: "0 8px"
+                  }}>
+                    {analysisPage + 1} / {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE)} ページ
+                  </span>
+                  <button
+                    onClick={() => setAnalysisPage(analysisPage + 1)}
+                    disabled={(analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length}
+                    style={{
+                      background: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
+                      color: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.3)" : "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "default" : "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    次へ →
+                  </button>
+                </div>
+              )}
 
               {/* エクスポートボタン */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
