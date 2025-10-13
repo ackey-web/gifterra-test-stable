@@ -225,19 +225,92 @@ export default function TipApp() {
     const dn = displayName.trim().slice(0, 32);
     const msg = message.trim().slice(0, hasProfile ? 120 : 40);
 
+    // 事前チェック（Reward UIと同様）
+    try {
+      const eth = (window as any).ethereum;
+      if (!eth) throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
+      
+      // アカウント接続確認
+      const accounts = await eth.request({ method: "eth_requestAccounts" });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("ウォレットアカウントが見つかりません");
+      }
+      
+      // チェーン確認と切り替え
+      const currentChainId = await eth.request({ method: "eth_chainId" });
+      if ((currentChainId || "").toLowerCase() !== "0x13882") {
+        try {
+          await eth.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x13882" }],
+          });
+          // チェーン切り替え後の待機
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            // ネットワークが存在しない場合は追加
+            await eth.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: "0x13882",
+                chainName: "Polygon Amoy Testnet",
+                nativeCurrency: {
+                  name: "MATIC",
+                  symbol: "MATIC",
+                  decimals: 18
+                },
+                rpcUrls: ["https://rpc-amoy.polygon.technology/"],
+                blockExplorerUrls: ["https://amoy.polygonscan.com/"]
+              }]
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error("preflight failed:", e);
+      const errorMsg = e?.message || "不明なエラー";
+      alert(`ウォレット/チェーンの準備に失敗しました:\n${errorMsg}\n\nPolygon Amoyネットワークに接続していることを確認してください。`);
+      return;
+    }
+
     try {
       setTxState("sending");
+      
+      // まずethers直接実行を試す（より安定）
       let tx: any;
-      if ((contract as any)?.call) {
-        tx = await (contract as any).call("tip", [parsedAmount.toString()]);
-      } else {
-        tx = await tipFn({ args: [parsedAmount.toString()] });
-      }
+      let receipt: any;
+      
+      try {
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        const signer = provider.getSigner();
+        const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, signer);
+        
+        // ガス見積もりを事前に実行
+        const gasEstimate = await directContract.estimateGas.tip(parsedAmount.toString());
+        
+        tx = await directContract.tip(parsedAmount.toString(), {
+          gasLimit: gasEstimate.mul(120).div(100) // 20%のバッファ
+        });
+        
+        receipt = await tx.wait();
+        console.log("Direct ethers success");
+      } catch (directError: any) {
+        console.warn("Direct ethers failed, trying ThirdWeb:", directError);
+        
+        // ethersが失敗した場合のThirdWebフォールバック
+        if ((contract as any)?.call) {
+          tx = await (contract as any).call("tip", [parsedAmount.toString()]);
+        } else {
+          tx = await tipFn({ args: [parsedAmount.toString()] });
+        }
 
-      let receipt: any = tx?.receipt ?? (typeof tx?.wait === "function" ? await tx.wait() : undefined);
-      if (!receipt && tx?.hash && (window as any).ethereum) {
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum as any);
-        receipt = await provider.getTransactionReceipt(tx.hash);
+        receipt = tx?.receipt ?? (typeof tx?.wait === "function" ? await tx.wait() : undefined);
+        if (!receipt && tx?.hash && (window as any).ethereum) {
+          const provider = new ethers.providers.Web3Provider((window as any).ethereum as any);
+          receipt = await provider.getTransactionReceipt(tx.hash);
+        }
       }
 
       const args =
@@ -310,11 +383,36 @@ export default function TipApp() {
         });
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("Tip transaction failed:", e);
       setTxState("error");
       setTimeout(() => setTxState("idle"), 1500);
-      const m = e?.reason || e?.data?.message || e?.message || "送信に失敗しました。もう一度お試しください。";
-      alert(m);
+      
+      // 詳細なエラー分析とユーザーメッセージ
+      const errorReason = e?.reason || e?.data?.message || e?.message || "不明なエラー";
+      const errorCode = e?.code;
+      const errorMsg = errorReason.toLowerCase();
+      
+      let userMessage = "";
+      
+      if (errorMsg.includes("internal json-rpc error")) {
+        userMessage = `🔧 RPC接続エラーが発生しました\n\n原因と対処法:\n• Polygon Amoyネットワークの一時的な混雑\n• RPC エンドポイントの問題\n• ウォレットの接続状態\n\n⏰ 数分待ってから再度お試しください\n💡 他のRPCエンドポイントも自動で試行済みです`;
+      } else if (errorMsg.includes("insufficient funds") || errorCode === -32000) {
+        userMessage = `💰 ガス代不足エラー\n\nMATICが不足しています:\n• Polygon Amoy testnet用のMATICが必要\n• 最低 0.01 MATIC以上を推奨\n\n🚰 Faucetから無料でMATICを取得:\nhttps://faucet.polygon.technology/`;
+      } else if (errorMsg.includes("insufficient balance") || errorMsg.includes("transfer amount exceeds balance")) {
+        userMessage = `💳 残高不足エラー\n\n${TOKEN.SYMBOL}の残高が不足しています:\n• 投げ銭額: ${amount} ${TOKEN.SYMBOL}\n• 現在の残高を確認してください\n\n💡 金額を調整して再度お試しください`;
+      } else if (errorMsg.includes("user rejected") || errorCode === 4001) {
+        userMessage = `🚫 ユーザーキャンセル\n\nトランザクションがキャンセルされました\n再度お試しいただけます`;
+      } else if (errorMsg.includes("execution reverted")) {
+        userMessage = `❌ スマートコントラクト実行エラー\n\n考えられる原因:\n• コントラクトの実行条件を満たしていない\n• 一時的なネットワークの問題\n• ガス制限の不足\n\n🔄 時間をおいて再度お試しください`;
+      } else if (errorMsg.includes("network") || errorMsg.includes("timeout")) {
+        userMessage = `🌐 ネットワークエラー\n\n接続に問題があります:\n• インターネット接続を確認\n• VPNを使用している場合は無効化\n• 時間をおいて再度お試し`;
+      } else if (errorMsg.includes("401") || errorMsg.includes("unauthorized")) {
+        userMessage = `🔑 認証エラー\n\nThirdWeb APIの認証に失敗:\n• 一時的なAPIの問題\n• 設定の不具合\n\n⏰ しばらく待ってから再度お試しください`;
+      } else {
+        userMessage = `❓ 予期しないエラー\n\nエラー内容: ${errorReason}\n\n対処法:\n• ページを再読み込み\n• ウォレットを再接続\n• 時間をおいて再試行\n\n問題が続く場合はサポートまでお問い合わせください`;
+      }
+      
+      alert(userMessage);
     }
   };
 
