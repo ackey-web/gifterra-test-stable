@@ -1,8 +1,13 @@
 // src/components/AdCarousel.tsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 
+interface AdData {
+  src: string;
+  href: string;
+}
+
 interface AdCarouselProps {
-  ads: Array<{
+  ads?: Array<{
     src: string;
     alt: string;
     link?: string;
@@ -14,7 +19,7 @@ interface AdCarouselProps {
 }
 
 export function AdCarousel({ 
-  ads, 
+  ads: propAds,
   autoPlayInterval = 2200, 
   transitionDuration = 800,
   className,
@@ -23,8 +28,46 @@ export function AdCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [ads, setAds] = useState<Array<{ src: string; alt: string; link?: string }>>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // localStorageから広告データを読み込み
+  useEffect(() => {
+    const loadAds = () => {
+      try {
+        const saved = localStorage.getItem('gifterra-ads');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.ads && Array.isArray(parsed.ads)) {
+            const formattedAds = parsed.ads.map((ad: AdData, index: number) => ({
+              src: ad.src,
+              alt: `Advertisement ${index + 1}`,
+              link: ad.href
+            }));
+            setAds(formattedAds);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load ad data from localStorage:', error);
+      }
+      
+      // デフォルトまたはpropsからの広告データを使用
+      if (propAds && propAds.length > 0) {
+        setAds(propAds);
+      } else {
+        // デフォルトの広告データ
+        setAds([
+          { src: "/ads/ad1.png", alt: "Advertisement 1", link: "https://example.com/1" },
+          { src: "/ads/ad2.png", alt: "Advertisement 2", link: "https://example.com/2" },
+          { src: "/ads/ad3.png", alt: "Advertisement 3", link: "https://example.com/3" }
+        ]);
+      }
+    };
+
+    loadAds();
+  }, [propAds]);
 
   // prefers-reduced-motion対応
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

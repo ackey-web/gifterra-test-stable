@@ -527,13 +527,8 @@ export default function App() {
           <div><strong>Daily Reward:</strong> {dailyReward}</div>
         </div>
 
-        {/* 広告スライドショー */}
+        {/* 広告スライドショー（localStorageから自動読み込み） */}
         <AdCarousel
-          ads={[
-            { src: "/ads/ad1.png", alt: "広告1", link: "https://example.com/ad1" },
-            { src: "/ads/ad2.png", alt: "広告2", link: "https://example.com/ad2" },
-            { src: "/ads/ad3.png", alt: "広告3", link: "https://example.com/ad3" }
-          ]}
           style={{
             width: "clamp(200px, 28vw, 240px)",
             height: "auto",
