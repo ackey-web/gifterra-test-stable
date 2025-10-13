@@ -1,6 +1,6 @@
 // src/admin/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useAddress, useChain, ConnectWallet } from "@thirdweb-dev/react";
+import { useAddress, ConnectWallet } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
   LineChart,
@@ -122,9 +122,8 @@ function LoadingOverlay() {
 
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
-  const addr = (useAddress() || "").toLowerCase();
-  const chain = useChain();
-  const isAdmin = ADMIN_WALLETS.length === 0 || ADMIN_WALLETS.includes(addr);
+  const address = useAddress();
+  const isAdmin = ADMIN_WALLETS.length === 0 || ADMIN_WALLETS.includes(address || "");
 
   const [period, setPeriod] = useState<Period>("day");
   const [fromBlock, setFromBlock] = useState<bigint | undefined>();
