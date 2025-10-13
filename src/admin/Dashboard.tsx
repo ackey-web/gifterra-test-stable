@@ -1636,52 +1636,38 @@ export default function AdminDashboard() {
 
               {/* ページネーション */}
               {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE) > 1 && (
-                <div style={{ 
-                  display: "flex", 
-                  justifyContent: "center", 
-                  alignItems: "center", 
-                  gap: 10, 
-                  marginTop: 16,
-                  paddingTop: 16,
-                  borderTop: "1px solid rgba(255,255,255,.08)"
-                }}>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 10 }}>
                   <button
                     onClick={() => setAnalysisPage(Math.max(0, analysisPage - 1))}
                     disabled={analysisPage === 0}
                     style={{
-                      background: analysisPage === 0 ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
-                      color: analysisPage === 0 ? "rgba(255,255,255,.3)" : "#fff",
+                      background: "#1f2937",
+                      color: "#fff",
                       border: "none",
-                      borderRadius: 6,
-                      padding: "8px 12px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: analysisPage === 0 ? "default" : "pointer",
-                      transition: "all 0.2s",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontWeight: 800,
+                      cursor: analysisPage === 0 ? "not-allowed" : "pointer",
+                      opacity: analysisPage === 0 ? 0.5 : 1,
                     }}
                   >
                     ← 前へ
                   </button>
-                  <span style={{ 
-                    fontSize: 13, 
-                    opacity: 0.7,
-                    padding: "0 8px"
-                  }}>
-                    {analysisPage + 1} / {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE)} ページ
-                  </span>
+                  <div style={{ fontSize: 12 }}>
+                    {analysisPage + 1} / {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE)}
+                  </div>
                   <button
                     onClick={() => setAnalysisPage(analysisPage + 1)}
                     disabled={(analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length}
                     style={{
-                      background: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
-                      color: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.3)" : "#fff",
+                      background: "#1f2937",
+                      color: "#fff",
                       border: "none",
-                      borderRadius: 6,
-                      padding: "8px 12px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "default" : "pointer",
-                      transition: "all 0.2s",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontWeight: 800,
+                      cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "not-allowed" : "pointer",
+                      opacity: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? 0.5 : 1,
                     }}
                   >
                     次へ →
