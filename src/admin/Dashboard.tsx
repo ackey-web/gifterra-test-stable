@@ -217,6 +217,7 @@ export default function AdminDashboard() {
   
   // 新しいウォレット権限管理
   const [newAdminAddress, setNewAdminAddress] = useState("");
+  const [showAdminModal, setShowAdminModal] = useState(false);
   
   const addAdminWallet = () => {
     if (!newAdminAddress.trim()) return;
@@ -1085,154 +1086,71 @@ export default function AdminDashboard() {
         padding: 12,
         margin: "12px auto",
         width: "min(1120px, 96vw)",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: 12,
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
         fontSize: 12
       }}>
-        <div>
-          <div style={{ opacity: 0.7, marginBottom: 4 }}>🔗 RPC状況</div>
-          <div style={{ fontWeight: 600, fontSize: 11 }}>
-            {ALCHEMY_RPC 
-              ? '✅ Alchemy + Public RPC' 
-              : '🔄 Public RPC Only'}
+        {/* システム状況アイテム */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, flex: 1 }}>
+          <div>
+            <div style={{ opacity: 0.7, marginBottom: 4 }}>🛡️ システム</div>
+            <div style={{ fontWeight: 600, color: emergencyStop ? '#ef4444' : '#10b981' }}>
+              {emergencyStop ? '🔴 停止中' : '🟢 稼働中'}
+            </div>
           </div>
-          <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-            {ALCHEMY_RPC ? 'Alchemy Free (10ブロック制限)' : 'Polygon公式'}
+          <div>
+            <div style={{ opacity: 0.7, marginBottom: 4 }}>🔗 RPC状況</div>
+            <div style={{ fontWeight: 600, fontSize: 11 }}>
+              {ALCHEMY_RPC 
+                ? '✅ Alchemy + Public RPC' 
+                : '🔄 Public RPC Only'}
+            </div>
+            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
+              {ALCHEMY_RPC ? 'Alchemy Free (10ブロック制限)' : 'Polygon公式'}
+            </div>
+          </div>
+          <div>
+            <div style={{ opacity: 0.7, marginBottom: 4 }}>🤖 AI分析</div>
+            <div style={{ fontWeight: 600 }}>
+              {isOpenAIConfigured() ? '✅ OpenAI API' : '⚠️ Mock分析'}
+            </div>
+          </div>
+          <div>
+            <div style={{ opacity: 0.7, marginBottom: 4 }}>� データ</div>
+            <div style={{ fontWeight: 600 }}>
+              {filtered.length}件 / {uniqueUsers}人
+            </div>
           </div>
         </div>
-        <div>
-          <div style={{ opacity: 0.7, marginBottom: 4 }}>🤖 AI分析</div>
-          <div style={{ fontWeight: 600 }}>
-            {isOpenAIConfigured() ? '✅ OpenAI API' : '⚠️ Mock分析'}
-          </div>
-        </div>
-        <div>
-          <div style={{ opacity: 0.7, marginBottom: 4 }}>🛡️ システム</div>
-          <div style={{ fontWeight: 600, color: emergencyStop ? '#ef4444' : '#10b981' }}>
-            {emergencyStop ? '🔴 停止中' : '🟢 稼働中'}
-          </div>
-        </div>
-        <div>
-          <div style={{ opacity: 0.7, marginBottom: 4 }}>📊 データ</div>
-          <div style={{ fontWeight: 600 }}>
-            {filtered.length}件 / {uniqueUsers}人
-          </div>
-        </div>
-      </div>
-
-      {/* 管理者権限管理パネル */}
-      <div style={{
-        background: "rgba(255,255,255,.04)",
-        borderRadius: 8,
-        padding: 16,
-        margin: "12px auto",
-        width: "min(1120px, 96vw)",
-      }}>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
-          🔒 管理者権限管理
-        </h3>
         
-        {/* 新規管理者追加 */}
-        <div style={{ marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            type="text"
-            placeholder="新しい管理者のウォレットアドレス (0x...)"
-            value={newAdminAddress}
-            onChange={(e) => setNewAdminAddress(e.target.value)}
-            style={{
-              background: "rgba(0,0,0,.3)",
-              border: "1px solid rgba(255,255,255,.2)",
-              borderRadius: 6,
-              padding: "8px 12px",
-              color: "#fff",
-              fontSize: 12,
-              minWidth: 300,
-              flex: 1,
-            }}
-          />
-          <button
-            onClick={addAdminWallet}
-            style={{
-              background: "#10b981",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              padding: "8px 16px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            ➕ 管理者追加
-          </button>
-        </div>
-
-        {/* 現在の管理者リスト */}
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, opacity: 0.9 }}>
-            現在の管理者 ({adminWallets.length + ADMIN_WALLETS.length}名)
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {/* 初期管理者（削除不可） */}
-            {ADMIN_WALLETS.map((addr) => (
-              <div key={addr} style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "rgba(34, 197, 94, 0.1)",
-                border: "1px solid rgba(34, 197, 94, 0.3)",
-                borderRadius: 6,
-                padding: "8px 12px",
-                fontSize: 12,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#22c55e", fontWeight: 600 }}>🔒 初期管理者</span>
-                  <code style={{ background: "rgba(0,0,0,.3)", padding: "2px 6px", borderRadius: 4 }}>
-                    {addr}
-                  </code>
-                </div>
-                <span style={{ color: "#22c55e", fontSize: 11 }}>削除不可</span>
-              </div>
-            ))}
-            
-            {/* 追加された管理者（削除可能） */}
-            {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).map((addr) => (
-              <div key={addr} style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "rgba(59, 130, 246, 0.1)",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
-                borderRadius: 6,
-                padding: "8px 12px",
-                fontSize: 12,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#3b82f6", fontWeight: 600 }}>👤 追加管理者</span>
-                  <code style={{ background: "rgba(0,0,0,.3)", padding: "2px 6px", borderRadius: 4 }}>
-                    {addr}
-                  </code>
-                </div>
-                <button
-                  onClick={() => removeAdminWallet(addr)}
-                  style={{
-                    background: "#ef4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 4,
-                    padding: "4px 8px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  🗑️ 削除
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* 管理者権限管理ボタン */}
+        <button
+          onClick={() => setShowAdminModal(true)}
+          style={{
+            background: "#6366f1",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 16px",
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            whiteSpace: "nowrap",
+            transition: "all 0.2s ease",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "#4f46e5";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "#6366f1";
+          }}
+        >
+          🔒 管理者権限
+        </button>
       </div>
 
       {/* 期間タブ */}
@@ -1888,6 +1806,201 @@ export default function AdminDashboard() {
           )}
         </div>
       </section>
+
+      {/* 管理者権限管理ポップアップモーダル */}
+      {showAdminModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAdminModal(false);
+            }
+          }}
+        >
+          <div
+            style={{
+              background: "#1f2937",
+              borderRadius: 16,
+              padding: 24,
+              width: "min(600px, 90vw)",
+              maxHeight: "80vh",
+              overflow: "auto",
+              border: "1px solid rgba(255,255,255,.1)",
+              boxShadow: "0 20px 40px rgba(0,0,0,.5)",
+            }}
+          >
+            {/* ヘッダー */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+              paddingBottom: 16,
+              borderBottom: "1px solid rgba(255,255,255,.1)"
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: 18,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                color: "#fff"
+              }}>
+                🔒 管理者権限管理
+              </h3>
+              <button
+                onClick={() => setShowAdminModal(false)}
+                style={{
+                  background: "rgba(255,255,255,.1)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: 16,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 新規管理者追加 */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
+                新規管理者追加
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  type="text"
+                  placeholder="新しい管理者のウォレットアドレス (0x...)"
+                  value={newAdminAddress}
+                  onChange={(e) => setNewAdminAddress(e.target.value)}
+                  style={{
+                    background: "rgba(0,0,0,.4)",
+                    border: "1px solid rgba(255,255,255,.2)",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    color: "#fff",
+                    fontSize: 14,
+                    flex: 1,
+                    minWidth: 300,
+                  }}
+                />
+                <button
+                  onClick={addAdminWallet}
+                  style={{
+                    background: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "12px 20px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ➕ 管理者追加
+                </button>
+              </div>
+            </div>
+
+            {/* 現在の管理者リスト */}
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
+                現在の管理者 ({adminWallets.length + ADMIN_WALLETS.length}名)
+              </div>
+              <div style={{ display: "grid", gap: 8, maxHeight: 300, overflow: "auto" }}>
+                {/* 初期管理者（削除不可） */}
+                {ADMIN_WALLETS.map((addr) => (
+                  <div key={addr} style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "rgba(34, 197, 94, 0.15)",
+                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    fontSize: 13,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ color: "#22c55e", fontWeight: 600 }}>🔒 初期管理者</span>
+                      <code style={{
+                        background: "rgba(0,0,0,.4)",
+                        padding: "4px 8px",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        color: "#e5e7eb"
+                      }}>
+                        {addr}
+                      </code>
+                    </div>
+                    <span style={{ color: "#22c55e", fontSize: 12, opacity: 0.8 }}>削除不可</span>
+                  </div>
+                ))}
+                
+                {/* 追加された管理者（削除可能） */}
+                {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).map((addr) => (
+                  <div key={addr} style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "rgba(59, 130, 246, 0.15)",
+                    border: "1px solid rgba(59, 130, 246, 0.3)",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    fontSize: 13,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ color: "#3b82f6", fontWeight: 600 }}>👤 追加管理者</span>
+                      <code style={{
+                        background: "rgba(0,0,0,.4)",
+                        padding: "4px 8px",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        color: "#e5e7eb"
+                      }}>
+                        {addr}
+                      </code>
+                    </div>
+                    <button
+                      onClick={() => removeAdminWallet(addr)}
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      🗑️ 削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* フッター */}
       <footer
