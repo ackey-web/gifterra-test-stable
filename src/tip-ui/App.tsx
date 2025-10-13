@@ -394,21 +394,6 @@ export default function TipApp() {
         <div style={{ fontSize: 13, fontWeight: address ? 800 : 500, color: address ? "#22c55e" : "rgba(255,255,255,0.75)", marginTop: 8 }}>
           {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
         </div>
-        
-        {/* デバッグ情報 */}
-        <div style={{ 
-          fontSize: 11, 
-          opacity: 0.6, 
-          marginTop: 8,
-          padding: 6,
-          background: "rgba(255,255,255,0.05)",
-          borderRadius: 4,
-          maxWidth: 400
-        }}>
-          <div>アドレス: {address || "未接続"}</div>
-          <div>チェーン: {chain?.name || "未設定"} (ID: {chain?.chainId || "N/A"})</div>
-          <div>期待チェーンID: 80002</div>
-        </div>
       </header>
 
       <section style={{ display: "grid", justifyItems: "center", alignContent: "start", rowGap: 12, width: "min(92vw, 720px)", margin: "12px auto 0" }}>
