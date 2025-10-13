@@ -1106,6 +1106,9 @@ export default function AdminDashboard() {
             <div style={{ fontWeight: 600 }}>
               {isOpenAIConfigured() ? "✅ OpenAI API" : "⚠️ Mock分析"}
             </div>
+            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
+              {isOpenAIConfigured() ? "GPT-4o-mini" : "キーワードマッチング"}
+            </div>
           </div>
         </div>
 
@@ -1193,17 +1196,17 @@ export default function AdminDashboard() {
             gap: 10,
           }}
         >
-          <div style={{...card, textAlign: "center"}}>
+          <div style={{...card, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>合計</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>
               {fmt18(total)} {TOKEN.SYMBOL}
             </div>
           </div>
-          <div style={{...card, textAlign: "center"}}>
+          <div style={{...card, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>ユーザー数</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{uniqueUsers}</div>
           </div>
-          <div style={{...card, textAlign: "center"}}>
+          <div style={{...card, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left"}}>
             <div style={{ opacity: 0.8, fontSize: 12 }}>件数</div>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{filtered.length}</div>
           </div>
