@@ -201,8 +201,47 @@ function LoadingOverlay() {
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
   const address = useAddress();
-  // 一時的にアクセス制限を緩和（テスト用） - ウォレット接続があればアクセス許可
-  const isAdmin = !!address || ADMIN_WALLETS.length === 0 || ADMIN_WALLETS.includes(address || "");
+  
+  // 動的管理者リスト管理
+  const [adminWallets, setAdminWallets] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('gifterra-admin-wallets');
+      return saved ? JSON.parse(saved) : ADMIN_WALLETS;
+    } catch {
+      return ADMIN_WALLETS;
+    }
+  });
+  
+  // 管理者チェック（初期管理者または追加された管理者）
+  const isAdmin = !!address && (ADMIN_WALLETS.includes(address.toLowerCase()) || adminWallets.includes(address.toLowerCase()));
+  
+  // 新しいウォレット権限管理
+  const [newAdminAddress, setNewAdminAddress] = useState("");
+  
+  const addAdminWallet = () => {
+    if (!newAdminAddress.trim()) return;
+    const cleanAddress = newAdminAddress.trim().toLowerCase();
+    if (ethers.utils.isAddress(cleanAddress)) {
+      const updatedList = [...new Set([...adminWallets, cleanAddress])];
+      setAdminWallets(updatedList);
+      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(updatedList));
+      setNewAdminAddress("");
+      alert(`管理者権限を追加しました: ${cleanAddress}`);
+    } else {
+      alert("有効なウォレットアドレスを入力してください");
+    }
+  };
+  
+  const removeAdminWallet = (addressToRemove: string) => {
+    if (ADMIN_WALLETS.includes(addressToRemove.toLowerCase())) {
+      alert("初期管理者アドレスは削除できません");
+      return;
+    }
+    const updatedList = adminWallets.filter(addr => addr !== addressToRemove.toLowerCase());
+    setAdminWallets(updatedList);
+    localStorage.setItem('gifterra-admin-wallets', JSON.stringify(updatedList));
+    alert(`管理者権限を削除しました: ${addressToRemove}`);
+  };
 
   const [period, setPeriod] = useState<Period>("day");
   const [fromBlock, setFromBlock] = useState<bigint | undefined>();
@@ -1082,6 +1121,120 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* 管理者権限管理パネル */}
+      <div style={{
+        background: "rgba(255,255,255,.04)",
+        borderRadius: 8,
+        padding: 16,
+        margin: "12px auto",
+        width: "min(1120px, 96vw)",
+      }}>
+        <h3 style={{ margin: "0 0 12px 0", fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          🔒 管理者権限管理
+        </h3>
+        
+        {/* 新規管理者追加 */}
+        <div style={{ marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="新しい管理者のウォレットアドレス (0x...)"
+            value={newAdminAddress}
+            onChange={(e) => setNewAdminAddress(e.target.value)}
+            style={{
+              background: "rgba(0,0,0,.3)",
+              border: "1px solid rgba(255,255,255,.2)",
+              borderRadius: 6,
+              padding: "8px 12px",
+              color: "#fff",
+              fontSize: 12,
+              minWidth: 300,
+              flex: 1,
+            }}
+          />
+          <button
+            onClick={addAdminWallet}
+            style={{
+              background: "#10b981",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "8px 16px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            ➕ 管理者追加
+          </button>
+        </div>
+
+        {/* 現在の管理者リスト */}
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, opacity: 0.9 }}>
+            現在の管理者 ({adminWallets.length + ADMIN_WALLETS.length}名)
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {/* 初期管理者（削除不可） */}
+            {ADMIN_WALLETS.map((addr) => (
+              <div key={addr} style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "rgba(34, 197, 94, 0.1)",
+                border: "1px solid rgba(34, 197, 94, 0.3)",
+                borderRadius: 6,
+                padding: "8px 12px",
+                fontSize: 12,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#22c55e", fontWeight: 600 }}>🔒 初期管理者</span>
+                  <code style={{ background: "rgba(0,0,0,.3)", padding: "2px 6px", borderRadius: 4 }}>
+                    {addr}
+                  </code>
+                </div>
+                <span style={{ color: "#22c55e", fontSize: 11 }}>削除不可</span>
+              </div>
+            ))}
+            
+            {/* 追加された管理者（削除可能） */}
+            {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).map((addr) => (
+              <div key={addr} style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "rgba(59, 130, 246, 0.1)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                borderRadius: 6,
+                padding: "8px 12px",
+                fontSize: 12,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#3b82f6", fontWeight: 600 }}>👤 追加管理者</span>
+                  <code style={{ background: "rgba(0,0,0,.3)", padding: "2px 6px", borderRadius: 4 }}>
+                    {addr}
+                  </code>
+                </div>
+                <button
+                  onClick={() => removeAdminWallet(addr)}
+                  style={{
+                    background: "#ef4444",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "4px 8px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  🗑️ 削除
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* 期間タブ */}
       <header style={{ textAlign: "center", position: "relative" }}>
         <div style={{ marginTop: 6, display: "inline-flex", gap: 8 }}>
@@ -1680,8 +1833,8 @@ export default function AdminDashboard() {
                 </table>
               </div>
 
-              {/* ページネーション */}
-              {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE) > 1 && (
+              {/* ページネーション - AI分析結果がある場合は常に表示 */}
+              {heatResults.length > 0 && (
                 <div style={{ 
                   display: "flex", 
                   justifyContent: "center", 
