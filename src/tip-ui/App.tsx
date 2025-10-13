@@ -1,5 +1,5 @@
 // src/tip-ui/App.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ConnectWallet,
   useAddress,
@@ -231,11 +231,7 @@ export default function TipApp() {
       if ((contract as any)?.call) {
         tx = await (contract as any).call("tip", [parsedAmount.toString()]);
       } else {
-        try {
-          tx = await tipFn({ args: [parsedAmount.toString()] });
-        } catch {
-          tx = await tipFn([parsedAmount.toString()]);
-        }
+        tx = await tipFn({ args: [parsedAmount.toString()] });
       }
 
       let receipt: any = tx?.receipt ?? (typeof tx?.wait === "function" ? await tx.wait() : undefined);
