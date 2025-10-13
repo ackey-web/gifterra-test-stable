@@ -1504,7 +1504,43 @@ export default function AdminDashboard() {
 
         {/* 🆕 AI貢献熱量分析（詳細パネル） */}
         <div id="ai-detail-panel" style={card}>
-          <h2 style={{ margin: "4px 0 10px", fontSize: 16 }}>🤖 AI貢献熱量分析</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h2 style={{ margin: 0, fontSize: 16 }}>🤖 AI貢献熱量分析</h2>
+            {!isAnalyzing && heatResults.length > 0 && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={exportAnalysisCSV}
+                  style={{
+                    background: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  📄 CSV
+                </button>
+                <button
+                  onClick={exportAnalysisJSON}
+                  style={{
+                    background: "#8b5cf6",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  📄 JSON
+                </button>
+              </div>
+            )}
+          </div>
           
           {isAnalyzing && (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
@@ -1695,39 +1731,6 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* エクスポートボタン */}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
-                <button
-                  onClick={exportAnalysisCSV}
-                  style={{
-                    background: "#10b981",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "6px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  📄 CSV
-                </button>
-                <button
-                  onClick={exportAnalysisJSON}
-                  style={{
-                    background: "#8b5cf6",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "6px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  � JSON
-                </button>
-              </div>
             </>
           )}
         </div>
