@@ -106,6 +106,10 @@ A decentralized application (DApp) for community rewards and tipping system buil
 2. Create a new app for Polygon Amoy testnet  
 3. Copy the HTTP URL and add it to your environment variables
 
+**⚠️ 重要**: デモエンドポイント (`/v2/demo`) はCORSポリシーによりブラウザからの直接アクセスが制限されています。実際のAPIキーが必要です。
+
+**フォールバック**: Alchemyが設定されていない場合、自動的にパブリックRPCエンドポイントを使用します。
+
 ## Deployment
 
 The project is configured for Vercel deployment with SPA routing support.

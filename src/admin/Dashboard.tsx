@@ -47,7 +47,7 @@ const short = (addr: string) =>
 /* ---------- RPC Helpers ---------- */
 const AMOY_RPC = 
   (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL || 
-  "https://polygon-amoy.g.alchemy.com/v2/demo";
+  "https://rpc-amoy.polygon.technology";
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
   const res = await fetch(AMOY_RPC, {
     method: "POST",
@@ -827,8 +827,13 @@ export default function AdminDashboard() {
       }}>
         <div>
           <div style={{ opacity: 0.7, marginBottom: 4 }}>🔗 RPC状況</div>
-          <div style={{ fontWeight: 600 }}>
-            {AMOY_RPC.includes('alchemy.com') ? '✅ Alchemy' : '⚠️ Fallback'}
+          <div style={{ fontWeight: 600, fontSize: 11 }}>
+            {AMOY_RPC.includes('alchemy.com') && AMOY_RPC.includes('/v2/') && !AMOY_RPC.includes('/demo') 
+              ? '✅ Alchemy (設定済み)' 
+              : '🔄 Public RPC'}
+          </div>
+          <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
+            {AMOY_RPC.includes('rpc-amoy.polygon.technology') ? 'Polygon公式' : 'カスタム'}
           </div>
         </div>
         <div>
