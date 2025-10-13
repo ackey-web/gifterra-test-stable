@@ -49,14 +49,38 @@ const AMOY_RPC =
   (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL || 
   "https://rpc-amoy.polygon.technology";
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
-  const res = await fetch(AMOY_RPC, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await res.json();
-  if (j.error) throw new Error(j.error.message ?? "RPC error");
-  return j.result as T;
+  console.log("🔗 RPC call:", { method, params, url: AMOY_RPC });
+  
+  try {
+    const res = await fetch(AMOY_RPC, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
+    const j = await res.json();
+    
+    if (j.error) {
+      console.error("❌ RPC error response:", j.error);
+      throw new Error(`RPC Error: ${j.error.message} (code: ${j.error.code})`);
+    }
+    
+    console.log("✅ RPC success:", { method, resultType: typeof j.result });
+    return j.result as T;
+  } catch (error: any) {
+    console.error("❌ RPC call failed:", {
+      method,
+      params,
+      url: AMOY_RPC,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
 }
 async function getLatestBlockNumber(): Promise<number> {
   const hex = await rpc<string>("eth_blockNumber");
@@ -155,15 +179,29 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
+        console.log("📅 Setting up block range for period:", period);
+        
         if (period === "all") {
+          console.log("📊 Using 'all' period - fromBlock = 0");
           if (!cancelled) setFromBlock(0n);
           return;
         }
+        
         const latest = await getLatestBlockNumber();
         const lookback = LOOKBACK_BY_PERIOD[period];
         const fb = BigInt(latest) > lookback ? BigInt(latest) - lookback : 0n;
+        
+        console.log("🔗 Block range calculated:", {
+          period,
+          latestBlock: latest,
+          lookback: lookback.toString(),
+          fromBlock: fb.toString(),
+          RPC_URL: AMOY_RPC
+        });
+        
         if (!cancelled) setFromBlock(fb);
-      } catch {
+      } catch (e: any) {
+        console.error("❌ Block range calculation failed:", e);
         if (!cancelled) setFromBlock(0n);
       }
     })();
@@ -179,6 +217,14 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
+        console.log("🔍 Fetching tip logs...", {
+          CONTRACT_ADDRESS,
+          fromBlock: fromBlock.toString(),
+          fromBlockHex: "0x" + fromBlock.toString(16),
+          TOPIC_TIPPED,
+          RPC_URL: AMOY_RPC
+        });
+
         const logs: any[] = await rpc("eth_getLogs", [
           {
             address: CONTRACT_ADDRESS,
@@ -187,6 +233,12 @@ export default function AdminDashboard() {
             topics: [TOPIC_TIPPED],
           },
         ]);
+        
+        console.log("📊 Raw logs received:", {
+          count: logs.length,
+          logs: logs.slice(0, 3) // 最初の3件のみ表示
+        });
+
         const items: TipItem[] = logs.map((log) => {
           const topic1: string = log.topics?.[1] || "0x";
           const from = "0x" + topic1.slice(-40).toLowerCase();
@@ -195,16 +247,36 @@ export default function AdminDashboard() {
           const txHash = (log.transactionHash || "").toLowerCase();
           return { from, amount, blockNumber, txHash };
         });
+        
         items.sort((a, b) =>
           a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0
         );
+        
+        console.log("✅ Processed tip items:", {
+          count: items.length,
+          totalAmount: items.reduce((a, b) => a + b.amount, 0n).toString(),
+          uniqueUsers: new Set(items.map(i => i.from)).size,
+          sample: items.slice(0, 2)
+        });
+        
         if (!cancelled) {
           setRawTips(items);
           setIsLoading(false);
         }
-      } catch (e) {
-        console.error("log fetch failed", e);
-        if (!cancelled) setIsLoading(false);
+      } catch (e: any) {
+        console.error("❌ Log fetch failed:", e);
+        console.error("Error details:", {
+          message: e?.message || "Unknown error",
+          stack: e?.stack,
+          RPC_URL: AMOY_RPC,
+          CONTRACT_ADDRESS,
+          fromBlock: fromBlock.toString(),
+          period
+        });
+        if (!cancelled) {
+          setRawTips([]); // エラー時は空配列を設定
+          setIsLoading(false);
+        }
       }
     })();
     return () => {
