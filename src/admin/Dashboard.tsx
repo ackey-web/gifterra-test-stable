@@ -279,8 +279,10 @@ export default function AdminDashboard() {
         });
 
         // Alchemy RPCの制限を考慮: eth_getLogsは最大10,000ブロック範囲まで
+        // TODO: メインネット移行時は maxBlockRange を増やす (例: 100000n = 約1週間分)
+        // テストネット用設定: 10,000ブロック (約1-2日分)
         const currentBlock = await getLatestBlockNumber();
-        const maxBlockRange = 10000n;
+        const maxBlockRange = 10000n; // MAINNET: 100000n に変更予定
         const actualFromBlock = fromBlock === 0n ? 
           Math.max(0, currentBlock - Number(maxBlockRange)) : 
           Math.max(Number(fromBlock), currentBlock - Number(maxBlockRange));
@@ -449,7 +451,9 @@ export default function AdminDashboard() {
   }, [filtered]);
 
   const [recentPage, setRecentPage] = useState(0);
+  const [analysisPage, setAnalysisPage] = useState(0);
   const RECENT_PAGE_SIZE = 10;
+  const ANALYSIS_ITEMS_PER_PAGE = 10;
   const totalRecentPages = Math.max(1, Math.ceil(filtered.length / RECENT_PAGE_SIZE));
   useEffect(() => {
     setRecentPage(0);
@@ -1446,6 +1450,46 @@ export default function AdminDashboard() {
 
               {/* 熱量ランキング */}
               <div style={tableBox}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#8b5cf6" }}>
+                    🔥 AI分析詳細 ({heatResults.length}件)
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, opacity: 0.7 }}>
+                      {analysisPage * ANALYSIS_ITEMS_PER_PAGE + 1}-{Math.min((analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE, heatResults.length)} / {heatResults.length}
+                    </span>
+                    <button
+                      onClick={() => setAnalysisPage(Math.max(0, analysisPage - 1))}
+                      disabled={analysisPage === 0}
+                      style={{
+                        background: analysisPage === 0 ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
+                        color: analysisPage === 0 ? "rgba(255,255,255,.3)" : "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 12,
+                        cursor: analysisPage === 0 ? "default" : "pointer",
+                      }}
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={() => setAnalysisPage(analysisPage + 1)}
+                      disabled={(analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length}
+                      style={{
+                        background: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.05)" : "rgba(139, 92, 246, 0.8)",
+                        color: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "rgba(255,255,255,.3)" : "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 12,
+                        cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "default" : "pointer",
+                      }}
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
                 <table style={tableStyle}>
                   <thead style={{ opacity: 0.8 }}>
                     <tr>
@@ -1459,39 +1503,44 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {heatResults.slice(0, 20).map((r, i) => (
-                      <tr key={r.address}>
-                        <td style={td}>{i + 1}</td>
-                        <td style={{ ...td, fontWeight: 800 }}>{r.name}</td>
-                        <td style={{ ...td, fontWeight: 800, color: "#8b5cf6" }}>
-                          {r.heatScore}
-                        </td>
-                        <td style={td}>{r.heatLevel}</td>
-                        <td style={td}>
-                          <span style={{ 
-                            padding: "2px 6px", 
-                            borderRadius: 4, 
-                            fontSize: 11,
-                            background: r.sentimentLabel === "positive" ? "rgba(34, 197, 94, 0.2)" :
-                                       r.sentimentLabel === "negative" ? "rgba(239, 68, 68, 0.2)" :
-                                       "rgba(156, 163, 175, 0.2)",
-                            color: r.sentimentLabel === "positive" ? "#22c55e" :
-                                   r.sentimentLabel === "negative" ? "#ef4444" :
-                                   "#9ca3af"
-                          }}>
-                            {r.sentimentScore}
-                          </span>
-                        </td>
-                        <td style={{ ...td, maxWidth: 200 }}>
-                          <div style={{ fontSize: 11, opacity: 0.85 }}>
-                            {r.keywords.join(", ") || "—"}
-                          </div>
-                        </td>
-                        <td style={{ ...td, textAlign: "right", whiteSpace: "nowrap" }}>
-                          {r.totalAmount} {TOKEN.SYMBOL}
-                        </td>
-                      </tr>
-                    ))}
+                    {heatResults
+                      .slice(analysisPage * ANALYSIS_ITEMS_PER_PAGE, (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE)
+                      .map((r, i) => {
+                        const globalRank = analysisPage * ANALYSIS_ITEMS_PER_PAGE + i + 1;
+                        return (
+                          <tr key={r.address}>
+                            <td style={td}>{globalRank}</td>
+                            <td style={{ ...td, fontWeight: 800 }}>{r.name}</td>
+                            <td style={{ ...td, fontWeight: 800, color: "#8b5cf6" }}>
+                              {r.heatScore}
+                            </td>
+                            <td style={td}>{r.heatLevel}</td>
+                            <td style={td}>
+                              <span style={{ 
+                                padding: "2px 6px", 
+                                borderRadius: 4, 
+                                fontSize: 11,
+                                background: r.sentimentLabel === "positive" ? "rgba(34, 197, 94, 0.2)" :
+                                           r.sentimentLabel === "negative" ? "rgba(239, 68, 68, 0.2)" :
+                                           "rgba(156, 163, 175, 0.2)",
+                                color: r.sentimentLabel === "positive" ? "#22c55e" :
+                                       r.sentimentLabel === "negative" ? "#ef4444" :
+                                       "#9ca3af"
+                              }}>
+                                {r.sentimentScore}
+                              </span>
+                            </td>
+                            <td style={{ ...td, maxWidth: 200 }}>
+                              <div style={{ fontSize: 11, opacity: 0.85 }}>
+                                {r.keywords.join(", ") || "—"}
+                              </div>
+                            </td>
+                            <td style={{ ...td, textAlign: "right", whiteSpace: "nowrap" }}>
+                              {r.totalAmount} {TOKEN.SYMBOL}
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
