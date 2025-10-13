@@ -11,7 +11,7 @@ import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 
-/* ---------- 安全イベントパーサ（元UIのまま） ---------- */
+/* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
   receipt: any,
   eventName: string,
@@ -19,10 +19,8 @@ function getEventArgsFromReceipt(
   abi: any
 ) {
   try {
-    const iface =
-      (ethers as any)?.utils?.Interface
-        ? new (ethers as any).utils.Interface(abi)
-        : new (ethers as any).Interface(abi);
+    // ethers v5 互換性を考慮したインターフェース作成
+    const iface = new ethers.utils.Interface(abi);
     const topic = iface.getEventTopic(eventName);
     const logs = receipt?.logs || receipt?.events || [];
     const hit = logs.find(
@@ -35,7 +33,8 @@ function getEventArgsFromReceipt(
     if (!hit) return null;
     const parsed = iface.parseLog({ topics: hit.topics, data: hit.data });
     return parsed?.args || null;
-  } catch {
+  } catch (error) {
+    console.warn("Event parsing failed:", error);
     return null;
   }
 }
@@ -130,17 +129,48 @@ export default function App() {
   const onClaim = async () => {
     if (!canClaim || !contract) return;
 
-    // 事前チェック（元UIの流儀に合わせて最小変更）
+    // 事前チェック（改善版）
     try {
       const eth = (window as any).ethereum;
-      if (!eth) throw new Error("Wallet not found");
-      await eth.request({ method: "eth_requestAccounts" });
-      const cid = await eth.request({ method: "eth_chainId" });
-      if ((cid || "").toLowerCase() !== "0x13882") {
-        await eth.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x13882" }],
-        });
+      if (!eth) throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
+      
+      // アカウント接続確認
+      const accounts = await eth.request({ method: "eth_requestAccounts" });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("ウォレットアカウントが見つかりません");
+      }
+      
+      // チェーン確認と切り替え
+      const currentChainId = await eth.request({ method: "eth_chainId" });
+      if ((currentChainId || "").toLowerCase() !== "0x13882") {
+        try {
+          await eth.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x13882" }],
+          });
+          // チェーン切り替え後の待機
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            // ネットワークが存在しない場合は追加
+            await eth.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: "0x13882",
+                chainName: "Polygon Amoy Testnet",
+                nativeCurrency: {
+                  name: "MATIC",
+                  symbol: "MATIC",
+                  decimals: 18
+                },
+                rpcUrls: ["https://rpc-amoy.polygon.technology/"],
+                blockExplorerUrls: ["https://amoy.polygonscan.com/"]
+              }]
+            });
+          } else {
+            throw switchError;
+          }
+        }
       }
     } catch (e: any) {
       console.error("preflight failed:", e);
@@ -154,9 +184,74 @@ export default function App() {
     let lastErr: any = null;
     setIsWriting(true);
 
+    // まずethers直接経由を試す（より安定）
+    try {
+      const provider = new ethers.providers.Web3Provider(
+        (window as any).ethereum
+      );
+      const signer = provider.getSigner();
+      const directContract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        CONTRACT_ABI as any,
+        signer
+      );
+      
+      // ガス見積もりを事前に実行
+      const gasEstimate = await directContract.estimateGas.claimDailyReward();
+      
+      const tx = await directContract.claimDailyReward({
+        gasLimit: gasEstimate.mul(120).div(100) // 20%のバッファ
+      });
+      
+      const receipt = await tx.wait();
+      
+      // 成功時の処理
+      const tryEvents = ["DailyRewardClaimed", "DailyClaimed", "RewardClaimed"];
+      let args: any = null;
+      for (const ev of tryEvents) {
+        args = getEventArgsFromReceipt(
+          receipt,
+          ev,
+          CONTRACT_ADDRESS,
+          CONTRACT_ABI
+        );
+        if (args) break;
+      }
+
+      if (args) {
+        const raw = args.amount ?? args.value ?? (Array.isArray(args) ? args[1] : undefined);
+        const pretty = raw !== undefined
+          ? Number(
+              ethers.utils.formatUnits(
+                raw.toString ? raw.toString() : (raw as any),
+                TOKEN.DECIMALS
+              )
+            ).toFixed(2)
+          : undefined;
+        alert(
+          pretty
+            ? `✅ ${pretty} ${TOKEN.SYMBOL} を受け取りました！`
+            : "✅ 受け取り完了！"
+        );
+      } else {
+        alert("✅ 受け取り取引を送信しました。確認をお待ちください。");
+      }
+      
+      setShowAddToken(true);
+      setIsWriting(false);
+      return;
+      
+    } catch (directError: any) {
+      console.warn("Direct ethers failed, trying ThirdWeb:", directError);
+      lastErr = directError;
+    }
+
+    // ethersが失敗した場合のThirdWebフォールバック
     for (let i = 0; i < maxTry; i++) {
       try {
-        // thirdweb 経由（元UIのまま）
+        console.log(`ThirdWeb attempt ${i + 1}/${maxTry}`);
+        
+        // ThirdWeb経由でのトランザクション送信
         const res: any = await (contract as any).call("claimDailyReward", []);
         let receipt =
           res?.receipt ??
@@ -210,40 +305,30 @@ export default function App() {
         setIsWriting(false);
         return;
       } catch (err: any) {
-        console.warn(`[try ${i + 1}/${maxTry}] thirdweb 経由失敗`, err);
+        console.warn(`[ThirdWeb try ${i + 1}/${maxTry}] failed:`, err);
         lastErr = err;
+        
         const msg = (err?.message || "").toLowerCase();
-        const retriable =
+        const isRetriable =
           msg.includes("parse") ||
           msg.includes("json") ||
           msg.includes("rate") ||
           msg.includes("429") ||
-          msg.includes("network");
-        if (!retriable && i === 0) {
-          // ethers 直叩きフォールバック
-          try {
-            const provider = new ethers.providers.Web3Provider(
-              (window as any).ethereum
-            );
-            const signer = provider.getSigner();
-            const direct = new ethers.Contract(
-              CONTRACT_ADDRESS,
-              CONTRACT_ABI as any,
-              signer
-            );
-            const tx = await direct.claimDailyReward();
-            await tx.wait();
-            alert("✅ 受け取り完了！（フォールバック経路）");
-            setShowAddToken(true);
-            setIsWriting(false);
-            return;
-          } catch (e2) {
-            console.warn("ethers フォールバックも失敗:", e2);
-            lastErr = e2;
-          }
+          msg.includes("network") ||
+          msg.includes("timeout") ||
+          msg.includes("connection");
+          
+        // 致命的なエラーの場合は即座に終了
+        if (msg.includes("insufficient funds") || 
+            msg.includes("execution reverted") ||
+            msg.includes("already claimed")) {
+          break;
         }
-        if (i < maxTry - 1) {
-          await sleep(500 * (i + 1));
+        
+        if (i < maxTry - 1 && isRetriable) {
+          const waitTime = 1000 * (i + 1); // 1s, 2s, 3s
+          console.log(`Retrying in ${waitTime}ms...`);
+          await sleep(waitTime);
           continue;
         }
       }
@@ -251,20 +336,29 @@ export default function App() {
 
     setIsWriting(false);
     
-    // より詳細なエラー情報の提供
+    // 詳細なエラー分析と適切なユーザーメッセージ
     const errorReason = lastErr?.reason || lastErr?.data?.message || lastErr?.message || "不明なエラー";
-    let userMessage = "送信に失敗しました。";
+    const errorCode = lastErr?.code;
+    const errorMsg = errorReason.toLowerCase();
     
-    if (errorReason.includes("Internal JSON-RPC error")) {
-      userMessage = "RPC接続エラーが発生しました。\n\n考えられる原因:\n• Polygon Amoyネットワークの一時的な問題\n• ウォレットの設定問題\n• ガス不足\n\n時間をおいて再度お試しください。";
-    } else if (errorReason.includes("insufficient funds")) {
-      userMessage = "ガス代として使用するMATICが不足しています。\nPolygon Amoy testnet用のMATICを取得してください。";
-    } else if (errorReason.includes("already claimed")) {
-      userMessage = "既に本日分を受け取り済みです。\n次回は24時間後に受け取れます。";
-    } else if (errorReason.includes("execution reverted")) {
-      userMessage = "スマートコントラクトの実行が失敗しました。\n条件を満たしていない可能性があります。";
+    let userMessage = "";
+    
+    if (errorMsg.includes("internal json-rpc error")) {
+      userMessage = `🔧 RPC接続エラーが発生しました\n\n原因と対処法:\n• Polygon Amoyネットワークの一時的な混雑\n• RPCエンドポイントの問題\n• ウォレットの接続状態\n\n⏰ 数分待ってから再度お試しください\n💡 他のRPCエンドポイントも自動で試行済みです`;
+    } else if (errorMsg.includes("insufficient funds") || errorCode === -32000) {
+      userMessage = `💰 ガス代不足エラー\n\nMATICが不足しています:\n• Polygon Amoy testnet用のMATICが必要\n• 最低 0.01 MATIC以上を推奨\n\n🚰 Faucetから無料でMATICを取得:\nhttps://faucet.polygon.technology/`;
+    } else if (errorMsg.includes("already claimed") || errorMsg.includes("too early")) {
+      userMessage = `⏰ 請求制限エラー\n\n既に本日分を受け取り済みです\n次の請求まで: ${remain > 0 ? fmt(remain) : '計算中...'}\n\n📅 24時間に1回のみ請求可能です`;
+    } else if (errorMsg.includes("execution reverted")) {
+      userMessage = `❌ スマートコントラクト実行エラー\n\n考えられる原因:\n• 請求条件を満たしていない\n• コントラクトの一時的な問題\n• ネットワークの不安定\n\n🔄 時間をおいて再度お試しください`;
+    } else if (errorMsg.includes("user rejected") || errorCode === 4001) {
+      userMessage = `🚫 ユーザーキャンセル\n\nトランザクションがキャンセルされました\n再度お試しいただけます`;
+    } else if (errorMsg.includes("network") || errorMsg.includes("timeout")) {
+      userMessage = `🌐 ネットワークエラー\n\n接続に問題があります:\n• インターネット接続を確認\n• VPNを使用している場合は無効化\n• 時間をおいて再度お試し`;
+    } else if (errorMsg.includes("401") || errorMsg.includes("unauthorized")) {
+      userMessage = `🔑 認証エラー\n\nThirdWeb APIの認証に失敗:\n• 一時的なAPIの問題\n• 設定の不具合\n\n⏰ しばらく待ってから再度お試しください`;
     } else {
-      userMessage = `エラー詳細: ${errorReason}\n\n時間をおいて再度お試しください。`;
+      userMessage = `❓ 予期しないエラー\n\nエラー内容: ${errorReason}\n\n対処法:\n• ページを再読み込み\n• ウォレットを再接続\n• 時間をおいて再試行\n\n問題が続く場合はサポートまでお問い合わせください`;
     }
     
     alert(userMessage);

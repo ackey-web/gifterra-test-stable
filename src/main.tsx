@@ -81,6 +81,7 @@ root.render(
         isDarkMode: true,
       }}
       autoConnect={true}
+      theme="dark"
     >
       {wantsAdmin ? (
         <AdminDashboard />
