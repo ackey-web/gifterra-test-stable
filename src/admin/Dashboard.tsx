@@ -49,35 +49,58 @@ const AMOY_RPC =
   (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL || 
   "https://rpc-amoy.polygon.technology";
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
-  console.log("🔗 RPC call:", { method, params, url: AMOY_RPC });
+  const requestBody = { jsonrpc: "2.0", id: 1, method, params };
+  console.log("🔗 RPC call:", { 
+    method, 
+    paramsLength: params.length,
+    url: AMOY_RPC,
+    fullRequest: method === "eth_getLogs" ? requestBody : { method, paramsCount: params.length }
+  });
   
   try {
     const res = await fetch(AMOY_RPC, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      body: JSON.stringify(requestBody),
+    });
+    
+    console.log("📡 HTTP Response:", {
+      status: res.status,
+      statusText: res.statusText,
+      ok: res.ok,
+      headers: Object.fromEntries(res.headers.entries())
     });
     
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const errorText = await res.text();
+      console.error("❌ HTTP Error Response Body:", errorText);
+      throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
     }
     
     const j = await res.json();
     
     if (j.error) {
-      console.error("❌ RPC error response:", j.error);
+      console.error("❌ RPC error response:", {
+        error: j.error,
+        method,
+        params: method === "eth_getLogs" ? params : "[hidden]"
+      });
       throw new Error(`RPC Error: ${j.error.message} (code: ${j.error.code})`);
     }
     
-    console.log("✅ RPC success:", { method, resultType: typeof j.result });
+    const resultInfo = method === "eth_getLogs" && Array.isArray(j.result) 
+      ? { method, resultType: "array", length: j.result.length }
+      : { method, resultType: typeof j.result };
+    
+    console.log("✅ RPC success:", resultInfo);
     return j.result as T;
   } catch (error: any) {
     console.error("❌ RPC call failed:", {
       method,
-      params,
+      paramsCount: params.length,
       url: AMOY_RPC,
       error: error.message,
-      stack: error.stack
+      stack: error.stack?.split('\n').slice(0, 3)
     });
     throw error;
   }
@@ -100,10 +123,11 @@ const ADMIN_WALLETS = [
   "0x66f1274ad5d042b7571c2efa943370dbcd3459ab",
   // 追加の管理者ウォレットをここに追加可能
 ].map((x) => x.toLowerCase());
+// Alchemy RPCの制限を考慮した適切なブロック範囲（Polygon Amoyは約2秒/ブロック）
 const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
-  day: 120_000n,
-  week: 800_000n,
-  month: 3_000_000n,
+  day: 43_200n,    // 1日分（約43,200ブロック）
+  week: 10_000n,   // Alchemy制限に合わせて調整（約5.5時間分）
+  month: 10_000n,  // Alchemy制限に合わせて調整（約5.5時間分）
 };
 const TOPIC_TIPPED = ethers.utils.keccak256(
   ethers.utils.toUtf8Bytes("Tipped(address,uint256)")
@@ -217,22 +241,45 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
+        const fromBlockHex = "0x" + fromBlock.toString(16);
+        
         console.log("🔍 Fetching tip logs...", {
           CONTRACT_ADDRESS,
           fromBlock: fromBlock.toString(),
-          fromBlockHex: "0x" + fromBlock.toString(16),
+          fromBlockHex,
           TOPIC_TIPPED,
-          RPC_URL: AMOY_RPC
+          RPC_URL: AMOY_RPC,
+          period
         });
 
-        const logs: any[] = await rpc("eth_getLogs", [
-          {
-            address: CONTRACT_ADDRESS,
-            fromBlock: "0x" + fromBlock.toString(16),
-            toBlock: "latest",
-            topics: [TOPIC_TIPPED],
-          },
-        ]);
+        // Alchemy RPCの制限を考慮: eth_getLogsは最大10,000ブロック範囲まで
+        const currentBlock = await getLatestBlockNumber();
+        const maxBlockRange = 10000n;
+        const actualFromBlock = fromBlock === 0n ? 
+          Math.max(0, currentBlock - Number(maxBlockRange)) : 
+          Math.max(Number(fromBlock), currentBlock - Number(maxBlockRange));
+        
+        const finalFromBlockHex = "0x" + actualFromBlock.toString(16);
+        
+        console.log("📊 Adjusted block range for Alchemy limits:", {
+          originalFromBlock: fromBlock.toString(),
+          currentBlock,
+          maxBlockRange: maxBlockRange.toString(),
+          adjustedFromBlock: actualFromBlock,
+          finalFromBlockHex,
+          blockRangeSize: currentBlock - actualFromBlock
+        });
+
+        const logRequest = {
+          address: CONTRACT_ADDRESS,
+          fromBlock: finalFromBlockHex,
+          toBlock: "latest",
+          topics: [TOPIC_TIPPED],
+        };
+        
+        console.log("🔗 eth_getLogs request:", JSON.stringify(logRequest, null, 2));
+
+        const logs: any[] = await rpc("eth_getLogs", [logRequest]);
         
         console.log("📊 Raw logs received:", {
           count: logs.length,
