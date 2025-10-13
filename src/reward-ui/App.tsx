@@ -10,6 +10,7 @@ import {
 import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
+import { AdCarousel } from "../components/AdCarousel";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -526,17 +527,17 @@ export default function App() {
           <div><strong>Daily Reward:</strong> {dailyReward}</div>
         </div>
 
-        {/* バナー（元のまま） */}
-        <img
-          src="/ad-placeholder.png"
-          alt="広告募集中"
+        {/* 広告スライドショー */}
+        <AdCarousel
+          ads={[
+            { src: "/ads/ad1.png", alt: "広告1", link: "https://example.com/ad1" },
+            { src: "/ads/ad2.png", alt: "広告2", link: "https://example.com/ad2" },
+            { src: "/ads/ad3.png", alt: "広告3", link: "https://example.com/ad3" }
+          ]}
           style={{
             width: "clamp(200px, 28vw, 240px)",
             height: "auto",
-            objectFit: "contain",
             marginTop: 18,
-            filter: "drop-shadow(0 8px 18px rgba(0,0,0,.28))",
-            borderRadius: 14
           }}
         />
       </div>
