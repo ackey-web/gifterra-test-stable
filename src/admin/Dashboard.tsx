@@ -20,7 +20,7 @@ import {
 } from "../lib/annotations";
 import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
-import { analyzeContributionHeat, exportHeatAnalysisJSON, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
+import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -452,12 +452,131 @@ export default function AdminDashboard() {
 
   const [recentPage, setRecentPage] = useState(0);
   const [analysisPage, setAnalysisPage] = useState(0);
+  const [showTipGraph, setShowTipGraph] = useState(true);
+  const [showHeatGraph, setShowHeatGraph] = useState(false);
   const RECENT_PAGE_SIZE = 10;
   const ANALYSIS_ITEMS_PER_PAGE = 10;
   const totalRecentPages = Math.max(1, Math.ceil(filtered.length / RECENT_PAGE_SIZE));
   useEffect(() => {
     setRecentPage(0);
   }, [period, filtered.length]);
+
+  /* ---------- Export Functions ---------- */
+  const downloadFile = (filename: string, content: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportRankingCSV = () => {
+    const headers = ["Rank", "Address", "Amount"];
+    const rows = ranking.map((u, i) => [
+      i + 1,
+      u.addr,
+      u.amount.toString()
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    downloadFile(`gifterra-ranking-${periodLabel}.csv`, csv, "text/csv");
+  };
+
+  const exportRankingJSON = () => {
+    const data = {
+      metadata: {
+        exportTime: new Date().toISOString(),
+        period: periodLabel,
+        totalUsers: ranking.length,
+        contractAddress: CONTRACT_ADDRESS
+      },
+      ranking: ranking.map((u, i) => ({
+        rank: i + 1,
+        address: u.addr,
+        totalAmount: u.amount.toString()
+      }))
+    };
+    downloadFile(`gifterra-ranking-${periodLabel}.json`, JSON.stringify(data, null, 2), "application/json");
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const exportRecentCSV = () => {
+    const headers = ["Timestamp", "From", "Name", "Amount", "TxHash", "Block"];
+    const rows = filtered.map(t => [
+      t.timestamp ? new Date(t.timestamp * 1000).toISOString() : "",
+      t.from,
+      nameFor(t.from),
+      fmt18(t.amount),
+      t.txHash || "",
+      t.blockNumber
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    downloadFile(`gifterra-recent-${periodLabel}.csv`, csv, "text/csv");
+  };
+
+  const exportRecentJSON = () => {
+    const data = {
+      metadata: {
+        exportTime: new Date().toISOString(),
+        period: periodLabel,
+        totalTips: filtered.length,
+        contractAddress: CONTRACT_ADDRESS
+      },
+      tips: filtered.map(t => ({
+        timestamp: t.timestamp ? new Date(t.timestamp * 1000).toISOString() : null,
+        from: t.from,
+        name: nameFor(t.from),
+        amount: fmt18(t.amount),
+        txHash: t.txHash || "",
+        blockNumber: t.blockNumber
+      }))
+    };
+    downloadFile(`gifterra-recent-${periodLabel}.json`, JSON.stringify(data, null, 2), "application/json");
+  };
+
+  const exportAnalysisCSV = () => {
+    const headers = ["Rank", "Address", "Name", "HeatScore", "HeatLevel", "Sentiment", "Keywords", "TotalAmount"];
+    const rows = heatResults.map((r, i) => [
+      i + 1,
+      r.address,
+      r.name,
+      r.heatScore,
+      r.heatLevel,
+      r.sentimentScore,
+      r.keywords.join("; "),
+      r.totalAmount
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    downloadFile(`gifterra-analysis-${periodLabel}.csv`, csv, "text/csv");
+  };
+
+  const exportAnalysisJSON = () => {
+    const data = {
+      metadata: {
+        exportTime: new Date().toISOString(),
+        period: periodLabel,
+        totalAnalyzed: heatResults.length,
+        contractAddress: CONTRACT_ADDRESS
+      },
+      analysis: heatResults.map((r, i) => ({
+        rank: i + 1,
+        address: r.address,
+        name: r.name,
+        heatScore: r.heatScore,
+        heatLevel: r.heatLevel,
+        sentiment: {
+          label: r.sentimentLabel,
+          score: r.sentimentScore
+        },
+        keywords: r.keywords,
+        totalAmount: r.totalAmount
+      }))
+    };
+    downloadFile(`gifterra-analysis-${periodLabel}.json`, JSON.stringify(data, null, 2), "application/json");
+  };
   const recentPaged = useMemo(
     () =>
       filtered.slice(
@@ -603,6 +722,45 @@ export default function AdminDashboard() {
   }, [chartData.length]);
 
   const pointsBadge = `データ点: ${chartData.length}`;
+
+  // AI分析結果をグラフ用データに変換
+  const heatChartData = useMemo(() => {
+    if (!heatResults.length) return [];
+    
+    // 日付別の熱量を計算
+    const heatByDay = new Map<string, number>();
+    
+    // filtered tipsとheatResultsをマッピング
+    for (const tip of filtered) {
+      const heatUser = heatResults.find(h => h.address.toLowerCase() === tip.from.toLowerCase());
+      if (heatUser && tip.timestamp) {
+        const day = new Date(tip.timestamp * 1000).toISOString().slice(0, 10);
+        heatByDay.set(day, (heatByDay.get(day) || 0) + heatUser.heatScore);
+      }
+    }
+
+    return Array.from(heatByDay.entries())
+      .map(([day, heat]) => ({ day: day.slice(5), heat }))
+      .sort((a, b) => a.day.localeCompare(b.day));
+  }, [heatResults, filtered]);
+
+  // グラフ用の統合データ
+  const displayChartData = useMemo(() => {
+    if (!showHeatGraph) return chartData;
+    
+    const combined = chartData.map(d => ({ ...d, heat: 0 }));
+    
+    for (const heatDay of heatChartData) {
+      const existingDay = combined.find(d => d.day === heatDay.day);
+      if (existingDay) {
+        existingDay.heat = heatDay.heat;
+      } else {
+        combined.push({ day: heatDay.day, amount: 0, heat: heatDay.heat });
+      }
+    }
+    
+    return combined.sort((a, b) => a.day.localeCompare(b.day));
+  }, [chartData, heatChartData, showHeatGraph]);
 
   const allAddrsToAnnotate = useMemo(() => {
     const s = new Set<string>();
@@ -756,91 +914,7 @@ export default function AdminDashboard() {
   const periodLabel =
     period === "day" ? "day" : period === "week" ? "week" : period === "month" ? "month" : "all";
 
-  /* ---------- エクスポート関数 ---------- */
-  const exportRankingCSV = () => {
-    if (!ranking || ranking.length === 0) {
-      alert("ランキングデータがありません。");
-      return;
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    const header = "Rank,Address,Name,Profile,TotalTips\n";
-    const rows = ranking
-      .map((r, i) => {
-        const a = annMap.get(r.addr.toLowerCase()) ?? null;
-        const name = nameFor(r.addr);
-        const msg = pickMessage(a)?.replace(/"/g, '""') || "";
-        return `${i + 1},"${r.addr}","${name.replace(/"/g, '""')}","${msg}",${fmt18(r.amount)}`;
-      })
-      .join("\n");
-    const footer = `\n# GIFTERRA TIPS RANKING - Generated on ${today}\n`;
-    const blob = new Blob([header + rows + footer], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `gifterra_ranking_${today}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
-  const exportRankingJSON = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const data = ranking.map((r, i) => {
-      const a = annMap.get(r.addr.toLowerCase()) ?? null;
-      return {
-        rank: i + 1,
-        address: r.addr,
-        name: nameFor(r.addr),
-        profile: pickMessage(a) || "",
-        totalTips: fmt18(r.amount),
-        token: TOKEN.SYMBOL,
-        period: periodLabel,
-      };
-    });
-    const blob = new Blob([JSON.stringify({ generatedAt: today, data }, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `gifterra_ranking_${today}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportRecentLatest10JSON = () => {
-    const latest10 = filtered.slice(0, 10).map((t) => {
-      const addrL = (t.from || "").toLowerCase();
-      const txHash = (t.txHash || "").toLowerCase();
-      const ann = annMap.get(addrL) ?? null;
-      const txMsg = (txHash && txMsgMap?.[addrL]?.[txHash]) || "";
-      const msg = txMsg || pickMessage(ann) || "";
-      return {
-        time: t.timestamp ? new Date(t.timestamp * 1000).toISOString() : null,
-        from: addrL,
-        amount: fmt18(t.amount),
-        token: TOKEN.SYMBOL,
-        txHash,
-        message: msg,
-      };
-    });
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      period: periodLabel,
-      count: latest10.length,
-      items: latest10,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `gifterra_recent_latest10_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   /* ---------- 画面 ---------- */
   if (!isAdmin) {
@@ -1100,8 +1174,8 @@ export default function AdminDashboard() {
 
         {/* Chart */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <div style={{ fontWeight: 800 }}>📈 Tips per Day ({periodLabel})</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+            <div style={{ fontWeight: 800 }}>📈 データ比較グラフ ({periodLabel})</div>
             <span
               style={{
                 fontSize: 12,
@@ -1127,8 +1201,29 @@ export default function AdminDashboard() {
               {pointsBadge}
             </span>
 
+            {/* グラフ表示切り替え */}
+            <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={showTipGraph}
+                  onChange={(e) => setShowTipGraph(e.target.checked)}
+                />
+                💰 投げ銭数
+              </label>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={showHeatGraph}
+                  onChange={(e) => setShowHeatGraph(e.target.checked)}
+                  disabled={!heatResults.length}
+                />
+                🔥 熱量スコア
+              </label>
+            </div>
+
             {period !== "all" && period !== "day" && (
-              <label style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                 <input
                   type="checkbox"
                   checked={fillEmptyDays}
@@ -1139,17 +1234,28 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {chartData.length === 0 ? (
-            <div style={{ opacity: 0.8, fontSize: 13 }}>(no data)</div>
+          {(!showTipGraph && !showHeatGraph) || chartData.length === 0 ? (
+            <div style={{ opacity: 0.8, fontSize: 13, textAlign: "center", padding: 40 }}>
+              いずれかのグラフを選択してください
+            </div>
           ) : (
             <div style={{ width: "100%", height: 260 }}>
               <ResponsiveContainer>
-                <LineChart data={chartData}>
+                <LineChart data={displayChartData}>
                   <CartesianGrid stroke="rgba(255,255,255,.08)" />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="amount" dot={false} />
+                  <YAxis yAxisId="amount" orientation="left" tick={{ fontSize: 12 }} />
+                  {showHeatGraph && <YAxis yAxisId="heat" orientation="right" tick={{ fontSize: 12 }} />}
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === 'amount' ? `${value} Tips` : `${value} Heat`,
+                      name === 'amount' ? '投げ銭数' : '熱量スコア'
+                    ]}
+                  />
+                  {showTipGraph && <Line yAxisId="amount" type="monotone" dataKey="amount" stroke="#3b82f6" dot={false} />}
+                  {showHeatGraph && heatResults.length > 0 && (
+                    <Line yAxisId="heat" type="monotone" dataKey="heat" stroke="#8b5cf6" dot={false} />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -1158,7 +1264,41 @@ export default function AdminDashboard() {
 
         {/* Ranking */}
         <div style={card}>
-          <h2 style={{ margin: "4px 0 10px", fontSize: 16 }}>🏆 Top Supporters ({periodLabel})</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h2 style={{ margin: 0, fontSize: 16 }}>🏆 Top Supporters ({periodLabel})</h2>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={exportRankingCSV}
+                style={{
+                  background: "#10b981",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                📄 CSV
+              </button>
+              <button
+                onClick={exportRankingJSON}
+                style={{
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                📄 JSON
+              </button>
+            </div>
+          </div>
           <div style={tableBox}>
             <table style={tableStyle}>
               <thead style={{ opacity: 0.8 }}>
@@ -1243,21 +1383,38 @@ export default function AdminDashboard() {
         <div style={card}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 style={{ margin: "4px 0 10px", fontSize: 16 }}>🕒 Recent Tips ({periodLabel})</h2>
-            <button
-              onClick={exportRecentLatest10JSON}
-              style={{
-                background: "#f97316",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontWeight: 800,
-                cursor: "pointer",
-                fontSize: 12,
-              }}
-            >
-              最新10件をJSONでエクスポート
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={exportRecentCSV}
+                style={{
+                  background: "#10b981",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                📄 CSV
+              </button>
+              <button
+                onClick={exportRecentJSON}
+                style={{
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                📄 JSON
+              </button>
+            </div>
           </div>
           <div style={tableBox}>
             <table style={tableStyle}>
@@ -1545,22 +1702,37 @@ export default function AdminDashboard() {
                 </table>
               </div>
 
-              {/* JSONエクスポート */}
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+              {/* エクスポートボタン */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
                 <button
-                  onClick={() => exportHeatAnalysisJSON(heatResults, periodLabel)}
+                  onClick={exportAnalysisCSV}
+                  style={{
+                    background: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  📄 CSV
+                </button>
+                <button
+                  onClick={exportAnalysisJSON}
                   style={{
                     background: "#8b5cf6",
                     color: "#fff",
                     border: "none",
-                    borderRadius: 8,
+                    borderRadius: 6,
                     padding: "6px 12px",
-                    fontWeight: 800,
-                    cursor: "pointer",
                     fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
                   }}
                 >
-                  📊 熱量分析JSONエクスポート
+                  � JSON
                 </button>
               </div>
             </>
