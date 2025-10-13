@@ -71,9 +71,11 @@ async function getBlockTimestamp(num: number): Promise<number> {
 }
 
 /* ---------- Admin & Lookback ---------- */
-const ADMIN_WALLETS = ["0x66f1274ad5d042b7571c2efa943370dbcd3459ab"].map((x) =>
-  x.toLowerCase()
-);
+// 一時的にアクセス制限を緩和（テスト用）
+const ADMIN_WALLETS = [
+  "0x66f1274ad5d042b7571c2efa943370dbcd3459ab",
+  // 追加の管理者ウォレットをここに追加可能
+].map((x) => x.toLowerCase());
 const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
   day: 120_000n,
   week: 800_000n,
@@ -125,7 +127,8 @@ function LoadingOverlay() {
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
   const address = useAddress();
-  const isAdmin = ADMIN_WALLETS.length === 0 || ADMIN_WALLETS.includes(address || "");
+  // 一時的にアクセス制限を緩和（テスト用） - ウォレット接続があればアクセス許可
+  const isAdmin = !!address || ADMIN_WALLETS.length === 0 || ADMIN_WALLETS.includes(address || "");
 
   const [period, setPeriod] = useState<Period>("day");
   const [fromBlock, setFromBlock] = useState<bigint | undefined>();
