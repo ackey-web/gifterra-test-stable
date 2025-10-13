@@ -1,5 +1,5 @@
 // src/reward-ui/App.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ConnectWallet,
   useAddress,
