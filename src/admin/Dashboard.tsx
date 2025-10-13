@@ -1453,7 +1453,15 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 10 }}>
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            gap: 10, 
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: "1px solid rgba(255,255,255,.08)"
+          }}>
             <button
               onClick={() => setRecentPage((p) => Math.max(0, p - 1))}
               disabled={recentPage === 0}
@@ -1466,12 +1474,13 @@ export default function AdminDashboard() {
                 fontWeight: 800,
                 cursor: recentPage === 0 ? "not-allowed" : "pointer",
                 opacity: recentPage === 0 ? 0.5 : 1,
+                transition: "all 0.2s ease",
               }}
             >
               ← 前へ
             </button>
-            <div style={{ fontSize: 12 }}>
-              {Math.min(recentPage + 1, totalRecentPages)} / {totalRecentPages}
+            <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>
+              {Math.min(recentPage + 1, totalRecentPages)} / {totalRecentPages} ページ
             </div>
             <button
               onClick={() => setRecentPage((p) => Math.min(totalRecentPages - 1, p + 1))}
@@ -1485,6 +1494,7 @@ export default function AdminDashboard() {
                 fontWeight: 800,
                 cursor: recentPage + 1 >= totalRecentPages ? "not-allowed" : "pointer",
                 opacity: recentPage + 1 >= totalRecentPages ? 0.5 : 1,
+                transition: "all 0.2s ease",
               }}
             >
               次へ →
@@ -1636,7 +1646,15 @@ export default function AdminDashboard() {
 
               {/* ページネーション */}
               {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE) > 1 && (
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 10 }}>
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "center", 
+                  alignItems: "center", 
+                  gap: 10, 
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: "1px solid rgba(255,255,255,.08)"
+                }}>
                   <button
                     onClick={() => setAnalysisPage(Math.max(0, analysisPage - 1))}
                     disabled={analysisPage === 0}
@@ -1649,12 +1667,13 @@ export default function AdminDashboard() {
                       fontWeight: 800,
                       cursor: analysisPage === 0 ? "not-allowed" : "pointer",
                       opacity: analysisPage === 0 ? 0.5 : 1,
+                      transition: "all 0.2s ease",
                     }}
                   >
                     ← 前へ
                   </button>
-                  <div style={{ fontSize: 12 }}>
-                    {analysisPage + 1} / {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE)}
+                  <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>
+                    {analysisPage + 1} / {Math.ceil(heatResults.length / ANALYSIS_ITEMS_PER_PAGE)} ページ
                   </div>
                   <button
                     onClick={() => setAnalysisPage(analysisPage + 1)}
@@ -1668,6 +1687,7 @@ export default function AdminDashboard() {
                       fontWeight: 800,
                       cursor: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? "not-allowed" : "pointer",
                       opacity: (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE >= heatResults.length ? 0.5 : 1,
+                      transition: "all 0.2s ease",
                     }}
                   >
                     次へ →
