@@ -23,9 +23,13 @@ const polygonAmoy = {
     decimals: 18,
   },
   rpc: [
-    // Alchemy RPC (環境変数から取得、フォールバック付き)
-    import.meta.env.VITE_ALCHEMY_RPC_URL || "https://polygon-amoy.g.alchemy.com/v2/demo",
-    "https://rpc-amoy.polygon.technology" // フォールバック
+    // プライマリRPC（CORS対応）
+    "https://rpc-amoy.polygon.technology",
+    // 設定済みAlchemy RPC（環境変数から）
+    ...(import.meta.env.VITE_ALCHEMY_RPC_URL ? [import.meta.env.VITE_ALCHEMY_RPC_URL] : []),
+    // 追加のフォールバック
+    "https://polygon-amoy.drpc.org",
+    "https://endpoints.omniatech.io/v1/matic/amoy/public"
   ],
   explorers: [
     {

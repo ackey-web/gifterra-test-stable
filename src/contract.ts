@@ -25,9 +25,9 @@ export const TOKEN = {
 export const publicClient = createPublicClient({
   chain: polygonAmoy,
   transport: http(
-    // Alchemy RPC (環境変数から取得、フォールバック付き)
+    // CORS対応のRPCを優先使用
     (import.meta as any)?.env?.VITE_ALCHEMY_RPC_URL || 
-    "https://polygon-amoy.g.alchemy.com/v2/demo"
+    "https://rpc-amoy.polygon.technology"
   ),
 });
 
