@@ -13,6 +13,7 @@
     "@thirdweb-dev/chains": "^0.1.120",
     "@thirdweb-dev/react": "^4.9.4",
     "@thirdweb-dev/sdk": "^4.0.99",
+    "canvas-confetti": "^1.9.3",
     "ethers": "^5.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.6.0",
     "@types/react": "^18.3.25",
     "@types/react-dom": "^18.3.7",

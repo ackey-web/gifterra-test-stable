@@ -17,6 +17,9 @@ importers:
       '@thirdweb-dev/sdk':
         specifier: ^4.0.99
         version: 4.0.99(@types/react-dom@18.3.7(@types/react@18.3.26))(@types/react@18.3.26)(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)
+      canvas-confetti:
+        specifier: ^1.9.3
+        version: 1.9.3
       ethers:
         specifier: ^5.8.0
         version: 5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -36,6 +39,9 @@ importers:
       '@eslint/js':
         specifier: ^9.36.0
         version: 9.37.0
+      '@types/canvas-confetti':
+        specifier: ^1.9.0
+        version: 1.9.0
       '@types/node':
         specifier: ^24.6.0
         version: 24.7.2
@@ -1926,6 +1932,9 @@ packages:
   '@types/bn.js@5.2.0':
     resolution: {integrity: sha512-DLbJ1BPqxvQhIGbeu8VbUC1DiAiahHtAYvA0ZEAa4P31F7IaArc8z3C3BRQdWX4mtLQuABG4yzp76ZrS02Ui1Q==}
 
+  '@types/canvas-confetti@1.9.0':
+    resolution: {integrity: sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg==}
+
   '@types/caseless@0.12.5':
     resolution: {integrity: sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==}
 
@@ -2501,6 +2510,9 @@ packages:
 
   caniuse-lite@1.0.30001750:
     resolution: {integrity: sha512-cuom0g5sdX6rw00qOoLNSFCJ9/mYIsuSOA+yzpDw8eopiFqcVwQvZHqov0vmEighRxX++cfC0Vg1G+1Iy/mSpQ==}
+
+  canvas-confetti@1.9.3:
+    resolution: {integrity: sha512-rFfTURMvmVEX1gyXFgn5QMn81bYk70qa0HLzcIOSVEyl57n6o9ItHeBtUSWdvKAPY0xlvBHno4/v3QPrT83q9g==}
 
   chai@4.5.0:
     resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}
@@ -7609,6 +7621,8 @@ snapshots:
     dependencies:
       '@types/node': 24.7.2
 
+  '@types/canvas-confetti@1.9.0': {}
+
   '@types/caseless@0.12.5': {}
 
   '@types/d3-array@3.2.2': {}
@@ -8869,6 +8883,8 @@ snapshots:
   camelcase@5.3.1: {}
 
   caniuse-lite@1.0.30001750: {}
+
+  canvas-confetti@1.9.3: {}
 
   chai@4.5.0:
     dependencies:
