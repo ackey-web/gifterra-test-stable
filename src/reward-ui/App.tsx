@@ -142,9 +142,10 @@ export default function App() {
           params: [{ chainId: "0x13882" }],
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("preflight failed:", e);
-      alert("ウォレット/チェーンの準備に失敗しました。もう一度お試しください。");
+      const errorMsg = e?.message || "不明なエラー";
+      alert(`ウォレット/チェーンの準備に失敗しました:\n${errorMsg}\n\nPolygon Amoyネットワークに接続していることを確認してください。`);
       return;
     }
 
@@ -249,12 +250,24 @@ export default function App() {
     }
 
     setIsWriting(false);
-    const msg =
-      lastErr?.reason ||
-      lastErr?.data?.message ||
-      lastErr?.message ||
-      "送信に失敗しました。時間をおいて再度お試しください。";
-    alert(msg);
+    
+    // より詳細なエラー情報の提供
+    const errorReason = lastErr?.reason || lastErr?.data?.message || lastErr?.message || "不明なエラー";
+    let userMessage = "送信に失敗しました。";
+    
+    if (errorReason.includes("Internal JSON-RPC error")) {
+      userMessage = "RPC接続エラーが発生しました。\n\n考えられる原因:\n• Polygon Amoyネットワークの一時的な問題\n• ウォレットの設定問題\n• ガス不足\n\n時間をおいて再度お試しください。";
+    } else if (errorReason.includes("insufficient funds")) {
+      userMessage = "ガス代として使用するMATICが不足しています。\nPolygon Amoy testnet用のMATICを取得してください。";
+    } else if (errorReason.includes("already claimed")) {
+      userMessage = "既に本日分を受け取り済みです。\n次回は24時間後に受け取れます。";
+    } else if (errorReason.includes("execution reverted")) {
+      userMessage = "スマートコントラクトの実行が失敗しました。\n条件を満たしていない可能性があります。";
+    } else {
+      userMessage = `エラー詳細: ${errorReason}\n\n時間をおいて再度お試しください。`;
+    }
+    
+    alert(userMessage);
   };
 
   const BTN_H = 42;

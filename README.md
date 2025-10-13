@@ -81,6 +81,7 @@ A decentralized application (DApp) for community rewards and tipping system buil
 4. Configure your environment variables in `.env`:
    - `VITE_ALCHEMY_RPC_URL`: Your Alchemy API endpoint for Polygon Amoy
    - `VITE_OPENAI_API_KEY`: OpenAI API key for AI analysis features
+   - `VITE_THIRDWEB_CLIENT_ID`: ThirdWeb client ID for Web3 functionality
 
 ## OpenAI API Setup
 
@@ -94,6 +95,18 @@ A decentralized application (DApp) for community rewards and tipping system buil
    ```
 
 **Note**: Without OpenAI API key, the app will use mock sentiment analysis.
+
+## ThirdWeb Setup
+
+1. Sign up at [ThirdWeb Dashboard](https://thirdweb.com/dashboard)
+2. Create a new project
+3. Get your Client ID from the dashboard
+4. Set the Client ID in your environment variables:
+   ```bash
+   VITE_THIRDWEB_CLIENT_ID=your_actual_client_id_here
+   ```
+
+**⚠️ Important**: Invalid or expired Client IDs will cause 401 authentication errors and transaction failures.
 
 5. Start development server:
    ```bash
