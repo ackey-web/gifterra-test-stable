@@ -12,6 +12,8 @@ import { utils as ethersUtils, ethers } from "ethers";
 import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
+import { useCountUp } from "../hooks/useCountUp";
+import { burstConfetti } from "../utils/confetti";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -224,6 +226,15 @@ export default function TipApp() {
   const [userHeatData, setUserHeatData] = useState<UserHeatData | null>(null);
   const [isLoadingHeat, setIsLoadingHeat] = useState(false);
 
+  // カウントアップアニメーション
+  const totalTipsNumber = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
+  const { value: animatedTips, start: startCountUp } = useCountUp({
+    end: totalTipsNumber,
+    duration: 1500,
+    decimals: 4,
+    startOnMount: false
+  });
+
   /* ================= 貢献熱量分析 ================ */
   const analyzeUserHeat = async () => {
     if (!address || isLoadingHeat) return;
@@ -405,6 +416,18 @@ export default function TipApp() {
 
       const amt = (args as any)?.amount ?? (args as any)?.value ?? (Array.isArray(args) ? (args as any)[1] : undefined);
       const pretty = fmtUnits(BigInt(amt?.toString?.() ?? "0"), TOKEN.DECIMALS);
+      
+      // 🎉 投げ銭成功エフェクト
+      // 1. コンフェッティ（紙吹雪）
+      burstConfetti().catch(console.warn);
+      
+      // 2. オーラ／背景エフェクト
+      setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+      setTimeout(() => setBgGradient(""), 3000);
+      
+      // 3. カウントアップアニメーション（少し遅らせて開始）
+      setTimeout(() => startCountUp(), 600);
+      
       alert(`投げ銭を送信しました！ (+${pretty} ${TOKEN.SYMBOL})`);
 
       // 投げ銭成功後に感情分析（非同期・独立実行）
@@ -620,8 +643,8 @@ export default function TipApp() {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 12, opacity: 0.8 }}>累積投げ銭額</div>
-              <div style={{ fontWeight: 800 }}>
-                {fmtUnits(totalTips, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
+              <div style={{ fontWeight: 800, transition: "all 0.3s ease" }}>
+                {animatedTips > 0 ? animatedTips.toFixed(4) : fmtUnits(totalTips, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
               </div>
             </div>
           </div>
