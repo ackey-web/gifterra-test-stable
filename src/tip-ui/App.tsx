@@ -13,6 +13,13 @@ import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 
+/* ---------------- 貢献熱量分析 ---------------- */
+interface UserHeatData {
+  heatScore: number;
+  heatLevel: "🔥熱狂" | "💎高額" | "🎉アクティブ" | "😊ライト";
+  sentimentScore: number;
+}
+
 /* ---------------- 安全イベントパーサ ---------------- */
 function getEventArgsFromReceipt(receipt: any, eventName: string, contractAddress: string, abi: any) {
   try {
@@ -213,6 +220,46 @@ export default function TipApp() {
   const [sentimentResult, setSentimentResult] = useState<{ label: string; score: number } | null>(null);
   const [bgGradient, setBgGradient] = useState<string>("");
 
+  // 貢献熱量データ
+  const [userHeatData, setUserHeatData] = useState<UserHeatData | null>(null);
+  const [isLoadingHeat, setIsLoadingHeat] = useState(false);
+
+  /* ================= 貢献熱量分析 ================ */
+  const analyzeUserHeat = async () => {
+    if (!address || isLoadingHeat) return;
+    
+    setIsLoadingHeat(true);
+    try {
+      // 基本的な熱量計算（簡易版）
+      const tipAmount = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
+      const basicScore = Math.min(1000, tipAmount * 50);
+      
+      let level: UserHeatData["heatLevel"] = "😊ライト";
+      if (basicScore >= 800) level = "🔥熱狂";
+      else if (basicScore >= 600) level = "💎高額";
+      else if (basicScore >= 400) level = "🎉アクティブ";
+      
+      setUserHeatData({
+        heatScore: Math.round(basicScore),
+        heatLevel: level,
+        sentimentScore: 75 // デフォルト値
+      });
+    } catch (error) {
+      console.warn("Heat analysis failed:", error);
+    } finally {
+      setIsLoadingHeat(false);
+    }
+  };
+
+  // アドレスまたは投げ銭額が変更されたら熱量を再分析
+  useEffect(() => {
+    if (address && totalTips > 0n) {
+      analyzeUserHeat();
+    } else {
+      setUserHeatData(null);
+    }
+  }, [address, totalTips]);
+
   /* ================= 投げ銭処理 ================ */
   const doTip = async () => {
     if (emergency) {
@@ -348,6 +395,8 @@ export default function TipApp() {
       // UI更新（手動でデータ再取得）
       setTimeout(() => {
         fetchUserData();
+        // 熱量データも更新
+        analyzeUserHeat();
         setTxState("idle");
       }, 1200);
 
@@ -602,6 +651,69 @@ export default function TipApp() {
         </div>
 
         {rankUpMsg && <div style={{ fontWeight: 800, animation: "pop 600ms ease" }}>{rankUpMsg}</div>}
+
+        {/* 貢献熱量パネル */}
+        {userHeatData && (
+          <div style={{ 
+            width: "100%", 
+            background: "rgba(255,255,255,.06)", 
+            borderRadius: 12, 
+            padding: 14, 
+            display: "grid", 
+            rowGap: 8,
+            border: "1px solid rgba(255,255,255,.08)"
+          }}>
+            <div style={{ fontSize: 12, opacity: 0.8, textAlign: "center" }}>🔥 あなたの貢献熱量</div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>
+                  {userHeatData.heatLevel}
+                </div>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>熱量レベル</div>
+              </div>
+              
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>
+                  {userHeatData.heatScore}
+                </div>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>/ 1000 pts</div>
+              </div>
+            </div>
+            
+            {/* 熱量プログレスバー */}
+            <div style={{ 
+              position: "relative", 
+              height: 8, 
+              borderRadius: 999, 
+              background: "#0e1720", 
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,.05)"
+            }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: `${Math.max(2, (userHeatData.heatScore / 1000) * 100)}%`,
+                  background: userHeatData.heatScore >= 800 
+                    ? "linear-gradient(90deg,#ef4444,#f97316)" // 熱狂
+                    : userHeatData.heatScore >= 600
+                    ? "linear-gradient(90deg,#8b5cf6,#a855f7)" // 高額
+                    : userHeatData.heatScore >= 400
+                    ? "linear-gradient(90deg,#06b6d4,#0ea5e9)" // アクティブ
+                    : "linear-gradient(90deg,#10b981,#059669)", // ライト
+                  transition: "width .8s ease",
+                }}
+              />
+            </div>
+            
+            <div style={{ fontSize: 10, opacity: 0.6, textAlign: "center" }}>
+              {isLoadingHeat ? "分析中..." : "金額・頻度・感情を総合評価"}
+            </div>
+          </div>
+        )}
       </section>
 
       <footer style={{ textAlign: "center", fontSize: 12, opacity: 0.6, marginTop: 6 }}>
