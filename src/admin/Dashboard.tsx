@@ -1066,95 +1066,93 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ウォレット接続・管理者権限パネル */}
+      {/* システム状況・ウォレット接続パネル */}
       <div style={{
-        background: "rgba(255,255,255,.04)",
-        borderRadius: 8,
-        padding: 12,
-        margin: "12px auto",
-        width: "min(1120px, 96vw)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 16,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}>
-          🔗 ウォレット接続・管理権限
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ConnectWallet theme="dark" />
-          <button
-            onClick={() => setShowAdminModal(true)}
-            style={{
-              background: "#6366f1",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 16px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              whiteSpace: "nowrap",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "#4f46e5";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "#6366f1";
-            }}
-          >
-            🔒 管理者権限
-          </button>
-        </div>
-      </div>
-
-      {/* システム状況表示 */}
-      <div style={{
-        background: "rgba(255,255,255,.04)",
-        borderRadius: 8,
-        padding: 12,
         margin: "12px auto",
         width: "min(1120px, 96vw)",
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "2fr 1fr",
         gap: 12,
-        fontSize: 12
       }}>
+        {/* システム状況表示 */}
+        <div style={{
+          background: "rgba(255,255,255,.04)",
+          borderRadius: 8,
+          padding: 12,
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 12,
+          fontSize: 12
+        }}>
           <div>
             <div style={{ opacity: 0.7, marginBottom: 4 }}>🛡️ システム</div>
-            <div style={{ fontWeight: 600, color: emergencyStop ? '#ef4444' : '#10b981' }}>
-              {emergencyStop ? '🔴 停止中' : '🟢 稼働中'}
+            <div style={{ fontWeight: 600, color: emergencyStop ? "#ef4444" : "#10b981" }}>
+              {emergencyStop ? "🔴 停止中" : "🟢 稼働中"}
             </div>
           </div>
           <div>
             <div style={{ opacity: 0.7, marginBottom: 4 }}>🔗 RPC状況</div>
             <div style={{ fontWeight: 600, fontSize: 11 }}>
               {ALCHEMY_RPC 
-                ? '✅ Alchemy + Public RPC' 
-                : '🔄 Public RPC Only'}
+                ? "✅ Alchemy + Public RPC" 
+                : "🔄 Public RPC Only"}
             </div>
             <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-              {ALCHEMY_RPC ? 'Alchemy Free (10ブロック制限)' : 'Polygon公式'}
+              {ALCHEMY_RPC ? "Alchemy Free (10ブロック制限)" : "Polygon公式"}
             </div>
           </div>
           <div>
             <div style={{ opacity: 0.7, marginBottom: 4 }}>🤖 AI分析</div>
             <div style={{ fontWeight: 600 }}>
-              {isOpenAIConfigured() ? '✅ OpenAI API' : '⚠️ Mock分析'}
+              {isOpenAIConfigured() ? "✅ OpenAI API" : "⚠️ Mock分析"}
             </div>
           </div>
-          <div>
-            <div style={{ opacity: 0.7, marginBottom: 4 }}>� データ</div>
-            <div style={{ fontWeight: 600 }}>
-              {filtered.length}件 / {uniqueUsers}人
-            </div>
-          </div>
-      </div>
+        </div>
 
+        {/* ウォレット接続・管理者権限パネル */}
+        <div style={{
+          background: "rgba(255,255,255,.04)",
+          borderRadius: 8,
+          padding: 12,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 12,
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, textAlign: "center", opacity: 0.9 }}>
+            🔗 ウォレット・権限管理
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+            <ConnectWallet theme="dark" />
+            <button
+              onClick={() => setShowAdminModal(true)}
+              style={{
+                background: "#6366f1",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                whiteSpace: "nowrap",
+                transition: "all 0.2s ease",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "#4f46e5";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "#6366f1";
+              }}
+            >
+              🔒 権限
+            </button>
+          </div>
+        </div>
+      </div>
       {/* 期間タブ */}
       <header style={{ textAlign: "center", position: "relative" }}>
         <div style={{ marginTop: 6, display: "inline-flex", gap: 8 }}>
