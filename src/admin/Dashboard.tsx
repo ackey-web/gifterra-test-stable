@@ -1043,126 +1043,9 @@ export default function AdminDashboard() {
           📱 リワードUI 総合管理
         </h2>
         
-        <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>💡 使用方法</h3>
-          <ul style={{ margin: 0, paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
-            <li>最大3つの広告スロットを設定できます</li>
-            <li>画像URL: 表示する広告画像のパスまたはURL</li>
-            <li>リンクURL: クリック時に開くWebサイトのURL</li>
-            <li>設定はブラウザのlocalStorageに保存されます</li>
-          </ul>
-        </div>
-
-        {editingAds.map((ad, index) => (
-          <div key={index} style={{
-            marginBottom: 16,
-            padding: 16,
-            background: "rgba(255,255,255,.06)",
-            borderRadius: 8,
-            position: "relative"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h4 style={{ margin: 0, fontSize: 16 }}>広告スロット {index + 1}</h4>
-              {editingAds.length > 1 && (
-                <button
-                  onClick={() => removeAdSlot(index)}
-                  style={{
-                    background: "#dc2626",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 4,
-                    padding: "4px 8px",
-                    fontSize: 12,
-                    cursor: "pointer"
-                  }}
-                >
-                  削除
-                </button>
-              )}
-            </div>
-            
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
-                画像URL:
-              </label>
-              <input
-                type="text"
-                value={ad.src}
-                onChange={(e) => updateAd(index, 'src', e.target.value)}
-                placeholder="/ads/ad1.png または https://example.com/image.png"
-                style={{
-                  width: "100%",
-                  padding: 8,
-                  background: "rgba(255,255,255,.1)",
-                  border: "1px solid rgba(255,255,255,.2)",
-                  borderRadius: 4,
-                  color: "#fff",
-                  fontSize: 14
-                }}
-              />
-            </div>
-            
-            <div>
-              <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
-                リンクURL:
-              </label>
-              <input
-                type="text"
-                value={ad.href}
-                onChange={(e) => updateAd(index, 'href', e.target.value)}
-                placeholder="https://example.com/"
-                style={{
-                  width: "100%",
-                  padding: 8,
-                  background: "rgba(255,255,255,.1)",
-                  border: "1px solid rgba(255,255,255,.2)",
-                  borderRadius: 4,
-                  color: "#fff",
-                  fontSize: 14
-                }}
-              />
-            </div>
-          </div>
-        ))}
-
-        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-          {editingAds.length < 3 && (
-            <button
-              onClick={addAdSlot}
-              style={{
-                background: "#059669",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 16px",
-                fontWeight: 600,
-                cursor: "pointer"
-              }}
-            >
-              ➕ 広告スロット追加
-            </button>
-          )}
-          
-          <button
-            onClick={handleSave}
-            style={{
-              background: "#0ea5e9",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 800,
-              cursor: "pointer",
-              marginLeft: "auto"
-            }}
-          >
-            💾 保存
-          </button>
-        </div>
-
         {/* リワードコントラクト管理セクション */}
         <div style={{
-          marginTop: 32,
+          marginBottom: 32,
           padding: 20,
           background: "rgba(255,255,255,.03)",
           borderRadius: 12,
@@ -1207,6 +1090,175 @@ export default function AdminDashboard() {
           {/* 日次リワード量変更セクション */}
           <RewardAmountSettingSection />
         </div>
+
+        {/* 広告管理セクション */}
+        <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>�️ 広告画像管理</h3>
+          <ul style={{ margin: 0, paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
+            <li>最大3つの広告スロットを設定できます</li>
+            <li>画像URL: 表示する広告画像のパスまたはURL</li>
+            <li>リンクURL: クリック時に開くWebサイトのURL</li>
+            <li>設定はブラウザのlocalStorageに保存されます</li>
+          </ul>
+        </div>
+
+        {editingAds.map((ad, index) => (
+          <div key={index} style={{
+            marginBottom: 16,
+            padding: 16,
+            background: "rgba(255,255,255,.06)",
+            borderRadius: 8,
+            position: "relative",
+            display: "flex",
+            gap: 16
+          }}>
+            {/* 画像プレビュー */}
+            <div style={{
+              width: 80,
+              height: 80,
+              background: "rgba(255,255,255,.1)",
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              overflow: "hidden"
+            }}>
+              {ad.src ? (
+                <img
+                  src={ad.src}
+                  alt={`広告プレビュー ${index + 1}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 6
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const nextSibling = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                    if (nextSibling) {
+                      nextSibling.style.display = "flex";
+                    }
+                  }}
+                />
+              ) : null}
+              <div style={{
+                display: ad.src ? "none" : "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                color: "rgba(255,255,255,.5)",
+                textAlign: "center",
+                padding: 8
+              }}>
+                画像なし
+              </div>
+            </div>
+            
+            {/* 入力フィールド */}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h4 style={{ margin: 0, fontSize: 16 }}>広告スロット {index + 1}</h4>
+                {editingAds.length > 1 && (
+                  <button
+                    onClick={() => removeAdSlot(index)}
+                    style={{
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 4,
+                      padding: "4px 8px",
+                      fontSize: 12,
+                      cursor: "pointer"
+                    }}
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
+              
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                  画像URL:
+                </label>
+                <input
+                  type="text"
+                  value={ad.src}
+                  onChange={(e) => updateAd(index, 'src', e.target.value)}
+                  placeholder="/ads/ad1.png または https://example.com/image.png"
+                  style={{
+                    width: "100%",
+                    padding: 8,
+                    background: "rgba(255,255,255,.1)",
+                    border: "1px solid rgba(255,255,255,.2)",
+                    borderRadius: 4,
+                    color: "#fff",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                  リンクURL:
+                </label>
+                <input
+                  type="text"
+                  value={ad.href}
+                  onChange={(e) => updateAd(index, 'href', e.target.value)}
+                  placeholder="https://example.com/"
+                  style={{
+                    width: "100%",
+                    padding: 8,
+                    background: "rgba(255,255,255,.1)",
+                    border: "1px solid rgba(255,255,255,.2)",
+                    borderRadius: 4,
+                    color: "#fff",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          {editingAds.length < 3 && (
+            <button
+              onClick={addAdSlot}
+              style={{
+                background: "#059669",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 16px",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              ➕ 広告スロット追加
+            </button>
+          )}
+          
+          <button
+            onClick={handleSave}
+            style={{
+              background: "#0ea5e9",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 20px",
+              fontWeight: 800,
+              cursor: "pointer",
+              marginLeft: "auto"
+            }}
+          >
+            💾 保存
+          </button>
+        </div>
+
+
       </div>
     );
   };
@@ -1557,7 +1609,7 @@ export default function AdminDashboard() {
               cursor: "pointer",
             }}
           >
-            � コントラクト管理
+            💸 TipUI管理
           </button>
           <button
             onClick={() => window.location.reload()}
