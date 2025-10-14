@@ -40,10 +40,10 @@ export default function DashboardMobile() {
   const [topSupporters, setTopSupporters] = useState<{address: string, amount: bigint}[]>([]);
   const [rankDistribution, setRankDistribution] = useState({seed: 0, grow: 0, bloom: 0, mythic: 0});
   
-  // スライド式緊急停止状態
-  const [isSliding, setIsSliding] = useState(false);
-  const [slideProgress, setSlideProgress] = useState(0);
-  const [slideStartX, setSlideStartX] = useState(0);
+  // プレス&ホールド式緊急停止状態
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [holdTimer, setHoldTimer] = useState<NodeJS.Timeout | null>(null);
 
   // データ取得
   const fetchData = async () => {
@@ -378,134 +378,89 @@ export default function DashboardMobile() {
     const newState = !emergency;
     await setEmergencyFlag(newState);
     setEmergency(newState);
-    // スライド状態をリセット（ただしprogressは状態変更後の適切な位置に保持）
-    setIsSliding(false);
-    // 状態変更が完了したら、スライダーを適切な位置に設定
-    setTimeout(() => {
-      setSlideProgress(newState ? 100 : 100); // 完了状態として100%に設定
-    }, 100);
+    console.log(`🔄 緊急停止状態変更: ${newState ? 'ON' : 'OFF'}`);
   };
   
-  // スライド処理関数
-  const handleSlideStart = (e: React.TouchEvent | React.MouseEvent) => {
+  // プレス&ホールド処理関数
+  const handleHoldStart = (e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('💆 スライド開始');
+    console.log('🫳 ホールド開始');
+    setIsHolding(true);
+    setHoldProgress(0);
     
-    setIsSliding(true);
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    setSlideStartX(clientX);
-    
-    // スライド開始の強いフィードバック
+    // ホールド開始の軽いフィードバック
     if (navigator.vibrate) {
-      navigator.vibrate(50); // より強い開始フィードバック
-    }
-  };
-  
-  const handleSlideMove = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!isSliding) return;
-    e.preventDefault();
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const diff = clientX - slideStartX;
-    const maxSlide = 300; // スライド最大距離を大幅拡大（より重い操作感）
-    
-    let rawProgress;
-    if (!emergency) {
-      // 停止時は右にスライド
-      rawProgress = Math.max(0, Math.min(100, (diff / maxSlide) * 100));
-    } else {
-      // 稼働時は左にスライド
-      rawProgress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
+      navigator.vibrate(30);
     }
     
-    // 重い抵抗カーブを適用（誘操作防止を強化）
-    // 初期から中盤までを大幅に重く設定
-    let resistanceFactor;
-    if (rawProgress < 15) {
-      resistanceFactor = 0.05; // 非常に重い初期
-    } else if (rawProgress < 35) {
-      resistanceFactor = 0.15; // 重い初期〜中期
-    } else if (rawProgress < 55) {
-      resistanceFactor = 0.35; // 中期の抵抗
-    } else if (rawProgress < 75) {
-      resistanceFactor = 0.6; // 後期の軽さ
-    } else if (rawProgress < 90) {
-      resistanceFactor = 0.8; // 終盤手前
-    } else {
-      resistanceFactor = 1.0; // 終盤のみフルスピード
-    }
-    
-    // 二次曲線でさらに重い抵抗を追加
-    const heavyResistance = Math.pow(resistanceFactor, 1.8); // 指数を上げてより重く
-    const progress = Math.min(100, rawProgress * heavyResistance);
-    
-    // デバッグログ追加
-    if (rawProgress > 80) {
-      console.log('📦 スライド進捗:', { 
-        rawProgress: rawProgress.toFixed(1), 
-        resistanceFactor, 
-        finalProgress: progress.toFixed(1),
-        diff,
-        maxSlide 
+    // プログレス更新タイマーを開始（3秒で100%）
+    const timer = setInterval(() => {
+      setHoldProgress(prev => {
+        const newProgress = prev + (100 / 30); // 100ms間隔で3秒
+        
+        // 進捗に応じたフィードバック
+        if (navigator.vibrate) {
+          if (newProgress >= 33 && prev < 33) {
+            navigator.vibrate(20);
+          } else if (newProgress >= 66 && prev < 66) {
+            navigator.vibrate(30);
+          } else if (newProgress >= 99 && prev < 99) {
+            navigator.vibrate([50, 30, 50]);
+          }
+        }
+        
+        // 100%に達したら実行
+        if (newProgress >= 100) {
+          console.log('✨ ホールド完了!');
+          
+          // 完了処理
+          setTimeout(() => {
+            toggleEmergency();
+            
+            // 完了後リセット
+            setTimeout(() => {
+              setHoldProgress(0);
+              setIsHolding(false);
+            }, 500);
+          }, 100);
+          
+          return 100;
+        }
+        
+        return newProgress;
       });
-    }
+    }, 100);
     
-    setSlideProgress(progress);
-    
-    // 触覚フィードバック（重い操作に合わせて強化）
-    if (navigator.vibrate) {
-      if (progress >= 20 && slideProgress < 20) {
-        navigator.vibrate(60); // 初期の強い抵抗感
-      } else if (progress >= 50 && slideProgress < 50) {
-        navigator.vibrate([50, 60, 50]); // 中間ポイントを強化
-      } else if (progress >= 80 && slideProgress < 80) {
-        navigator.vibrate([60, 100, 60]); // 終了直前をさらに強化
-      }
-    }
-    
-    // 95%以上スライドしたら実行（より確実な操作を要求）
-    // またはrawProgressが90%以上でも実行（抵抗カーブの影響を考慮）  
-    if (!isSliding) return; // スライド中でなければ処理しない
-    
-    if (progress >= 95 || rawProgress >= 90) {
-      console.log('✨ スライド完了!', { progress: progress.toFixed(1), rawProgress: rawProgress.toFixed(1) });
-      
-      if (navigator.vibrate) {
-        navigator.vibrate(200); // 完了時の強いバイブレーション
-      }
-      
-      // 完了フラグを設定して重複実行を防ぐ
-      setSlideProgress(100); // 完了状態として100%に固定
-      setIsSliding(false); // スライド状態を終了
-      
-      // 少し遅延して状態変更を実行（UIの更新を待つ）
-      setTimeout(() => {
-        toggleEmergency();
-      }, 100);
-    }
+    setHoldTimer(timer);
   };
-  
-  const handleSlideEnd = () => {
-    console.log('🔄 スライド終了:', { slideProgress: slideProgress.toFixed(1), isSliding });
+
+  const handleHoldEnd = () => {
+    console.log('🔄 ホールド終了:', { holdProgress: holdProgress.toFixed(1), isHolding });
     
-    setIsSliding(false);
+    // タイマークリア
+    if (holdTimer) {
+      clearInterval(holdTimer);
+      setHoldTimer(null);
+    }
     
-    // 完了状態（100%）でない場合のみリセット
-    if (slideProgress < 100) {
-      console.log('⚠️ スライド未完了、リセットします');
+    setIsHolding(false);
+    
+    // 未完了の場合はプログレスをリセット
+    if (holdProgress < 100) {
+      console.log('⚠️ ホールド未完了、リセットします');
       
-      if (navigator.vibrate && slideProgress > 15) {
-        navigator.vibrate([120, 80, 120]); // より強いリセットフィードバック
-      }
-      
-      setTimeout(() => {
-        setSlideProgress(0);
-        console.log('🔄 スライドプログレスを0にリセット');
-      }, 150);
-    } else {
-      console.log('✅ スライド完了、リセットしません');
+      const resetAnimation = () => {
+        setHoldProgress(prev => {
+          const newProgress = Math.max(0, prev - 10);
+          if (newProgress > 0) {
+            setTimeout(resetAnimation, 50);
+          }
+          return newProgress;
+        });
+      };
+      setTimeout(resetAnimation, 100);
     }
   };
 
@@ -520,6 +475,15 @@ export default function DashboardMobile() {
       return () => clearTimeout(timer);
     }
   }, [address]);
+
+  // コンポーネントアンマウント時のクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (holdTimer) {
+        clearInterval(holdTimer);
+      }
+    };
+  }, [holdTimer]);
 
   return (
     <div style={{
@@ -830,7 +794,7 @@ export default function DashboardMobile() {
             </div>
           </div>
 
-          {/* スライド式緊急停止ボタン */}
+          {/* プレス&ホールド式緊急停止ボタン */}
           <div style={{
             background: "rgba(255,255,255,0.06)",
             borderRadius: "12px",
@@ -858,133 +822,124 @@ export default function DashboardMobile() {
               </div>
             </div>
             
-            {/* スライドコントロール */}
+            {/* プレス&ホールドボタン */}
             <div 
               style={{
                 position: "relative",
                 width: "100%",
-                height: "50px",
-                background: emergency ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)",
-                borderRadius: "25px",
-                overflow: "hidden",
+                height: "60px",
+                background: emergency 
+                  ? (isHolding 
+                      ? "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)" 
+                      : "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)")
+                  : (isHolding 
+                      ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" 
+                      : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)"),
+                borderRadius: "12px",
                 marginBottom: "8px",
                 cursor: "pointer",
                 userSelect: "none",
-                touchAction: "none"
+                touchAction: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: isHolding ? "2px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                boxShadow: isHolding 
+                  ? "0 4px 20px rgba(0,0,0,0.3), inset 0 2px 10px rgba(255,255,255,0.1)" 
+                  : "0 2px 10px rgba(0,0,0,0.2)",
+                transform: isHolding ? "scale(0.98)" : "scale(1)",
+                transition: "all 0.15s ease"
               }}
-              onTouchStart={handleSlideStart}
-              onTouchMove={handleSlideMove}
-              onTouchEnd={handleSlideEnd}
-              onMouseDown={handleSlideStart}
-              onMouseMove={handleSlideMove}
-              onMouseUp={handleSlideEnd}
-              onMouseLeave={handleSlideEnd}
+              onTouchStart={handleHoldStart}
+              onTouchEnd={handleHoldEnd}
+              onMouseDown={handleHoldStart}
+              onMouseUp={handleHoldEnd}
+              onMouseLeave={handleHoldEnd}
             >
-              {/* スライダーハンドル */}
-              {/* スライダーハンドル */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: emergency ? `${Math.max(2, 100 - slideProgress)}%` : `${Math.min(98, slideProgress)}%`,
-                  top: "2px",
-                  width: "46px",
-                  height: "46px",
-                  background: slideProgress > 80 ? "#10b981" : slideProgress > 50 ? "#fbbf24" : slideProgress > 20 ? "#f3f4f6" : "white",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "16px",
-                  boxShadow: isSliding 
-                    ? `0 ${4 + slideProgress / 10}px ${12 + slideProgress / 5}px rgba(0,0,0,${0.4 + slideProgress / 200})` 
-                    : "0 2px 8px rgba(0,0,0,0.3)",
-                  transform: `translateX(-50%) scale(${isSliding ? 1.02 + slideProgress / 1000 : 1})`,
-                  transition: isSliding ? "background 0.15s ease-out, box-shadow 0.15s ease-out" : "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
-                  cursor: "grab",
-                  touchAction: "none",
-                  pointerEvents: "none" /* イベントは親コンテナで管理 */
-                }}
-              >
-                {slideProgress > 90 ? "✨" : slideProgress > 70 ? "⚡" : emergency ? "🔄" : "🚨"}
-              </div>
-              
-              {/* スライドテキスト */}
-              <div style={{
-                position: "absolute",
-                top: "50%",
-                left: emergency ? "25%" : "75%",
-                transform: "translate(-50%, -50%)",
-                color: "white",
-                fontSize: "14px",
-                fontWeight: "600",
-                opacity: 0.9,
-                pointerEvents: "none"
-              }}>
-                {emergency ? "← 稼働再開" : "停止 →"}
-              </div>
-              
-              {/* プログレスインジケーター */}
-              {slideProgress > 0 && (
-                <div style={{
-                  position: "absolute",
-                  top: 0,
-                  left: emergency ? `${100 - slideProgress}%` : 0,
-                  width: `${slideProgress}%`,
-                  height: "100%",
-                  background: slideProgress > 90 
-                    ? (emergency 
-                        ? "linear-gradient(90deg, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0.8) 100%)"
-                        : "linear-gradient(90deg, rgba(239, 68, 68, 0.6) 0%, rgba(220, 38, 38, 0.8) 100%)")
-                    : (emergency 
-                        ? "linear-gradient(90deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.3) 100%)"
-                        : "linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)"),
-                  borderRadius: "25px",
-                  transition: "background 0.2s ease"
-                }}/>
-              )}
-              
-              {/* 完了フィードバック */}
-              {slideProgress >= 95 && (
+              {/* プログレス円 */}
+              {holdProgress > 0 && (
                 <div style={{
                   position: "absolute",
                   top: "50%",
                   left: "50%",
                   transform: "translate(-50%, -50%)",
-                  fontSize: "18px",
-                  animation: "pulse 0.5s ease-in-out"
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  background: `conic-gradient(
+                    from 0deg, 
+                    rgba(255,255,255,0.8) 0deg, 
+                    rgba(255,255,255,0.8) ${holdProgress * 3.6}deg, 
+                    rgba(255,255,255,0.2) ${holdProgress * 3.6}deg, 
+                    rgba(255,255,255,0.2) 360deg
+                  )`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
                 }}>
-                  ✨
+                  <div style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: emergency 
+                      ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" 
+                      : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "16px"
+                  }}>
+                    {holdProgress >= 90 ? "✨" : holdProgress >= 60 ? "⚡" : emergency ? "🔄" : "🚨"}
+                  </div>
                 </div>
               )}
+              
+              {/* メインアイコン（プログレスなしの状態） */}
+              {holdProgress === 0 && (
+                <div style={{
+                  fontSize: "24px",
+                  opacity: 0.9
+                }}>
+                  {emergency ? "🔄" : "🚨"}
+                </div>
+              )}
+              
+              {/* テキスト表示 */}
+              <div style={{
+                position: "absolute",
+                bottom: "8px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "white",
+                opacity: 0.9,
+                textAlign: "center"
+              }}>
+                {isHolding 
+                  ? `${Math.floor(holdProgress)}%` 
+                  : (emergency ? "稼働再開" : "緊急停止")
+                }
+              </div>
             </div>
             
             <p style={{
               fontSize: "11px",
-              opacity: slideProgress > 30 ? 1 : 0.6,
+              opacity: holdProgress > 30 ? 1 : 0.6,
               margin: 0,
               lineHeight: 1.4,
               textAlign: "center",
-              color: slideProgress > 80 ? "#10b981" : slideProgress > 50 ? "#fbbf24" : "inherit",
-              fontWeight: slideProgress > 80 ? "700" : slideProgress > 50 ? "600" : "normal",
+              color: holdProgress > 80 ? "#10b981" : holdProgress > 50 ? "#fbbf24" : "inherit",
+              fontWeight: holdProgress > 80 ? "700" : holdProgress > 50 ? "600" : "normal",
               transition: "all 0.2s ease"
             }}>
-              {slideProgress > 90 
-                ? (emergency ? "✨ あと少し！" : "✨ あと少し！")
-                : slideProgress > 70
-                  ? (emergency ? "もう少しで稼働再開" : "もう少しで緊急停止")
-                  : (emergency 
-                      ? "← 左にスライドして稼働再開" 
-                      : "右にスライドして緊急停止 →")
+              {holdProgress > 90 
+                ? "✨ もうすぐ完了！"
+                : holdProgress > 0
+                  ? `${emergency ? "稼働再開まで" : "緊急停止まで"} ${Math.ceil((100 - holdProgress) / 33)}秒`
+                  : "3秒間ボタンを押し続けてください"
               }
             </p>
-            
-            {/* パルスアニメーション用スタイル */}
-            <style>{`
-              @keyframes pulse {
-                0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.2); }
-              }
-            `}</style>
           </div>
 
           {/* 最近のTip履歴 */}

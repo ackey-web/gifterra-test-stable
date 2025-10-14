@@ -135,15 +135,40 @@ export default function App() {
   const onClaim = async () => {
     if (!canClaim || !contract) return;
 
-    // 事前チェック（改善版）
+    // 事前チェック（モバイル対応改善）
     try {
-      const eth = (window as any).ethereum;
-      if (!eth) throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
+      // ThirdWebの接続状態を優先チェック
+      if (!address) {
+        throw new Error("ウォレットが接続されていません。接続ボタンをクリックしてください。");
+      }
       
-      // アカウント接続確認
-      const accounts = await eth.request({ method: "eth_requestAccounts" });
-      if (!accounts || accounts.length === 0) {
-        throw new Error("ウォレットアカウントが見つかりません");
+      // Web3プロバイダー検知（モバイルアプリ対応改善）
+      const eth = (window as any).ethereum;
+      const userAgent = navigator.userAgent;
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      
+      if (!eth) {
+        if (isMobileDevice) {
+          // モバイルデバイスでWeb3プロバイダーがない場合
+          throw new Error("モバイルではウォレットアプリからアクセスしてください。\n\n推奨手順:\n1. MetaMaskアプリをインストール\n2. アプリ内ブラウザでこのサイトを開く\n3. アプリ内でウォレットを接続");
+        } else {
+          throw new Error("MetaMaskまたは対応ウォレットが見つかりません。\n\nMetaMask拡張機能をインストールしてください。");
+        }
+      }
+      
+      // アカウント確認（モバイルでは異なるアプローチ）
+      try {
+        const accounts = await eth.request({ method: "eth_requestAccounts" });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("ウォレットアカウントが見つかりません");
+        }
+      } catch (accountError: any) {
+        // モバイルアプリではアカウント取得が異なる場合がある
+        console.warn("アカウント確認エラー:", accountError);
+        // ThirdWebが既に接続されている場合は続行
+        if (!address) {
+          throw new Error("ウォレットのアカウントアクセスに失敗しました。ウォレットアプリで接続を確認してください。");
+        }
       }
       
       // チェーン確認と切り替え
@@ -179,9 +204,33 @@ export default function App() {
         }
       }
     } catch (e: any) {
-      console.error("preflight failed:", e);
+      console.error("事前チェック失敗:", e);
       const errorMsg = e?.message || "不明なエラー";
-      alert(`ウォレット/チェーンの準備に失敗しました:\n${errorMsg}\n\nPolygon Amoyネットワークに接続していることを確認してください。`);
+      
+      // モバイルユーザー向けの具体的なエラーメッセージ
+      let userFriendlyMessage = "";
+      
+      if (errorMsg.includes("モバイルではウォレットアプリ")) {
+        userFriendlyMessage = "📱 モバイルでのアクセス方法\n\n";
+        userFriendlyMessage += "🔄 以下の手順でアクセスしてください:\n\n";
+        userFriendlyMessage += "1️⃣ MetaMaskアプリをインストール\n";
+        userFriendlyMessage += "2️⃣ アプリを開いてウォレットを作成/インポート\n";
+        userFriendlyMessage += "3️⃣ アプリ内のブラウザタブをタップ\n";
+        userFriendlyMessage += "4️⃣ このサイトのURLを入力してアクセス\n\n";
+        userFriendlyMessage += "⚠️ 通常のブラウザではウォレット接続できません";
+      } else if (errorMsg.includes("チェーン切り替えを拒否")) {
+        userFriendlyMessage = "🔗 ネットワーク切り替えが必要です\n\n";
+        userFriendlyMessage += "• ウォレットで 'Polygon Amoy' ネットワークを選択\n";
+        userFriendlyMessage += "• ネットワーク切り替えを承認してください";
+      } else {
+        userFriendlyMessage = "🚫 ウォレット接続エラー\n\n";
+        userFriendlyMessage += `エラー: ${errorMsg}\n\n`;
+        userFriendlyMessage += "🔍 解決方法:\n";
+        userFriendlyMessage += "• ウォレットアプリが正しく接続されているか確認\n";
+        userFriendlyMessage += "• Polygon Amoy テストネットに接続しているか確認";
+      }
+      
+      alert(userFriendlyMessage);
       return;
     }
 
