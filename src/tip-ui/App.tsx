@@ -311,53 +311,114 @@ export default function TipApp() {
     const dn = displayName.trim().slice(0, 32);
     const msg = message.trim().slice(0, hasProfile ? 120 : 40);
 
-    // 事前チェック（Reward UIと同様）
+    // 事前チェック（モバイル対応改善）
     try {
-      const eth = (window as any).ethereum;
-      if (!eth) throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
-      
-      // アカウント接続確認
-      const accounts = await eth.request({ method: "eth_requestAccounts" });
-      if (!accounts || accounts.length === 0) {
-        throw new Error("ウォレットアカウントが見つかりません");
+      // ThirdWebの接続状態を優先チェック
+      if (!address) {
+        throw new Error("ウォレットが接続されていません。接続ボタンをクリックしてください。");
       }
       
-      // チェーン確認と切り替え
-      const currentChainId = await eth.request({ method: "eth_chainId" });
-      if ((currentChainId || "").toLowerCase() !== "0x13882") {
-        try {
-          await eth.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x13882" }],
-          });
-          // チェーン切り替え後の待機
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (switchError: any) {
-          if (switchError.code === 4902) {
-            // ネットワークが存在しない場合は追加
-            await eth.request({
-              method: "wallet_addEthereumChain",
-              params: [{
-                chainId: "0x13882",
-                chainName: "Polygon Amoy Testnet",
-                nativeCurrency: {
-                  name: "MATIC",
-                  symbol: "MATIC",
-                  decimals: 18
-                },
-                rpcUrls: ["https://rpc-amoy.polygon.technology/"],
-                blockExplorerUrls: ["https://amoy.polygonscan.com/"]
-              }]
-            });
-          } else {
-            throw switchError;
-          }
+      // Web3プロバイダー検知（モバイルアプリ対応）
+      const eth = (window as any).ethereum;
+      const isInjectedWallet = typeof (window as any).ethereum !== 'undefined';
+      
+      if (!eth && !isInjectedWallet) {
+        // モバイル環境でのWeb3ウォレットアプリ検知
+        const userAgent = navigator.userAgent;
+        const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+        
+        if (isMobileDevice) {
+          throw new Error("モバイルウォレットアプリからアクセスしてください。MetaMaskアプリのブラウザ機能を使用してください。");
+        } else {
+          throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
         }
       }
+      
+      // アカウント確認（モバイルでは異なるアプローチ）
+      try {
+        const accounts = await eth.request({ method: "eth_requestAccounts" });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("ウォレットアカウントが見つかりません");
+        }
+      } catch (accountError: any) {
+        // モバイルアプリではアカウント取得が異なる場合がある
+        console.warn("アカウント確認エラー:", accountError);
+        // ThirdWebが既に接続されている場合は続行
+        if (!address) {
+          throw new Error("ウォレットのアカウントアクセスに失敷しました。ウォレットアプリで接続を確認してください。");
+        }
+      }
+      
+      // チェーン確認と切り替え（モバイル対応）
+      try {
+        const currentChainId = await eth.request({ method: "eth_chainId" });
+        const targetChainId = "0x13882"; // Polygon Amoy
+        
+        if ((currentChainId || "").toLowerCase() !== targetChainId.toLowerCase()) {
+          console.log("チェーン切り替え要求:", { current: currentChainId, target: targetChainId });
+          
+          try {
+            await eth.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: targetChainId }],
+            });
+            // チェーン切り替え後の待機（モバイルでは長めに）
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } catch (switchError: any) {
+            console.error("チェーン切り替えエラー:", switchError);
+            
+            if (switchError.code === 4902) {
+              // ネットワークが存在しない場合は追加
+              console.log("ネットワーク追加要求");
+              await eth.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: targetChainId,
+                  chainName: "Polygon Amoy Testnet",
+                  nativeCurrency: {
+                    name: "MATIC",
+                    symbol: "MATIC",
+                    decimals: 18
+                  },
+                  rpcUrls: [
+                    "https://rpc-amoy.polygon.technology/",
+                    "https://polygon-amoy.drpc.org"
+                  ],
+                  blockExplorerUrls: ["https://amoy.polygonscan.com/"]
+                }]
+              });
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } else if (switchError.code === 4001) {
+              throw new Error("ユーザーがチェーン切り替えを拒否しました。Polygon Amoyネットワークに切り替えてください。");
+            } else {
+              throw switchError;
+            }
+          }
+        }
+      } catch (chainError: any) {
+        console.error("チェーン関連エラー:", chainError);
+        throw new Error(`ネットワークの確認に失敗しました: ${chainError.message || '不明なエラー'}`);
+      }
     } catch (e: any) {
-      console.error("preflight failed:", e);
+      console.error("事前チェック失敗:", e);
       const errorMsg = e?.message || "不明なエラー";
-      alert(`ウォレット/チェーンの準備に失敗しました:\n${errorMsg}\n\nPolygon Amoyネットワークに接続していることを確認してください。`);
+      
+      // モバイルユーザー向けの詳細なエラーメッセージ
+      let userFriendlyMessage = "ウォレット接続に問題があります。\n\n";
+      
+      if (errorMsg.includes("モバイルウォレットアプリ")) {
+        userFriendlyMessage += "• MetaMaskアプリのブラウザ機能でアクセスしてください\n";
+        userFriendlyMessage += "• アプリ内ブラウザでこのサイトを開いてください";
+      } else if (errorMsg.includes("チェーン切り替えを拒否")) {
+        userFriendlyMessage += "• Polygon Amoyネットワークへの切り替えが必要です\n";
+        userFriendlyMessage += "• ウォレットでネットワークを切り替えてください";
+      } else {
+        userFriendlyMessage += `エラー詳細: ${errorMsg}\n\n`;
+        userFriendlyMessage += "• ウォレットアプリが正しく接続されているか確認\n";
+        userFriendlyMessage += "• Polygon Amoyネットワークに接続しているか確認";
+      }
+      
+      alert(userFriendlyMessage);
       return;
     }
 
