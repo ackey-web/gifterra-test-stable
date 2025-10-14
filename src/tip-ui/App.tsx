@@ -13,7 +13,7 @@ import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
-import { burstConfetti } from "../utils/confetti";
+import { tipSuccessConfetti } from "../utils/confetti";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -443,7 +443,7 @@ export default function TipApp() {
       
       // 🎉 投げ銭成功エフェクト
       // 1. コンフェッティ（紙吹雪）
-      burstConfetti().catch(console.warn);
+      tipSuccessConfetti().catch(console.warn);
       
       // 2. オーラ／背景エフェクト
       setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");

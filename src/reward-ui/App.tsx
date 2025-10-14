@@ -11,7 +11,7 @@ import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
-import { burstConfetti } from "../utils/confetti";
+import { rewardSuccessConfetti } from "../utils/confetti";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -226,14 +226,14 @@ export default function App() {
 
       if (args) {
         // 🎉 リワード受け取り成功エフェクト
-        burstConfetti().catch(console.warn);
+        rewardSuccessConfetti().catch(console.warn);
         setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
         setTimeout(() => setBgGradient(""), 3000);
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
       } else {
         // 🎉 取引送信成功エフェクト
-        burstConfetti().catch(console.warn);
+        rewardSuccessConfetti().catch(console.warn);
         setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
         setTimeout(() => setBgGradient(""), 3000);
         setShowSuccessMessage(true);
@@ -284,7 +284,7 @@ export default function App() {
         if (args) {
           // 🎉 リワード受け取り成功エフェクト
           // 1. コンフェッティ（紙吹雪）
-          burstConfetti().catch(console.warn);
+          rewardSuccessConfetti().catch(console.warn);
           
           // 2. オーラ／背景エフェクト
           setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
@@ -297,7 +297,7 @@ export default function App() {
           setShowAddToken(true); // 成功時のみ出現
         } else {
           // 🎉 取引送信成功エフェクト
-          burstConfetti().catch(console.warn);
+          rewardSuccessConfetti().catch(console.warn);
           setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
           setTimeout(() => setBgGradient(""), 3000);
           setShowSuccessMessage(true);
