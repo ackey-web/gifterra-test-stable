@@ -420,20 +420,24 @@ export default function DashboardMobile() {
       rawProgress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
     }
     
-    // 抵抗カーブを適用（初期は重く、後半は軽く）
-    // 二次曲線を使用して初期の動きを抑制、終盤は達成しやすく
+    // スムーズな抵抗カーブを適用（初期は重く、彭々に軽く）
+    // 指数関数を使用してより自然な動きを実現
     let resistanceFactor;
-    if (rawProgress < 20) {
-      resistanceFactor = 0.2; // 初期の重さ
-    } else if (rawProgress < 50) {
-      resistanceFactor = 0.5; // 中期の軽さ
-    } else if (rawProgress < 80) {
-      resistanceFactor = 0.8; // 後期の軽さ
+    if (rawProgress < 10) {
+      resistanceFactor = 0.1; // 初期の重さ
+    } else if (rawProgress < 30) {
+      resistanceFactor = 0.3; // 漸増
+    } else if (rawProgress < 60) {
+      resistanceFactor = 0.6; // 中期
+    } else if (rawProgress < 85) {
+      resistanceFactor = 0.85; // 後期
     } else {
-      resistanceFactor = 1.0; // 終盤はフルスピード（達成しやすく）
+      resistanceFactor = 1.0; // 終盤はフルスピード
     }
     
-    const progress = Math.min(100, rawProgress * resistanceFactor);
+    // 指数関数でより滑らかな進行を実現
+    const smoothProgress = Math.min(100, rawProgress * resistanceFactor * (1 + Math.pow(rawProgress / 100, 2) * 0.2));
+    const progress = Math.min(100, smoothProgress);
     
     // デバッグログ追加
     if (rawProgress > 80) {
@@ -448,14 +452,14 @@ export default function DashboardMobile() {
     
     setSlideProgress(progress);
     
-    // 触覚フィードバック（バイブレーション）
+    // 触覚フィードバック（バイブレーション）をより滑らかに
     if (navigator.vibrate) {
-      if (progress >= 30 && slideProgress < 30) {
-        navigator.vibrate(50); // 初期の抵抗感
-      } else if (progress >= 70 && slideProgress < 70) {
-        navigator.vibrate([30, 50, 30]); // 中間ポイント
-      } else if (progress >= 90 && slideProgress < 90) {
-        navigator.vibrate([50, 100, 50]); // 終了直前
+      if (progress >= 25 && slideProgress < 25) {
+        navigator.vibrate(40); // 初期の抵抗感
+      } else if (progress >= 60 && slideProgress < 60) {
+        navigator.vibrate([25, 40, 25]); // 中間ポイント
+      } else if (progress >= 85 && slideProgress < 85) {
+        navigator.vibrate([40, 80, 40]); // 終了直前
       }
     }
     
@@ -892,8 +896,8 @@ export default function DashboardMobile() {
                   boxShadow: isSliding 
                     ? `0 ${4 + slideProgress / 10}px ${12 + slideProgress / 5}px rgba(0,0,0,${0.4 + slideProgress / 200})` 
                     : "0 2px 8px rgba(0,0,0,0.3)",
-                  transform: `translateX(-50%) scale(${isSliding ? 1.05 + slideProgress / 500 : 1})`,
-                  transition: isSliding ? "background 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease" : "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transform: `translateX(-50%) scale(${isSliding ? 1.02 + slideProgress / 1000 : 1})`,
+                  transition: isSliding ? "background 0.15s ease-out, box-shadow 0.15s ease-out" : "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
                   cursor: "grab",
                   touchAction: "none",
                   pointerEvents: "none" /* イベントは親コンテナで管理 */

@@ -318,19 +318,17 @@ export default function TipApp() {
         throw new Error("ウォレットが接続されていません。接続ボタンをクリックしてください。");
       }
       
-      // Web3プロバイダー検知（モバイルアプリ対応）
+      // Web3プロバイダー検知（モバイルアプリ対応改善）
       const eth = (window as any).ethereum;
-      const isInjectedWallet = typeof (window as any).ethereum !== 'undefined';
+      const userAgent = navigator.userAgent;
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
       
-      if (!eth && !isInjectedWallet) {
-        // モバイル環境でのWeb3ウォレットアプリ検知
-        const userAgent = navigator.userAgent;
-        const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-        
+      if (!eth) {
         if (isMobileDevice) {
-          throw new Error("モバイルウォレットアプリからアクセスしてください。MetaMaskアプリのブラウザ機能を使用してください。");
+          // モバイルデバイスでWeb3プロバイダーがない場合
+          throw new Error("モバイルではウォレットアプリからアクセスしてください。\n\n推奨手順:\n1. MetaMaskアプリをインストール\n2. アプリ内ブラウザでこのサイトを開く\n3. アプリ内でウォレットを接続");
         } else {
-          throw new Error("MetaMaskまたは対応ウォレットが見つかりません");
+          throw new Error("MetaMaskまたは対応ウォレットが見つかりません。\n\nMetaMask拡張機能をインストールしてください。");
         }
       }
       
@@ -403,19 +401,27 @@ export default function TipApp() {
       console.error("事前チェック失敗:", e);
       const errorMsg = e?.message || "不明なエラー";
       
-      // モバイルユーザー向けの詳細なエラーメッセージ
-      let userFriendlyMessage = "ウォレット接続に問題があります。\n\n";
+      // モバイルユーザー向けの具体的なエラーメッセージ
+      let userFriendlyMessage = "";
       
-      if (errorMsg.includes("モバイルウォレットアプリ")) {
-        userFriendlyMessage += "• MetaMaskアプリのブラウザ機能でアクセスしてください\n";
-        userFriendlyMessage += "• アプリ内ブラウザでこのサイトを開いてください";
+      if (errorMsg.includes("モバイルではウォレットアプリ")) {
+        userFriendlyMessage = "📱 モバイルでのアクセス方法\n\n";
+        userFriendlyMessage += "🔄 以下の手順でアクセスしてください:\n\n";
+        userFriendlyMessage += "1️⃣ MetaMaskアプリをインストール\n";
+        userFriendlyMessage += "2️⃣ アプリを開いてウォレットを作成/インポート\n";
+        userFriendlyMessage += "3️⃣ アプリ内のブラウザタブをタップ\n";
+        userFriendlyMessage += "4️⃣ このサイトのURLを入力してアクセス\n\n";
+        userFriendlyMessage += "⚠️ 通常のブラウザではウォレット接続できません";
       } else if (errorMsg.includes("チェーン切り替えを拒否")) {
-        userFriendlyMessage += "• Polygon Amoyネットワークへの切り替えが必要です\n";
-        userFriendlyMessage += "• ウォレットでネットワークを切り替えてください";
+        userFriendlyMessage = "🔗 ネットワーク切り替えが必要です\n\n";
+        userFriendlyMessage += "• ウォレットで 'Polygon Amoy' ネットワークを選択\n";
+        userFriendlyMessage += "• ネットワーク切り替えを承認してください";
       } else {
-        userFriendlyMessage += `エラー詳細: ${errorMsg}\n\n`;
+        userFriendlyMessage = "🚫 ウォレット接続エラー\n\n";
+        userFriendlyMessage += `エラー: ${errorMsg}\n\n`;
+        userFriendlyMessage += "🔍 解決方法:\n";
         userFriendlyMessage += "• ウォレットアプリが正しく接続されているか確認\n";
-        userFriendlyMessage += "• Polygon Amoyネットワークに接続しているか確認";
+        userFriendlyMessage += "• Polygon Amoy テストネットに接続しているか確認";
       }
       
       alert(userFriendlyMessage);
