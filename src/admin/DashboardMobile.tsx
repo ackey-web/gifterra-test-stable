@@ -103,14 +103,79 @@ export default function DashboardMobile() {
 
       // 現在のブロック番号取得
       const currentBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, currentBlock - 50000);
+      // 段階的なブロック範囲設定（最近のブロックから優先的に検索）
+      const BLOCK_RANGES = [2000, 5000, 10000]; // 段階的に範囲を拡大
+      let fromBlock = Math.max(0, currentBlock - BLOCK_RANGES[0]);
+      let selectedRange = BLOCK_RANGES[0];
       
-      console.log("📊 イベント取得開始:", { currentBlock, fromBlock, range: currentBlock - fromBlock });
+      console.log("📊 イベント取得開始:", { 
+        currentBlock, 
+        fromBlock, 
+        range: currentBlock - fromBlock,
+        selectedRange,
+        availableRanges: BLOCK_RANGES,
+        rpcProvider: providerUrl
+      });
 
-      // イベント取得
-      const tipEvents = await contract.queryFilter("TipSent", fromBlock);
-      console.log("📩 イベント取得結果:", { eventCount: tipEvents.length });
+      // イベント取得（タイムアウトとエラーハンドリングを強化）
+      let tipEvents: any[] = [];
+      try {
+        console.log("🔍 イベントクエリ実行中...");
+        const queryResult = await Promise.race([
+          contract.queryFilter("TipSent", fromBlock),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Event query timeout')), 30000)
+          )
+        ]) as any[];
+        tipEvents = queryResult;
+        console.log("✅ イベント取得成功:", { eventCount: tipEvents.length });
+      } catch (eventError) {
+        console.error("❌ イベント取得エラー:", eventError);
+        // さらに小さい範囲で再試行（最初の範囲よりも小さく）
+        const smallerRange = Math.min(selectedRange, 1000);
+        const smallerFromBlock = Math.max(0, currentBlock - smallerRange);
+        console.log("🔄 より小さい範囲で再試行:", { smallerRange, smallerFromBlock, originalRange: selectedRange });
+        tipEvents = await contract.queryFilter("TipSent", smallerFromBlock) as any[];
+        console.log("✅ 小範囲イベント取得成功:", { eventCount: tipEvents.length });
+      }
 
+      // イベントが0件の場合は段階的に範囲を拡大
+      if (tipEvents.length === 0) {
+        console.warn("⚠️ イベントが見つかりません - 範囲を拡大して再検索", {
+          currentRange: selectedRange,
+          blockRange: { from: fromBlock, to: currentBlock },
+          contractAddress: CONTRACT_ADDRESS,
+          eventName: "TipSent"
+        });
+        
+        // より大きな範囲で再試行
+        for (let i = 1; i < BLOCK_RANGES.length; i++) {
+          const expandedRange = BLOCK_RANGES[i];
+          const expandedFromBlock = Math.max(0, currentBlock - expandedRange);
+          console.log(`🔍 範囲を拡大して再検索 (${expandedRange}ブロック)...`);
+          
+          try {
+            const expandedEvents = await contract.queryFilter("TipSent", expandedFromBlock) as any[];
+            if (expandedEvents.length > 0) {
+              tipEvents = expandedEvents;
+              selectedRange = expandedRange;
+              fromBlock = expandedFromBlock;
+              console.log("✅ 拡大検索で発見:", { eventCount: tipEvents.length, range: expandedRange });
+              break;
+            }
+          } catch (expandError) {
+            console.warn(`⚠️ 拡大検索失敗 (${expandedRange}ブロック):`, expandError);
+          }
+        }
+        
+        if (tipEvents.length === 0) {
+          console.error("❌ すべての範囲でイベントが見つかりませんでした", {
+            testedRanges: BLOCK_RANGES,
+            suggestion: "コントラクトアドレスまたはイベント名を確認してください"
+          });
+        }
+      }
+      
       const tipData: TipItem[] = [];
       const recentEvents = tipEvents.slice(-20); // 最新の20件
       
@@ -138,14 +203,14 @@ export default function DashboardMobile() {
 
       console.log("💰 累積Tip額計算開始...");
       // 累積Tip額をイベントから集計
-      const total = tipEvents.reduce((sum, event) => {
+      const total = tipEvents.reduce((sum: bigint, event: any) => {
         return sum + (event.args?.amount || 0n);
       }, 0n);
       console.log("💰 累積Tip額(イベント集計):", ethers.utils.formatUnits(total, TOKEN.DECIMALS), TOKEN.SYMBOL);
 
       // 管理者用統計: 全体の累積Tip額とユーザー統計
       const userStats = new Map<string, bigint>();
-      tipEvents.forEach(event => {
+      tipEvents.forEach((event: any) => {
         const userAddr = event.args?.from?.toLowerCase();
         const amount = event.args?.amount || 0n;
         if (userAddr) {
