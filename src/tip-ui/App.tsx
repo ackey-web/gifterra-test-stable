@@ -642,48 +642,159 @@ export default function TipApp() {
         </div>
       </header>
 
-      <section style={{ display: "grid", justifyItems: "center", alignContent: "start", rowGap: 12, width: "min(92vw, 720px)", margin: "12px auto 0" }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+      <section style={{ 
+        display: "grid", 
+        justifyItems: "center", 
+        alignContent: "start", 
+        rowGap: 'clamp(8px, 2vw, 12px)', 
+        width: "min(95vw, 720px)", 
+        margin: "12px auto 0",
+        padding: "0 clamp(5px, 2vw, 10px)"
+      }}>
+        <div style={{ 
+          display: "grid", 
+          gap: 'clamp(8px, 2vw, 10px)', 
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          alignItems: "center", 
+          justifyItems: "center",
+          width: "100%"
+        }}>
+          <div style={{
+            display: "flex",
+            gap: 'clamp(6px, 1.5vw, 10px)',
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            width: "100%",
+            minWidth: "280px"
+          }}>
           <ConnectWallet 
             theme="dark" 
             modalTitle="ウォレット接続"
             modalTitleIconUrl=""
+            style={{
+              minHeight: '44px', // モバイルタッチ対応
+              fontSize: 'clamp(14px, 2vw, 16px)'
+            }}
           />
-          <select value={tokenKey} onChange={() => setTokenKey("PRIMARY")} style={{ height: BUTTON_H, borderRadius: 10, border: "1px solid #334155", background: "#0f1a24", color: "#fff", padding: "0 12px", fontWeight: 700 }}>
-            <option value="PRIMARY">{TOKEN.SYMBOL}</option>
-            <option value="DISABLED" disabled>JPYC（近日予定）</option>
-          </select>
-          <div style={{ display: "inline-flex", alignItems: "center", height: BUTTON_H, borderRadius: 10, background: "#0f1a24", border: "1px solid #334155" }}>
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="金額" style={{ height: "100%", padding: "0 12px", outline: "none", background: "transparent", color: "#fff", border: "none", width: 120 }} />
-            <span style={{ opacity: 0.8, fontSize: 12, paddingRight: 10 }}>{TOKEN.SYMBOL}</span>
+            <select 
+              value={tokenKey} 
+              onChange={() => setTokenKey("PRIMARY")} 
+              style={{ 
+                height: 'clamp(44px, 8vw, 48px)', 
+                borderRadius: 10, 
+                border: "1px solid #334155", 
+                background: "#0f1a24", 
+                color: "#fff", 
+                padding: "0 12px", 
+                fontWeight: 700,
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                minWidth: 'clamp(80px, 15vw, 100px)'
+              }}
+            >
+              <option value="PRIMARY">{TOKEN.SYMBOL}</option>
+              <option value="DISABLED" disabled>JPYC（近日予定）</option>
+            </select>
+            <div style={{ 
+              display: "inline-flex", 
+              alignItems: "center", 
+              height: 'clamp(44px, 8vw, 48px)', 
+              borderRadius: 10, 
+              background: "#0f1a24", 
+              border: "1px solid #334155",
+              minWidth: 'clamp(130px, 25vw, 150px)'
+            }}>
+              <input 
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)} 
+                inputMode="decimal" 
+                placeholder="金額" 
+                style={{ 
+                  height: "100%", 
+                  padding: "0 12px", 
+                  outline: "none", 
+                  background: "transparent", 
+                  color: "#fff", 
+                  border: "none", 
+                  width: '100%',
+                  fontSize: 'clamp(14px, 2vw, 16px)'
+                }} 
+              />
+              <span style={{ 
+                opacity: 0.8, 
+                fontSize: 'clamp(11px, 1.8vw, 12px)', 
+                paddingRight: 10 
+              }}>{TOKEN.SYMBOL}</span>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="ニックネーム（任意）" maxLength={32} style={{ height: BUTTON_H, borderRadius: 10, border: "1px solid #334155", background: "#0f1a24", color: "#fff", padding: "0 12px", width: 160 }} />
+          <div style={{ 
+            display: "flex", 
+            gap: 'clamp(6px, 1.5vw, 10px)', 
+            flexWrap: "wrap",
+            justifyContent: "center",
+            width: "100%"
+          }}>
+            <input 
+              value={displayName} 
+              onChange={(e) => setDisplayName(e.target.value)} 
+              placeholder="ニックネーム（任意）" 
+              maxLength={32} 
+              style={{ 
+                height: BUTTON_H, 
+                borderRadius: 10, 
+                border: "1px solid #334155", 
+                background: "#0f1a24", 
+                color: "#fff", 
+                padding: "0 12px", 
+                width: 'clamp(140px, 25vw, 160px)',
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                minHeight: '44px' // モバイルタッチ対応
+              }} 
+            />
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={hasProfile === null ? "確認中..." : hasProfile ? "一言メッセージ（任意）" : "簡易プロフィール（初回のみ）"}
               maxLength={hasProfile ? 120 : 40}
-              style={{ height: BUTTON_H, borderRadius: 10, border: "1px solid #334155", background: "#0f1a24", color: "#fff", padding: "0 12px", width: 220 }}
+              style={{ 
+                height: BUTTON_H, 
+                borderRadius: 10, 
+                border: "1px solid #334155", 
+                background: "#0f1a24", 
+                color: "#fff", 
+                padding: "0 12px", 
+                width: 'clamp(180px, 35vw, 220px)',
+                fontSize: 'clamp(14px, 2vw, 16px)',
+                minHeight: '44px' // モバイルタッチ対応
+              }}
             />
           </div>
-          <button
-            onClick={doTip}
-            disabled={!canSend}
-            title={emergency ? "メンテナンス中（緊急停止）" : undefined}
-            style={{
-              height: BUTTON_H,
-              padding: "0 16px",
-              background: canSend ? "#22c55e" : "#3a3f46",
-              color: "#0a0a0a",
-              borderRadius: 10,
-              border: "none",
-              cursor: canSend ? "pointer" : "not-allowed",
-              fontWeight: 800
-            }}
-          >
-            {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "投げ銭する"}
-          </button>
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%"
+          }}>
+            <button
+              onClick={doTip}
+              disabled={!canSend}
+              title={emergency ? "メンテナンス中（緊急停止）" : undefined}
+              style={{
+                height: 'clamp(44px, 8vw, 48px)', // モバイル対応の高さ
+                padding: "0 clamp(16px, 4vw, 24px)",
+                background: canSend ? "#22c55e" : "#3a3f46",
+                color: "#0a0a0a",
+                borderRadius: 10,
+                border: "none",
+                cursor: canSend ? "pointer" : "not-allowed",
+                fontWeight: 800,
+                fontSize: 'clamp(14px, 2.5vw, 16px)',
+                minWidth: 'clamp(120px, 25vw, 140px)',
+                touchAction: 'manipulation' // モバイルタップ改善
+              }}
+            >
+              {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "投げ銭する"}
+            </button>
+          </div>
         </div>
 
         {hasProfile === false && (
@@ -760,11 +871,18 @@ export default function TipApp() {
             background: showRankUpEffect 
               ? "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #ffeaa7 100%)"
               : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            color: "white", padding: "20px 30px", borderRadius: 16,
-            fontSize: 20, fontWeight: "bold", textAlign: "center",
-            zIndex: 9999, boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
+            color: "white", 
+            padding: "clamp(15px, 4vw, 30px)", 
+            borderRadius: 16,
+            fontSize: 'clamp(16px, 4vw, 20px)', 
+            fontWeight: "bold", 
+            textAlign: "center",
+            zIndex: 9999, 
+            boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
             animation: showRankUpEffect ? "rankUpPulse 2s ease-in-out infinite" : "fadeInOut 3s ease-in-out",
-            border: showRankUpEffect ? "3px solid rgba(255,255,255,0.3)" : "none"
+            border: showRankUpEffect ? "3px solid rgba(255,255,255,0.3)" : "none",
+            maxWidth: "90vw", // モバイルで画面からはみ出さない
+            wordBreak: "keep-all"
           }}>
             {rankUpMsg}
           </div>
@@ -775,11 +893,17 @@ export default function TipApp() {
             position: "fixed",
             top: "25%", left: "50%", transform: "translateX(-50%)",
             background: "rgba(0,0,0,0.8)",
-            color: "white", padding: "12px 20px", borderRadius: 8,
-            fontSize: 14, textAlign: "center",
-            zIndex: 9998, boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            color: "white", 
+            padding: "clamp(10px, 3vw, 20px)", 
+            borderRadius: 8,
+            fontSize: 'clamp(12px, 3vw, 14px)', 
+            textAlign: "center",
+            zIndex: 9998, 
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
             animation: "fadeInOut 1s ease-in-out",
-            backdropFilter: "blur(8px)"
+            backdropFilter: "blur(8px)",
+            maxWidth: "85vw", // モバイルで画面からはみ出さない
+            wordBreak: "keep-all"
           }}>
             {sbtProcessMsg}
           </div>
