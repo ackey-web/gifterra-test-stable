@@ -49,6 +49,11 @@ export default function DashboardMobile() {
   const [weeklyTips, setWeeklyTips] = useState(0);
   const [topSupporters, setTopSupporters] = useState<{address: string, amount: bigint}[]>([]);
   const [rankDistribution, setRankDistribution] = useState({seed: 0, grow: 0, bloom: 0, mythic: 0});
+  
+  // スライド式緊急停止状態
+  const [isSliding, setIsSliding] = useState(false);
+  const [slideProgress, setSlideProgress] = useState(0);
+  const [slideStartX, setSlideStartX] = useState(0);
 
   // データ取得
   const fetchData = async () => {
@@ -176,10 +181,14 @@ export default function DashboardMobile() {
         }
       }
       
+      // 表示用のTipデータ（最新20件のみ詳細処理）
       const tipData: TipItem[] = [];
       const recentEvents = tipEvents.slice(-20); // 最新の20件
       
-      console.log("🔄 イベント processing 開始:", { eventsToProcess: recentEvents.length });
+      console.log("🔄 表示用イベント処理開始:", { 
+        eventsToProcess: recentEvents.length,
+        totalEvents: tipEvents.length 
+      });
       
       for (let i = 0; i < recentEvents.length; i++) {
         const event = recentEvents[i];
@@ -200,6 +209,20 @@ export default function DashboardMobile() {
           console.warn("⚠️ ブロック情報取得失敗:", event.blockNumber, blockError);
         }
       }
+      
+      // 統計用の全イベントデータ（ブロック情報なしで軽量処理）
+      const allTipData: TipItem[] = tipEvents.map(event => ({
+        from: event.args?.from || "",
+        amount: event.args?.amount || 0n,
+        blockNumber: BigInt(event.blockNumber),
+        timestamp: undefined, // 統計では不要なので省略
+        txHash: event.transactionHash,
+      }));
+      
+      console.log("📈 統計用データ準備完了:", { 
+        displayData: tipData.length,
+        statisticsData: allTipData.length 
+      });
 
       console.log("💰 累積Tip額計算開始...");
       // 累積Tip額をイベントから集計
@@ -228,8 +251,8 @@ export default function DashboardMobile() {
       setTips(tipData.reverse());
       setTotalTips(total);
       
-      // 分析データ計算
-      calculateAnalytics(tipData);
+      // 分析データ計算（全イベントデータを使用）
+      calculateAnalytics(allTipData);
       
     } catch (error: any) {
       console.error("❌ データ取得エラー:", {
@@ -255,18 +278,56 @@ export default function DashboardMobile() {
 
   // 分析データ計算
   const calculateAnalytics = (tipData: TipItem[]) => {
+    console.log("📊 分析データ計算開始:", {
+      tipDataLength: tipData.length,
+      tipDataSample: tipData.slice(0, 2),
+      currentTimestamp: Date.now() / 1000
+    });
+    
+    if (tipData.length === 0) {
+      console.warn("⚠️ 分析用データが空です - デフォルト値を設定");
+      setDailyTips(0);
+      setWeeklyTips(0);
+      setTopSupporters([]);
+      setRankDistribution({seed: 1, grow: 0, bloom: 0, mythic: 0});
+      return;
+    }
+    
     const now = Date.now() / 1000;
     const todayStart = new Date().setHours(0, 0, 0, 0) / 1000;
     const weekStart = now - 7 * 24 * 60 * 60;
     
-    // 当日・週間Tip集計
-    const todayTips = tipData.filter(tip => 
-      tip.timestamp && tip.timestamp >= todayStart
-    ).length;
+    // 当日・週間Tip集計（タイムスタンプ情報なしの場合は最近のブロックとして概算）
+    const avgBlockTime = 2; // Polygon Amoyの平均ブロック時間（秒）
+    const currentTime = now;
     
-    const weekTips = tipData.filter(tip => 
-      tip.timestamp && tip.timestamp >= weekStart
-    ).length;
+    const todayTips = tipData.filter(tip => {
+      if (tip.timestamp) {
+        return tip.timestamp >= todayStart;
+      } else {
+        // タイムスタンプがない場合はブロック番号から推定
+        const estimatedTime = currentTime - (Number(tip.blockNumber) * avgBlockTime);
+        return estimatedTime >= todayStart;
+      }
+    }).length;
+    
+    const weekTips = tipData.filter(tip => {
+      if (tip.timestamp) {
+        return tip.timestamp >= weekStart;
+      } else {
+        const estimatedTime = currentTime - (Number(tip.blockNumber) * avgBlockTime);
+        return estimatedTime >= weekStart;
+      }
+    }).length;
+    
+    console.log("📅 期間別統計:", {
+      todayStart: new Date(todayStart * 1000).toLocaleString(),
+      weekStart: new Date(weekStart * 1000).toLocaleString(),
+      todayTips,
+      weekTips,
+      tipDataCount: tipData.length,
+      hasTimestamps: tipData.filter(tip => tip.timestamp).length
+    });
     
     setDailyTips(todayTips);
     setWeeklyTips(weekTips);
@@ -274,14 +335,22 @@ export default function DashboardMobile() {
     // トップサポーター集計（アドレス別）
     const supporterMap = new Map<string, bigint>();
     tipData.forEach(tip => {
-      const current = supporterMap.get(tip.from) || 0n;
-      supporterMap.set(tip.from, current + tip.amount);
+      if (tip.from) {
+        const current = supporterMap.get(tip.from) || 0n;
+        supporterMap.set(tip.from, current + tip.amount);
+      }
     });
     
     const topThree = Array.from(supporterMap.entries())
       .map(([address, amount]) => ({ address, amount }))
       .sort((a, b) => b.amount > a.amount ? 1 : -1)
       .slice(0, 3);
+    
+    console.log("🌟 サポーター統計:", {
+      totalSupporters: supporterMap.size,
+      topThreeCount: topThree.length,
+      supporterMapEntries: Array.from(supporterMap.entries()).slice(0, 3)
+    });
     
     setTopSupporters(topThree);
     
@@ -294,7 +363,16 @@ export default function DashboardMobile() {
       bloom: Math.max(0, Math.floor(uniqueUsers * 0.12)),
       mythic: Math.max(0, Math.floor(uniqueUsers * 0.03))
     };
+    
+    console.log("🏆 SBTランク分布計算:", {
+      uniqueUsers,
+      distribution: mockDistribution,
+      calculationBase: "uniqueUsers * [0.6, 0.25, 0.12, 0.03]"
+    });
+    
     setRankDistribution(mockDistribution);
+    
+    console.log("✅ 分析データ計算完了");
   };
 
   // 緊急停止の読み込み・設定
@@ -310,6 +388,50 @@ export default function DashboardMobile() {
     const newState = !emergency;
     await setEmergencyFlag(newState);
     setEmergency(newState);
+    // スライド状態をリセット
+    setIsSliding(false);
+    setSlideProgress(0);
+  };
+  
+  // スライド処理関数
+  const handleSlideStart = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    setIsSliding(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    setSlideStartX(clientX);
+  };
+  
+  const handleSlideMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isSliding) return;
+    e.preventDefault();
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const diff = clientX - slideStartX;
+    const maxSlide = 150; // スライド最大距離を調整
+    
+    let progress;
+    if (!emergency) {
+      // 停止時は右にスライド
+      progress = Math.max(0, Math.min(100, (diff / maxSlide) * 100));
+    } else {
+      // 稼働時は左にスライド
+      progress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
+    }
+    
+    setSlideProgress(progress);
+    
+    // 90%以上スライドしたら実行（より確実な操作を要求）
+    if (progress >= 90) {
+      toggleEmergency();
+    }
+  };
+  
+  const handleSlideEnd = () => {
+    setIsSliding(false);
+    if (slideProgress < 90) {
+      // 90%未満の場合はリセット
+      setTimeout(() => setSlideProgress(0), 100);
+    }
   };
 
   useEffect(() => {
@@ -633,7 +755,7 @@ export default function DashboardMobile() {
             </div>
           </div>
 
-          {/* 緊急停止ボタン */}
+          {/* スライド式緊急停止ボタン */}
           <div style={{
             background: "rgba(255,255,255,0.06)",
             borderRadius: "12px",
@@ -645,32 +767,134 @@ export default function DashboardMobile() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: "8px"
+              marginBottom: "12px"
             }}>
               <span style={{ fontWeight: "600" }}>🚨 緊急停止</span>
-              <button
-                onClick={toggleEmergency}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: emergency ? "#ef4444" : "#22c55e",
-                  color: "white",
-                  fontWeight: "600",
-                  fontSize: "14px"
-                }}
-              >
-                {emergency ? "ON" : "OFF"}
-              </button>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "12px",
+                fontWeight: "600"
+              }}>
+                <span style={{ color: emergency ? "#ef4444" : "#22c55e" }}>
+                  {emergency ? "ON" : "OFF"}
+                </span>
+              </div>
             </div>
-            <p style={{
-              fontSize: "12px",
-              opacity: 0.7,
-              margin: 0,
-              lineHeight: 1.4
+            
+            {/* スライドコントロール */}
+            <div style={{
+              position: "relative",
+              width: "100%",
+              height: "50px",
+              background: emergency ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)",
+              borderRadius: "25px",
+              overflow: "hidden",
+              marginBottom: "8px",
+              cursor: "pointer",
+              userSelect: "none"
             }}>
-              緊急時にすべてのTip機能を停止します
-            </p>
+              {/* スライダーハンドル */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: emergency ? `${Math.max(2, 100 - slideProgress)}%` : `${Math.min(98, slideProgress)}%`,
+                  top: "2px",
+                  width: "46px",
+                  height: "46px",
+                  background: slideProgress > 50 ? "#fbbf24" : "white",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "16px",
+                  boxShadow: isSliding 
+                    ? "0 4px 12px rgba(0,0,0,0.4)" 
+                    : "0 2px 8px rgba(0,0,0,0.3)",
+                  transform: `translateX(-50%) scale(${isSliding ? 1.05 : 1})`,
+                  transition: isSliding ? "background 0.2s ease, box-shadow 0.2s ease" : "all 0.3s ease",
+                  cursor: "grab",
+                  touchAction: "none"
+                }}
+                onTouchStart={handleSlideStart}
+                onTouchMove={handleSlideMove}
+                onTouchEnd={handleSlideEnd}
+                onMouseDown={handleSlideStart}
+                onMouseMove={handleSlideMove}
+                onMouseUp={handleSlideEnd}
+                onMouseLeave={handleSlideEnd}
+              >
+                {slideProgress > 70 ? "⚡" : emergency ? "🔄" : "🚨"}
+              </div>
+              
+              {/* スライドテキスト */}
+              <div style={{
+                position: "absolute",
+                top: "50%",
+                left: emergency ? "25%" : "75%",
+                transform: "translate(-50%, -50%)",
+                color: "white",
+                fontSize: "14px",
+                fontWeight: "600",
+                opacity: 0.9,
+                pointerEvents: "none"
+              }}>
+                {emergency ? "← 稼働再開" : "停止 →"}
+              </div>
+              
+              {/* プログレスインジケーター */}
+              {slideProgress > 0 && (
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  left: emergency ? `${100 - slideProgress}%` : 0,
+                  width: `${slideProgress}%`,
+                  height: "100%",
+                  background: slideProgress > 70 
+                    ? (emergency 
+                        ? "linear-gradient(90deg, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0.8) 100%)"
+                        : "linear-gradient(90deg, rgba(239, 68, 68, 0.6) 0%, rgba(220, 38, 38, 0.8) 100%)")
+                    : (emergency 
+                        ? "linear-gradient(90deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.3) 100%)"
+                        : "linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)"),
+                  borderRadius: "25px",
+                  transition: "background 0.2s ease"
+                }}/>
+              )}
+              
+              {/* 完了フィードバック */}
+              {slideProgress >= 90 && (
+                <div style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  fontSize: "18px",
+                  animation: "pulse 0.5s ease-in-out"
+                }}>
+                  ✨
+                </div>
+              )}
+            </div>
+            
+            <p style={{
+              fontSize: "11px",
+              opacity: slideProgress > 50 ? 1 : 0.7,
+              margin: 0,
+              lineHeight: 1.4,
+              textAlign: "center",
+              color: slideProgress > 70 ? "#fbbf24" : "inherit",
+              fontWeight: slideProgress > 70 ? "600" : "normal",
+              transition: "all 0.2s ease"
+            }}>
+              {slideProgress > 70 
+                ? (emergency ? "もう少しで稼働再開！" : "もう少しで緊急停止！")
+                : (emergency 
+                    ? "← 左にスライドして稼働再開" 
+                    : "右にスライドして緊急停止 →")
+              }
+            </p>\n            \n            {/* パルスアニメーション用スタイル */}\n            <style>{`\n              @keyframes pulse {\n                0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }\n                50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.2); }\n              }\n            `}</style>
           </div>
 
           {/* 最近のTip履歴 */}
