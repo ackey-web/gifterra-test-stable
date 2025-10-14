@@ -18,7 +18,7 @@ export interface ContributionHeat {
   address: string;
   name: string;
   
-  // 金額的貢献
+  // Tip的貢献
   totalAmount: string;
   amountRank: number;
   
@@ -200,7 +200,7 @@ function calculateHeatScore(
   tipCount: number,
   avgSentiment: number
 ): number {
-  // 金額スコア（0-400）
+  // Tipスコア（0-400）
   const amountScore = Math.min(400, Number(ethers.utils.formatUnits(totalAmount, 18)) / 10);
   
   // 頻度スコア（0-300）
@@ -327,7 +327,7 @@ export async function analyzeContributionHeat(
     }
   }
   
-  // 金額ランキング設定
+  // Tipランキング設定
   results.sort((a, b) => parseFloat(b.totalAmount) - parseFloat(a.totalAmount));
   results.forEach((r, i) => r.amountRank = i + 1);
   

@@ -1527,7 +1527,7 @@ export default function AdminDashboard() {
                   checked={showTipGraph}
                   onChange={(e) => setShowTipGraph(e.target.checked)}
                 />
-                💰 投げ銭数
+                🎁 Tip数
               </label>
               <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }}>
                 <input
@@ -1567,7 +1567,7 @@ export default function AdminDashboard() {
                   <Tooltip
                     formatter={(value, name) => [
                       name === 'amount' ? `${value} Tips` : `${value} Heat`,
-                      name === 'amount' ? '投げ銭数' : '熱量スコア'
+                      name === 'amount' ? 'Tip数' : '熱量スコア'
                     ]}
                   />
                   {showTipGraph && <Line yAxisId="amount" type="monotone" dataKey="amount" stroke="#3b82f6" dot={false} />}
@@ -1952,7 +1952,7 @@ export default function AdminDashboard() {
                       <th style={th}>レベル</th>
                       <th style={th}>感情</th>
                       <th style={th}>キーワード</th>
-                      <th style={{ ...th, textAlign: "right" }}>投げ銭額</th>
+                      <th style={{ ...th, textAlign: "right" }}>Tip額</th>
                     </tr>
                   </thead>
                   <tbody>

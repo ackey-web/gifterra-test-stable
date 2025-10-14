@@ -290,7 +290,7 @@ export default function TipApp() {
     }
   };
 
-  // アドレスまたは投げ銭額が変更されたら熱量を再分析
+  // アドレスまたはTip額が変更されたら熱量を再分析
   useEffect(() => {
     if (address && totalTips > 0n) {
       analyzeUserHeat();
@@ -299,7 +299,7 @@ export default function TipApp() {
     }
   }, [address, totalTips]);
 
-  /* ================= 投げ銭処理 ================ */
+  /* ================= Tip送信処理 ================ */
   const doTip = async () => {
     if (emergency) {
       alert("現在メンテナンス中（緊急停止）です。しばらくお待ちください。");
@@ -381,7 +381,7 @@ export default function TipApp() {
         console.log("Insufficient allowance, requesting approval...");
         setTxState("approving");
         
-        // 大きな値で承認（将来の投げ銭のため）
+        // 大きな値で承認（将来のTipのため）
         const approveAmount = ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
         console.log("Approval transaction sent:", approveTx.hash);
@@ -469,7 +469,7 @@ export default function TipApp() {
       const amt = (args as any)?.amount ?? (args as any)?.value ?? (Array.isArray(args) ? (args as any)[1] : undefined);
       const pretty = fmtUnits(BigInt(amt?.toString?.() ?? "0"), TOKEN.DECIMALS);
       
-      // 🎉 投げ銭成功エフェクト
+      // 🎉 Tip成功エフェクト
       // 1. コンフェッティ（紙吹雪）
       tipSuccessConfetti().catch(console.warn);
       
@@ -480,9 +480,9 @@ export default function TipApp() {
       // 3. カウントアップアニメーション（少し遅らせて開始）
       setTimeout(() => startCountUp(), 600);
       
-      alert(`投げ銭を送信しました！ (+${pretty} ${TOKEN.SYMBOL})`);
+      alert(`Tipを贈りました💝 (+${pretty} ${TOKEN.SYMBOL})`);
 
-      // 投げ銭成功後に感情分析（非同期・独立実行）
+      // Tip成功後に感情分析（非同期・独立実行）
       if (msg) {
         setSentimentState("analyzing");
         analyzeSentimentSafe(msg).then((sentiment) => {
@@ -523,13 +523,13 @@ export default function TipApp() {
       } else if (errorMsg.includes("insufficient funds") || errorCode === -32000) {
         userMessage = `💰 ガス代不足エラー\n\nMATICが不足しています:\n• Polygon Amoy testnet用のMATICが必要\n• 最低 0.01 MATIC以上を推奨\n\n🚰 Faucetから無料でMATICを取得:\nhttps://faucet.polygon.technology/`;
       } else if (errorMsg.includes("insufficient balance") || errorMsg.includes("transfer amount exceeds balance")) {
-        userMessage = `💳 残高不足エラー\n\n${TOKEN.SYMBOL}の残高が不足しています:\n• 投げ銭額: ${amount} ${TOKEN.SYMBOL}\n• 現在の残高を確認してください\n\n💡 金額を調整して再度お試しください`;
+        userMessage = `🏳 残高不足エラー\n\n${TOKEN.SYMBOL}の残高が不足しています:\n• Tip額: ${amount} ${TOKEN.SYMBOL}\n• 現在の残高を確認してください\n\n💡 Tip額を調整して再度お試しください`;
       } else if (errorMsg.includes("user rejected") || errorCode === 4001) {
         userMessage = `🚫 ユーザーキャンセル\n\nトランザクションがキャンセルされました\n再度お試しいただけます`;
       } else if (errorMsg.includes("execution reverted")) {
         // リバートの詳細分析
         if (errorMsg.includes("0xfb8f41b2")) {
-          userMessage = `⚠️ コントラクト実行条件エラー\n\n投げ銭を送信できませんでした:\n• コントラクトが一時的に利用不可\n• 送信先アドレスに問題がある可能性\n• メンテナンス中の可能性\n\n🔄 数分後に再度お試しください\n💡 問題が続く場合は管理者にお問い合わせください`;
+          userMessage = `⚠️ コントラクト実行条件エラー\n\nTipを贈ることができませんでした:\n• コントラクトが一時的に利用不可\n• 送信先アドレスに問題がある可能性\n• メンテナンス中の可能性\n\n🔄 数分後に再度お試しください\n💡 問題が続く場合は管理者にお問い合わせください`;
         } else {
           userMessage = `❌ スマートコントラクト実行エラー\n\n考えられる原因:\n• コントラクトの実行条件を満たしていない\n• 一時的なネットワークの問題\n• ガス制限の不足\n\n🔄 時間をおいて再度お試しください`;
         }
@@ -635,8 +635,8 @@ export default function TipApp() {
 
       <header style={{ textAlign: "center", marginBottom: 10 }}>
         <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ width: "clamp(90px, 12vw, 140px)", marginBottom: 22, filter: "drop-shadow(0 10px 22px rgba(0,0,0,.30))" }} />
-        <h1 style={{ fontSize: "clamp(22px, 2.4vw, 28px)", margin: "10px 0 6px" }}>💝 Send Your Support</h1>
-        <p style={{ opacity: 0.85, margin: "0 0 4px", fontSize: 13 }}>あなたの応援が、カタチになる。</p>
+        <h1 style={{ fontSize: "clamp(22px, 2.4vw, 28px)", margin: "10px 0 6px" }}>🎁 Send Your Gift</h1>
+        <p style={{ opacity: 0.85, margin: "0 0 4px", fontSize: 13 }}>あなたの想いを、Tipとして贈る。</p>
         <div style={{ fontSize: 13, fontWeight: address ? 800 : 500, color: address ? "#22c55e" : "rgba(255,255,255,0.75)", marginTop: 8 }}>
           {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
         </div>
@@ -696,7 +696,7 @@ export default function TipApp() {
             </select>
           </div>
           
-          {/* 金額入力 */}
+          {/* Tip入力 */}
           <div style={{ 
             display: "flex", 
             alignItems: "center", 
@@ -710,7 +710,7 @@ export default function TipApp() {
               value={amount} 
               onChange={(e) => setAmount(e.target.value)} 
               inputMode="decimal" 
-              placeholder="金額" 
+              placeholder="Tip" 
               style={{ 
                 height: "100%", 
                 padding: "0 12px", 
@@ -767,7 +767,7 @@ export default function TipApp() {
             }}
           />
           
-          {/* 投げ銭ボタン */}
+          {/* Tipボタン */}
           <div style={{
             display: "flex",
             justifyContent: "center",
@@ -792,7 +792,7 @@ export default function TipApp() {
                 touchAction: 'manipulation' // モバイルタップ改善
               }}
             >
-              {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "投げ銭する"}
+              {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "Tipする"}
             </button>
           </div>
         </div>
@@ -833,7 +833,7 @@ export default function TipApp() {
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>累積投げ銭額</div>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>累積ギフト</div>
               <div style={{ fontWeight: 800, transition: "all 0.3s ease" }}>
                 {animatedTips > 0 ? animatedTips.toFixed(4) : fmtUnits(totalTips, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
               </div>
@@ -967,7 +967,9 @@ export default function TipApp() {
             </div>
             
             <div style={{ fontSize: 10, opacity: 0.6, textAlign: "center" }}>
-              {isLoadingHeat ? "分析中..." : "金額・頻度・感情を総合評価"}
+              {
+                isLoadingHeat ? "分析中..." : "Tip・頻度・感情を総合評価"
+              }
             </div>
           </div>
         )}
