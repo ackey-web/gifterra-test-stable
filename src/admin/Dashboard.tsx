@@ -1206,7 +1206,11 @@ export default function AdminDashboard() {
             このページは管理者のみ閲覧できます。ウォレットを接続し、権限があるアドレスでアクセスしてください。
           </p>
           <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
-            <ConnectWallet theme="dark" />
+            <ConnectWallet 
+              theme="dark" 
+              modalTitle="管理者ウォレット接続"
+              modalTitleIconUrl=""
+            />
           </div>
           <div style={{ marginTop: 16, opacity: 0.7, fontSize: 12 }}>
             Presented by <strong>METATRON.</strong>
@@ -1357,7 +1361,11 @@ export default function AdminDashboard() {
           gap: 12,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-            <ConnectWallet theme="dark" />
+            <ConnectWallet 
+              theme="dark" 
+              modalTitle="管理者ダッシュボード接続"
+              modalTitleIconUrl=""
+            />
             <button
               onClick={() => setShowAdminModal(true)}
               style={{
