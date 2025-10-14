@@ -1009,6 +1009,13 @@ export default function AdminDashboard() {
   // リワードUI管理ページコンポーネント
   const RewardUIManagementPage = () => {
     const [editingAds, setEditingAds] = useState<AdData[]>(adManagementData);
+    
+    // デイリー配布量管理用の状態
+    const [dailyRewardAmount, setDailyRewardAmount] = useState<string>("");
+    const [newDailyAmount, setNewDailyAmount] = useState<string>("");
+    const [isOwner, setIsOwner] = useState<boolean>(false);
+    const [isLoadingReward, setIsLoadingReward] = useState<boolean>(true);
+    const [isUpdatingReward, setIsUpdatingReward] = useState<boolean>(false);
 
     const handleSave = () => {
       saveAdData(editingAds);
@@ -1030,6 +1037,75 @@ export default function AdminDashboard() {
       setEditingAds(editingAds.filter((_, i) => i !== index));
     };
 
+    // デイリー配布量とオーナー権限の取得
+    const loadDailyRewardData = async () => {
+      if (!address) return;
+      
+      setIsLoadingReward(true);
+      try {
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, [
+          "function dailyRewardAmount() view returns (uint256)",
+          "function owner() view returns (address)"
+        ], provider);
+        
+        const [dailyAmount, ownerAddress] = await Promise.all([
+          contract.dailyRewardAmount(),
+          contract.owner()
+        ]);
+        
+        const formattedAmount = ethers.utils.formatUnits(dailyAmount, 18);
+        setDailyRewardAmount(formattedAmount);
+        setNewDailyAmount(formattedAmount);
+        setIsOwner(address.toLowerCase() === ownerAddress.toLowerCase());
+      } catch (error: any) {
+        console.error("Failed to load daily reward data:", error);
+        alert(`データ読み込みエラー: ${error?.reason || error?.message || "不明なエラー"}`);
+      } finally {
+        setIsLoadingReward(false);
+      }
+    };
+
+    // デイリー配布量の更新
+    const updateDailyReward = async () => {
+      if (!address || !isOwner || !newDailyAmount) return;
+      
+      const amount = parseFloat(newDailyAmount);
+      if (isNaN(amount) || amount < 1 || amount > 100000) {
+        alert("配布量は1〜100000の範囲で入力してください");
+        return;
+      }
+      
+      setIsUpdatingReward(true);
+      try {
+        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, [
+          "function setDailyRewardAmount(uint256 amount) external"
+        ], signer);
+        
+        const parsedAmount = ethers.utils.parseUnits(newDailyAmount, 18);
+        const tx = await contract.setDailyRewardAmount(parsedAmount);
+        await tx.wait();
+        
+        // 更新成功後、再取得
+        await loadDailyRewardData();
+        alert("✅ デイリー配布量を更新しました");
+      } catch (error: any) {
+        console.error("Failed to update daily reward:", error);
+        alert(`更新エラー: ${error?.reason || error?.message || "不明なエラー"}`);
+      } finally {
+        setIsUpdatingReward(false);
+      }
+    };
+
+    // 初回読み込み
+    React.useEffect(() => {
+      if (address) {
+        loadDailyRewardData();
+      }
+    }, [address]);
+
     return (
       <div style={{
         width: "min(800px, 96vw)",
@@ -1039,8 +1115,104 @@ export default function AdminDashboard() {
         padding: 24,
       }}>
         <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          📱 リワードUI 広告管理
+          📱 リワードUI管理
         </h2>
+
+        {/* デイリー配布量編集カード */}
+        <div style={{
+          marginBottom: 24,
+          padding: 20,
+          background: "rgba(255,255,255,.06)",
+          borderRadius: 12,
+          border: isOwner ? "2px solid #059669" : "1px solid rgba(255,255,255,.1)"
+        }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
+            💰 デイリー配布量設定
+          </h3>
+          
+          {isLoadingReward ? (
+            <div style={{ textAlign: "center", opacity: 0.7 }}>読み込み中...</div>
+          ) : !isOwner ? (
+            <div style={{ 
+              padding: 16, 
+              background: "rgba(239, 68, 68, 0.1)", 
+              borderRadius: 8, 
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              textAlign: "center",
+              color: "#fca5a5"
+            }}>
+              🔒 この機能はオーナーのみ利用可能です<br/>
+              現在の配布量: {dailyRewardAmount} {TOKEN.SYMBOL}/day
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                    現在の配布量:
+                  </label>
+                  <div style={{ 
+                    padding: "8px 12px", 
+                    background: "rgba(0,0,0,.2)", 
+                    borderRadius: 6,
+                    fontFamily: "monospace",
+                    fontSize: 16,
+                    fontWeight: 600
+                  }}>
+                    {dailyRewardAmount} {TOKEN.SYMBOL}/day
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+                    新しい配布量 (1〜100000):
+                  </label>
+                  <input
+                    type="number"
+                    value={newDailyAmount}
+                    onChange={(e) => setNewDailyAmount(e.target.value)}
+                    min="1"
+                    max="100000"
+                    step="0.0001"
+                    placeholder="例: 50.0"
+                    disabled={isUpdatingReward}
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      background: "rgba(255,255,255,.1)",
+                      border: "1px solid rgba(255,255,255,.2)",
+                      borderRadius: 6,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontFamily: "monospace"
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <button
+                onClick={updateDailyReward}
+                disabled={isUpdatingReward || !newDailyAmount || parseFloat(newDailyAmount) < 1 || parseFloat(newDailyAmount) > 100000}
+                style={{
+                  background: isUpdatingReward ? "#6b7280" : "#059669",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 20px",
+                  fontWeight: 700,
+                  cursor: isUpdatingReward ? "not-allowed" : "pointer",
+                  opacity: isUpdatingReward ? 0.7 : 1
+                }}
+              >
+                {isUpdatingReward ? "更新中..." : "💾 配布量を更新"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 広告管理セクション */}
+        <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
+          📢 広告管理
+        </h3>
         
         <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>💡 使用方法</h3>
