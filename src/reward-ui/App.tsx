@@ -93,8 +93,17 @@ export default function App() {
   // ★メンテ中は請求不可（それ以外は元UIのまま）
   const canClaim = !!address && remain === 0 && !isWriting && !isMaintenance;
 
-  // ---- 受け取り成功時のみウォレット追加を表示（レイアウト固定）----
+  // ---- ウォレット接続時は常時ウォレット追加を表示（レイアウト固定）----
   const [showAddToken, setShowAddToken] = useState(false);
+  
+  // ウォレット接続状態でトークン追加ボタンを表示
+  useEffect(() => {
+    if (address) {
+      setShowAddToken(true);
+    } else {
+      setShowAddToken(false);
+    }
+  }, [address]);
   
   // ---- 成功メッセージ表示用ステート ----
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -102,26 +111,71 @@ export default function App() {
 
   const addTokenToWallet = async () => {
     try {
-      const wasAdded = await (window as any).ethereum?.request({
-        method: "wallet_watchAsset",
-        params: {
-          type: "ERC20",
-          options: {
-            address: TOKEN.ADDRESS,
-            symbol: TOKEN.SYMBOL,
-            decimals: TOKEN.DECIMALS,
-            image: TOKEN.ICON,
-          },
+      // モバイルデバイス検出
+      const userAgent = navigator.userAgent;
+      const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      const eth = (window as any).ethereum;
+      
+      // Web3プロバイダーの存在確認
+      if (!eth) {
+        if (isMobileDevice) {
+          alert("⚠️ モバイルではウォレットアプリ内のブラウザをお使いください。\n\nMetaMaskアプリ → ブラウザタブからアクセスしてください。");
+        } else {
+          alert("⚠️ MetaMaskが見つかりません。拡張機能をインストールしてください。");
+        }
+        return;
+      }
+      
+      // wallet_watchAssetサポート確認
+      const supportsWatchAsset = typeof eth.request === 'function';
+      if (!supportsWatchAsset) {
+        alert(`⚠️ お使いのウォレットはトークン自動追加に対応していません。\n\n手動でトークンを追加してください:\nアドレス: ${TOKEN.ADDRESS}\nシンボル: ${TOKEN.SYMBOL}`);
+        return;
+      }
+      
+      // モバイルでは画像なしでトークン追加を試行
+      const tokenParams = {
+        type: "ERC20",
+        options: {
+          address: TOKEN.ADDRESS,
+          symbol: TOKEN.SYMBOL,
+          decimals: TOKEN.DECIMALS,
+          // モバイルでは画像を省略（安定性向上）
+          ...(isMobileDevice ? {} : { image: TOKEN.ICON })
         },
+      };
+      
+      console.log('🪙 トークン追加試行:', { isMobileDevice, tokenParams });
+      
+      const wasAdded = await eth.request({
+        method: "wallet_watchAsset",
+        params: tokenParams,
       });
+      
       if (wasAdded) {
         alert(`✅ ${TOKEN.SYMBOL} をウォレットに追加しました！`);
       } else {
         alert("ℹ️ 追加はキャンセルされました。");
       }
-    } catch (e) {
-      console.error(e);
-      alert("⚠️ トークン追加に失敗しました。");
+    } catch (e: any) {
+      console.error('🚨 トークン追加エラー:', e);
+      
+      // エラーの種類に応じた詳細メッセージ
+      let errorMessage = "⚠️ トークン追加に失敗しました。";
+      
+      if (e?.code === -32602) {
+        errorMessage += "\n\nパラメータエラー: ウォレットがこの操作に対応していない可能性があります。";
+      } else if (e?.code === -32601) {
+        errorMessage += "\n\nメソッドエラー: wallet_watchAssetがサポートされていません。";
+      } else if (e?.code === 4001) {
+        errorMessage = "ℹ️ ユーザーによってキャンセルされました。";
+      } else if (e?.message?.includes('User rejected')) {
+        errorMessage = "ℹ️ ユーザーによって拒否されました。";
+      } else {
+        errorMessage += `\n\n手動でトークンを追加してください:\nアドレス: ${TOKEN.ADDRESS}\nシンボル: ${TOKEN.SYMBOL}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -289,7 +343,7 @@ export default function App() {
         setTimeout(() => setShowSuccessMessage(false), 3000);
       }
       
-      setShowAddToken(true);
+      // showAddTokenは常時表示のため削除
       setIsWriting(false);
       return;
       
@@ -343,7 +397,7 @@ export default function App() {
           setShowSuccessMessage(true);
           setTimeout(() => setShowSuccessMessage(false), 3000);
           
-          setShowAddToken(true); // 成功時のみ出現
+          // showAddTokenは常時表示のため削除
         } else {
           // 🎉 取引送信成功エフェクト
           rewardSuccessConfetti().catch(console.warn);
@@ -352,7 +406,7 @@ export default function App() {
           setShowSuccessMessage(true);
           setTimeout(() => setShowSuccessMessage(false), 3000);
           
-          setShowAddToken(true); // 成功扱い
+          // showAddTokenは常時表示のため削除
         }
         setIsWriting(false);
         return;

@@ -26,9 +26,28 @@ const fmt18 = (v: bigint) => {
 
 const shortAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
+// 管理者ウォレットアドレス（デスクトップ版と同一）
+const ADMIN_WALLETS = [
+  "0x66f1274ad5d042b7571c2efa943370dbcd3459ab",
+  // 追加の管理者ウォレットをここに追加可能
+].map((x) => x.toLowerCase());
+
 // スマホ用Admin Dashboard
 export default function DashboardMobile() {
   const address = useAddress();
+  
+  // 管理者権限チェック（ローカルストレージと初期管理者）
+  const adminWallets = (() => {
+    try {
+      const saved = localStorage.getItem('gifterra-admin-wallets');
+      return saved ? JSON.parse(saved) : ADMIN_WALLETS;
+    } catch {
+      return ADMIN_WALLETS;
+    }
+  })();
+  
+  // 管理者チェック（初期管理者または追加された管理者）
+  const isAdmin = !!address && (ADMIN_WALLETS.includes(address.toLowerCase()) || adminWallets.includes(address.toLowerCase()));
   const [loading, setLoading] = useState(false);
   const [tips, setTips] = useState<TipItem[]>([]);
   const [totalTips, setTotalTips] = useState(0n);
@@ -531,6 +550,26 @@ export default function DashboardMobile() {
       </div>
 
       {address ? (
+        !isAdmin ? (
+          // 管理権限がない場合のアクセス拒否UI
+          <div style={{
+            textAlign: "center",
+            padding: "40px 20px",
+            background: "rgba(255,255,255,0.1)",
+            borderRadius: "12px",
+            backdropFilter: "blur(10px)",
+            border: "2px solid rgba(255,68,68,0.3)"
+          }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🚫</div>
+            <h2 style={{ fontSize: "24px", marginBottom: "16px", color: "#ff6b6b" }}>アクセス拒否</h2>
+            <p style={{ fontSize: "16px", lineHeight: "1.5", marginBottom: "20px" }}>
+              このアカウント ({shortAddress(address)}) には管理者権限がありません。
+            </p>
+            <p style={{ fontSize: "14px", opacity: 0.8 }}>
+              管理者権限が必要な場合は、システム管理者にお問い合わせください。
+            </p>
+          </div>
+        ) : (
         <>
           {/* 統計情報カード */}
           <div style={{
@@ -1058,6 +1097,7 @@ export default function DashboardMobile() {
             </button>
           </div>
         </>
+        )
       ) : (
         <div style={{
           textAlign: "center",
