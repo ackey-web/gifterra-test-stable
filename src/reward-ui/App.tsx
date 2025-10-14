@@ -11,6 +11,7 @@ import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
+import { burstConfetti } from "../utils/confetti";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -94,6 +95,10 @@ export default function App() {
 
   // ---- 受け取り成功時のみウォレット追加を表示（レイアウト固定）----
   const [showAddToken, setShowAddToken] = useState(false);
+  
+  // ---- 成功メッセージ表示用ステート ----
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [bgGradient, setBgGradient] = useState("");
 
   const addTokenToWallet = async () => {
     try {
@@ -220,22 +225,19 @@ export default function App() {
       }
 
       if (args) {
-        const raw = args.amount ?? args.value ?? (Array.isArray(args) ? args[1] : undefined);
-        const pretty = raw !== undefined
-          ? Number(
-              ethers.utils.formatUnits(
-                raw.toString ? raw.toString() : (raw as any),
-                TOKEN.DECIMALS
-              )
-            ).toFixed(2)
-          : undefined;
-        alert(
-          pretty
-            ? `✅ ${pretty} ${TOKEN.SYMBOL} を受け取りました！`
-            : "✅ 受け取り完了！"
-        );
+        // 🎉 リワード受け取り成功エフェクト
+        burstConfetti().catch(console.warn);
+        setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+        setTimeout(() => setBgGradient(""), 3000);
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
       } else {
-        alert("✅ 受け取り取引を送信しました。確認をお待ちください。");
+        // 🎉 取引送信成功エフェクト
+        burstConfetti().catch(console.warn);
+        setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+        setTimeout(() => setBgGradient(""), 3000);
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
       }
       
       setShowAddToken(true);
@@ -280,27 +282,27 @@ export default function App() {
         }
 
         if (args) {
-          const raw =
-            args.amount ??
-            args.value ??
-            (Array.isArray(args) ? args[1] : undefined);
-          const pretty =
-            raw !== undefined
-              ? Number(
-                  ethers.utils.formatUnits(
-                    raw.toString ? raw.toString() : (raw as any),
-                    TOKEN.DECIMALS
-                  )
-                ).toFixed(2)
-              : undefined;
-          alert(
-            pretty
-              ? `✅ ${pretty} ${TOKEN.SYMBOL} を受け取りました！`
-              : "✅ 受け取り完了！"
-          );
+          // 🎉 リワード受け取り成功エフェクト
+          // 1. コンフェッティ（紙吹雪）
+          burstConfetti().catch(console.warn);
+          
+          // 2. オーラ／背景エフェクト
+          setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+          setTimeout(() => setBgGradient(""), 3000);
+          
+          // 3. 成功メッセージ表示
+          setShowSuccessMessage(true);
+          setTimeout(() => setShowSuccessMessage(false), 3000);
+          
           setShowAddToken(true); // 成功時のみ出現
         } else {
-          alert("✅ 受け取り取引を送信しました。ウォレットで確定をご確認ください。");
+          // 🎉 取引送信成功エフェクト
+          burstConfetti().catch(console.warn);
+          setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
+          setTimeout(() => setBgGradient(""), 3000);
+          setShowSuccessMessage(true);
+          setTimeout(() => setShowSuccessMessage(false), 3000);
+          
           setShowAddToken(true); // 成功扱い
         }
         setIsWriting(false);
@@ -373,7 +375,10 @@ export default function App() {
         minHeight: "100vh",
         width: "100vw",
         maxWidth: "100vw",
-        background: "#0b1620",
+        background: bgGradient || "#0b1620",
+        backgroundSize: "200% 200%",
+        backgroundPosition: "0% 50%",
+        animation: bgGradient ? "gradientShift 3s ease-in-out" : "none",
         color: "#fff",
         display: "grid",
         gridTemplateRows: "auto 1fr auto",
@@ -381,7 +386,9 @@ export default function App() {
         padding: "14px 10px 16px",
         margin: 0,
         overflowX: "hidden",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
+        position: "relative",
+        transition: "background 0.8s ease"
       }}
     >
       {/* ロゴ（元レイアウト） */}
@@ -549,6 +556,67 @@ export default function App() {
       >
         Presented by <strong>METATRON.</strong>
       </div>
+
+      {/* 成功メッセージオーバーレイ */}
+      {showSuccessMessage && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            backdropFilter: "blur(2px)",
+            zIndex: 1000,
+            animation: "fadeIn 0.3s ease-in-out"
+          }}
+        >
+          <div
+            style={{
+              background: "linear-gradient(135deg, #667eea, #764ba2)",
+              borderRadius: "16px",
+              padding: "24px 32px",
+              textAlign: "center",
+              fontSize: "18px",
+              fontWeight: 800,
+              color: "#fff",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+              animation: "scaleIn 0.4s ease-out"
+            }}
+          >
+            💎本日のリワードを受け取りました！
+          </div>
+        </div>
+      )}
+
+      {/* CSS アニメーション */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
     </main>
   );
 }
