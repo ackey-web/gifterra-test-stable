@@ -389,6 +389,10 @@ export default function DashboardMobile() {
   // スライド処理関数
   const handleSlideStart = (e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('💆 スライド開始');
+    
     setIsSliding(true);
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     setSlideStartX(clientX);
@@ -456,7 +460,9 @@ export default function DashboardMobile() {
     }
     
     // 95%以上スライドしたら実行（より確実な操作を要求）
-    // またはrawProgressが90%以上でも実行（抵抗カーブの影響を考慮）
+    // またはrawProgressが90%以上でも実行（抵抗カーブの影響を考慮）  
+    if (!isSliding) return; // スライド中でなければ処理しない
+    
     if (progress >= 95 || rawProgress >= 90) {
       console.log('✨ スライド完了!', { progress: progress.toFixed(1), rawProgress: rawProgress.toFixed(1) });
       
@@ -467,8 +473,11 @@ export default function DashboardMobile() {
       // 完了フラグを設定して重複実行を防ぐ
       setSlideProgress(100); // 完了状態として100%に固定
       setIsSliding(false); // スライド状態を終了
-      toggleEmergency();
-      return; // 早期リターンで重複実行を防ぐ
+      
+      // 少し遅延して状態変更を実行（UIの更新を待つ）
+      setTimeout(() => {
+        toggleEmergency();
+      }, 100);
     }
   };
   
@@ -844,17 +853,28 @@ export default function DashboardMobile() {
             </div>
             
             {/* スライドコントロール */}
-            <div style={{
-              position: "relative",
-              width: "100%",
-              height: "50px",
-              background: emergency ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)",
-              borderRadius: "25px",
-              overflow: "hidden",
-              marginBottom: "8px",
-              cursor: "pointer",
-              userSelect: "none"
-            }}>
+            <div 
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "50px",
+                background: emergency ? "linear-gradient(90deg, #ef4444 0%, #dc2626 100%)" : "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)",
+                borderRadius: "25px",
+                overflow: "hidden",
+                marginBottom: "8px",
+                cursor: "pointer",
+                userSelect: "none",
+                touchAction: "none"
+              }}
+              onTouchStart={handleSlideStart}
+              onTouchMove={handleSlideMove}
+              onTouchEnd={handleSlideEnd}
+              onMouseDown={handleSlideStart}
+              onMouseMove={handleSlideMove}
+              onMouseUp={handleSlideEnd}
+              onMouseLeave={handleSlideEnd}
+            >
+              {/* スライダーハンドル */}
               {/* スライダーハンドル */}
               <div
                 style={{
@@ -875,15 +895,9 @@ export default function DashboardMobile() {
                   transform: `translateX(-50%) scale(${isSliding ? 1.05 + slideProgress / 500 : 1})`,
                   transition: isSliding ? "background 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease" : "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                   cursor: "grab",
-                  touchAction: "none"
+                  touchAction: "none",
+                  pointerEvents: "none" /* イベントは親コンテナで管理 */
                 }}
-                onTouchStart={handleSlideStart}
-                onTouchMove={handleSlideMove}
-                onTouchEnd={handleSlideEnd}
-                onMouseDown={handleSlideStart}
-                onMouseMove={handleSlideMove}
-                onMouseUp={handleSlideEnd}
-                onMouseLeave={handleSlideEnd}
               >
                 {slideProgress > 90 ? "✨" : slideProgress > 70 ? "⚡" : emergency ? "🔄" : "🚨"}
               </div>
