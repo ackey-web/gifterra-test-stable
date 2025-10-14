@@ -1,6 +1,6 @@
 // src/admin/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useAddress, ConnectWallet } from "@thirdweb-dev/react";
+import { useAddress, ConnectWallet, useContract, useContractRead } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
   LineChart,
@@ -11,7 +11,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { CONTRACT_ADDRESS, TOKEN } from "../contract";
+import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import {
   fetchAnnotationsCached,
   prefetchAnnotations,
@@ -37,7 +37,7 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management";
+type PageType = "dashboard" | "reward-ui-management" | "reward-contract-management";
 
 const fmt18 = (v: bigint) => {
   try {
@@ -208,6 +208,7 @@ function LoadingOverlay() {
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
   const address = useAddress();
+  const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
   
   // ページ状態管理
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
@@ -1162,6 +1163,237 @@ export default function AdminDashboard() {
     );
   };
 
+  // ---- リワード管理画面コンポーネント ----
+  const RewardManagementPage = () => {
+    const [chargeAmount, setChargeAmount] = useState("");
+    const [newDailyReward, setNewDailyReward] = useState("");
+    const [isCharging, setIsCharging] = useState(false);
+    const [isUpdatingReward, setIsUpdatingReward] = useState(false);
+
+    // 現在のコントラクト情報を取得
+    const { data: currentDailyReward } = useContractRead(contract, "dailyRewardAmount");
+    const { data: contractBalance } = useContractRead(contract, "balanceOf", [CONTRACT_ADDRESS]);
+
+    const handleChargeTokens = async () => {
+      if (!chargeAmount || !contract || !address) {
+        alert("⚠️ チャージ金額を入力してください");
+        return;
+      }
+
+      const amount = parseFloat(chargeAmount);
+      if (amount <= 0) {
+        alert("⚠️ 正の数値を入力してください");
+        return;
+      }
+
+      try {
+        setIsCharging(true);
+        
+        // Wei単位に変換
+        const amountWei = ethers.utils.parseEther(amount.toString());
+        
+        // コントラクトに直接トークンを転送
+        const tx = await (contract as any).call("transfer", [CONTRACT_ADDRESS, amountWei]);
+        
+        alert(`✅ ${amount} ${TOKEN.SYMBOL} をコントラクトにチャージしました！\nTxHash: ${tx.hash || 'N/A'}`);
+        setChargeAmount("");
+        
+      } catch (error: any) {
+        console.error("チャージエラー:", error);
+        
+        let errorMessage = "❌ チャージに失敗しました\n\n";
+        const msg = (error?.message || "").toLowerCase();
+        
+        if (msg.includes("insufficient funds") || msg.includes("transfer amount exceeds balance")) {
+          errorMessage += "残高不足: ウォレットに十分なトークンがありません";
+        } else if (msg.includes("user rejected") || msg.includes("user denied")) {
+          errorMessage += "ユーザーによってキャンセルされました";
+        } else {
+          errorMessage += `エラー詳細: ${error?.message || "不明なエラー"}`;
+        }
+        
+        alert(errorMessage);
+      } finally {
+        setIsCharging(false);
+      }
+    };
+
+    const handleUpdateDailyReward = async () => {
+      if (!newDailyReward || !contract || !address) {
+        alert("⚠️ 新しい日次リワード量を入力してください");
+        return;
+      }
+
+      const amount = parseFloat(newDailyReward);
+      if (amount <= 0) {
+        alert("⚠️ 正の数値を入力してください");
+        return;
+      }
+
+      try {
+        setIsUpdatingReward(true);
+        
+        // Wei単位に変換
+        const amountWei = ethers.utils.parseEther(amount.toString());
+        
+        // 日次リワード量を更新
+        const tx = await (contract as any).call("setDailyRewardAmount", [amountWei]);
+        
+        alert(`✅ 日次リワード量を ${amount} ${TOKEN.SYMBOL} に更新しました！\nTxHash: ${tx.hash || 'N/A'}`);
+        setNewDailyReward("");
+        
+      } catch (error: any) {
+        console.error("リワード量更新エラー:", error);
+        
+        let errorMessage = "❌ リワード量の更新に失敗しました\n\n";
+        const msg = (error?.message || "").toLowerCase();
+        
+        if (msg.includes("ownable: caller is not the owner") || msg.includes("access denied")) {
+          errorMessage += "権限エラー: コントラクトオーナーのみ実行可能です";
+        } else if (msg.includes("user rejected") || msg.includes("user denied")) {
+          errorMessage += "ユーザーによってキャンセルされました";
+        } else {
+          errorMessage += `エラー詳細: ${error?.message || "不明なエラー"}`;
+        }
+        
+        alert(errorMessage);
+      } finally {
+        setIsUpdatingReward(false);
+      }
+    };
+
+    return (
+      <div style={{
+        padding: 20,
+        background: "rgba(255,255,255,.03)",
+        borderRadius: 12,
+        margin: "20px 0"
+      }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+          💰 リワードコントラクト管理
+        </h2>
+
+        {/* 現在の状態表示 */}
+        <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>📊 現在の状態</h3>
+          <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
+            <div>
+              <strong>コントラクト残高:</strong> {
+                contractBalance 
+                  ? `${Number(contractBalance) / 1e18} ${TOKEN.SYMBOL}`
+                  : "読み込み中..."
+              }
+            </div>
+            <div>
+              <strong>日次リワード量:</strong> {
+                currentDailyReward 
+                  ? `${Number(currentDailyReward) / 1e18} ${TOKEN.SYMBOL}`
+                  : "読み込み中..."
+              }
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+              ※ コントラクトアドレス: {CONTRACT_ADDRESS}
+            </div>
+          </div>
+        </div>
+
+        {/* トークンチャージセクション */}
+        <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>🔋 トークンチャージ</h3>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+              チャージ金額 ({TOKEN.SYMBOL})
+            </label>
+            <input
+              type="number"
+              value={chargeAmount}
+              onChange={(e) => setChargeAmount(e.target.value)}
+              placeholder="例: 1000"
+              min="0"
+              step="0.01"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,.2)",
+                background: "rgba(0,0,0,.3)",
+                color: "#fff",
+                fontSize: 14
+              }}
+            />
+          </div>
+          <button
+            onClick={handleChargeTokens}
+            disabled={isCharging || !chargeAmount}
+            style={{
+              background: isCharging ? "#666" : "#16a34a",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "10px 16px",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: isCharging ? "not-allowed" : "pointer",
+              opacity: isCharging || !chargeAmount ? 0.7 : 1
+            }}
+          >
+            {isCharging ? "チャージ中..." : "💰 トークンをチャージ"}
+          </button>
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+            ⚠️ 注意: ウォレットに十分なトークン残高があることを確認してください
+          </div>
+        </div>
+
+        {/* 日次リワード量変更セクション */}
+        <div style={{ padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>⚙️ 日次リワード量設定</h3>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+              新しい日次リワード量 ({TOKEN.SYMBOL})
+            </label>
+            <input
+              type="number"
+              value={newDailyReward}
+              onChange={(e) => setNewDailyReward(e.target.value)}
+              placeholder="例: 10"
+              min="0"
+              step="0.01"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,.2)",
+                background: "rgba(0,0,0,.3)",
+                color: "#fff",
+                fontSize: 14
+              }}
+            />
+          </div>
+          <button
+            onClick={handleUpdateDailyReward}
+            disabled={isUpdatingReward || !newDailyReward}
+            style={{
+              background: isUpdatingReward ? "#666" : "#dc2626",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "10px 16px",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: isUpdatingReward ? "not-allowed" : "pointer",
+              opacity: isUpdatingReward || !newDailyReward ? 0.7 : 1
+            }}
+          >
+            {isUpdatingReward ? "更新中..." : "⚙️ リワード量を更新"}
+          </button>
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+            ⚠️ 注意: この操作はコントラクトオーナーのみ実行可能です
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   /* ---------- 画面 ---------- */
   if (!isAdmin) {
     return (
@@ -1232,14 +1464,18 @@ export default function AdminDashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
-            {currentPage === "dashboard" ? "GIFTERRA admin : on-chain (Tipped イベント)" : "GIFTERRA admin : リワードUI管理"}
+            {currentPage === "dashboard" 
+              ? "GIFTERRA admin : on-chain (Tipped イベント)" 
+              : currentPage === "reward-ui-management"
+              ? "GIFTERRA admin : リワードUI管理"
+              : "GIFTERRA admin : リワードコントラクト管理"}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
-            onClick={() => setCurrentPage(currentPage === "dashboard" ? "reward-ui-management" : "dashboard")}
+            onClick={() => setCurrentPage("dashboard")}
             style={{
-              background: "#7c3aed",
+              background: currentPage === "dashboard" ? "#16a34a" : "#374151",
               color: "#fff",
               border: "none",
               borderRadius: 8,
@@ -1248,7 +1484,35 @@ export default function AdminDashboard() {
               cursor: "pointer",
             }}
           >
-            {currentPage === "dashboard" ? "📱 リワードUI管理" : "📊 ダッシュボード"}
+            📊 ダッシュボード
+          </button>
+          <button
+            onClick={() => setCurrentPage("reward-ui-management")}
+            style={{
+              background: currentPage === "reward-ui-management" ? "#7c3aed" : "#374151",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 12px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            📱 リワードUI管理
+          </button>
+          <button
+            onClick={() => setCurrentPage("reward-contract-management")}
+            style={{
+              background: currentPage === "reward-contract-management" ? "#dc2626" : "#374151",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 12px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            � コントラクト管理
           </button>
           <button
             onClick={() => window.location.reload()}
@@ -1384,6 +1648,8 @@ export default function AdminDashboard() {
       {/* ページ切り替え */}
       {currentPage === "reward-ui-management" ? (
         <RewardUIManagementPage />
+      ) : currentPage === "reward-contract-management" ? (
+        <RewardManagementPage />
       ) : (
         <>
           {/* 期間タブ */}
