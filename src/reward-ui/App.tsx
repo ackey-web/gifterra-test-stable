@@ -46,35 +46,63 @@ export default function App() {
   const chain = useChain();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
 
-  // ---- 読み取り（元UIのまま）----
-  const { data: dailyRewardRaw } = useContractRead(
+  // ---- 読み取り（エラーハンドリング強化）----
+  const { data: dailyRewardRaw, error: dailyRewardError } = useContractRead(
     contract,
     "dailyRewardAmount"
   );
-  const { data: userInfoRaw } = useContractRead(
-    contract,
+  
+  // ユーザー情報はアドレスがある場合のみ読み取り
+  const { data: userInfoRaw, error: userInfoError } = useContractRead(
+    contract && address ? contract : undefined,
     "userInfo",
     address ? [address] : undefined
   );
 
-  const dailyReward =
-    dailyRewardRaw !== undefined
+  // エラーログ出力（デバッグ用）
+  useEffect(() => {
+    if (dailyRewardError) {
+      console.warn("💥 dailyRewardAmount読み取りエラー:", dailyRewardError);
+    }
+    if (userInfoError) {
+      console.warn("💥 userInfo読み取りエラー:", userInfoError);
+    }
+  }, [dailyRewardError, userInfoError]);
+
+  // チェーン確認とデータ表示
+  const isCorrectChain = chain?.chainId === 80002; // Polygon Amoy
+  
+  const dailyReward = useMemo(() => {
+    if (dailyRewardError) {
+      console.warn("dailyRewardAmount エラー:", dailyRewardError);
+      return "読み込みエラー";
+    }
+    if (!isCorrectChain) {
+      return "ネットワーク未接続";
+    }
+    return dailyRewardRaw !== undefined
       ? `${Number(dailyRewardRaw) / 1e18} ${TOKEN.SYMBOL}/day`
       : "loading...";
+  }, [dailyRewardRaw, dailyRewardError, isCorrectChain]);
 
   // ★ ダッシュボードと同期するローカル緊急停止フラグのみ使用
   const isMaintenance = useEmergency();
 
-  // ---- 最終請求時刻 → カウントダウン（元UIのまま）----
+  // ---- 最終請求時刻 → カウントダウン（エラーハンドリング強化）----
   const lastClaimedSec = useMemo<number | undefined>(() => {
-    if (!userInfoRaw) return undefined;
+    if (userInfoError) {
+      console.warn("userInfo エラー:", userInfoError);
+      return undefined;
+    }
+    if (!userInfoRaw || !isCorrectChain) return undefined;
     try {
       const arr = userInfoRaw as any[];
       return Number(BigInt(arr[0] ?? 0n));
-    } catch {
+    } catch (error) {
+      console.warn("userInfo データ解析エラー:", error);
       return undefined;
     }
-  }, [userInfoRaw]);
+  }, [userInfoRaw, userInfoError, isCorrectChain]);
 
   const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -108,6 +136,8 @@ export default function App() {
   // ---- 成功メッセージ表示用ステート ----
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [bgGradient, setBgGradient] = useState("");
+  
+
 
   const addTokenToWallet = async () => {
     try {
@@ -641,6 +671,11 @@ export default function App() {
           <div><strong>Address:</strong> {address ?? "—"}</div>
           <div><strong>Chain:</strong> {chain ? `${chain.name} (${chain.chainId})` : "—"}</div>
           <div><strong>Daily Reward:</strong> {dailyReward}</div>
+{(!!dailyRewardError || !!userInfoError) && (
+          <div style={{ color: "#ff6b6b", fontSize: 11, marginTop: 4 }}>
+            ⚠️ データ読み込みエラーが発生しました
+          </div>
+        )}
         </div>
 
         {/* 広告スライドショー（localStorageから自動読み込み） */}
