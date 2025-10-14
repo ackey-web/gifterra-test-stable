@@ -136,8 +136,6 @@ export default function App() {
   // ---- 成功メッセージ表示用ステート ----
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [bgGradient, setBgGradient] = useState("");
-  
-
 
   const addTokenToWallet = async () => {
     try {
@@ -671,11 +669,11 @@ export default function App() {
           <div><strong>Address:</strong> {address ?? "—"}</div>
           <div><strong>Chain:</strong> {chain ? `${chain.name} (${chain.chainId})` : "—"}</div>
           <div><strong>Daily Reward:</strong> {dailyReward}</div>
-{(!!dailyRewardError || !!userInfoError) && (
-          <div style={{ color: "#ff6b6b", fontSize: 11, marginTop: 4 }}>
-            ⚠️ データ読み込みエラーが発生しました
-          </div>
-        )}
+          {(!!dailyRewardError || !!userInfoError) && (
+            <div style={{ color: "#ff6b6b", fontSize: 11, marginTop: 4 }}>
+              ⚠️ データ読み込みエラーが発生しました
+            </div>
+          )}
         </div>
 
         {/* 広告スライドショー（localStorageから自動読み込み） */}
