@@ -446,7 +446,13 @@ export default function App() {
             marginTop: 4
           }}
         >
-          <ConnectWallet theme="dark" />
+                  <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+          <ConnectWallet 
+            theme="dark" 
+            modalTitle="リワード受け取り用ウォレット接続"
+            modalTitleIconUrl=""
+          />
+        </div>
           <button
             onClick={isMaintenance ? undefined : onClaim}
             disabled={!canClaim}

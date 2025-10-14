@@ -185,7 +185,7 @@ export default function TipApp() {
 
   const { mutateAsync: tipFn, isLoading: isTipping } = useContractWrite(contract, "tip");
 
-  const [txState, setTxState] = useState<"idle" | "sending" | "mined" | "error">("idle");
+  const [txState, setTxState] = useState<"idle" | "approving" | "sending" | "mined" | "error">("idle");
   const [lastLevel, setLastLevel] = useState(currentLevel);
   const [rankUpMsg, setRankUpMsg] = useState("");
 
@@ -336,14 +336,38 @@ export default function TipApp() {
     try {
       setTxState("sending");
       
+      const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+      const signer = provider.getSigner();
+      const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, signer);
+      
+      // ERC20承認チェック
+      const tokenContract = new ethers.Contract(TOKEN.ADDRESS, [
+        "function allowance(address owner, address spender) view returns (uint256)",
+        "function approve(address spender, uint256 amount) returns (bool)"
+      ], signer);
+      
+      const currentAllowance = await tokenContract.allowance(address, CONTRACT_ADDRESS);
+      console.log("Current allowance:", ethers.utils.formatUnits(currentAllowance, TOKEN.DECIMALS), TOKEN.SYMBOL);
+      
+      if (currentAllowance.lt(parsedAmount)) {
+        console.log("Insufficient allowance, requesting approval...");
+        setTxState("approving");
+        
+        // 大きな値で承認（将来の投げ銭のため）
+        const approveAmount = ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
+        console.log("Approval transaction sent:", approveTx.hash);
+        
+        await approveTx.wait();
+        console.log("Approval confirmed");
+        setTxState("sending");
+      }
+      
       // まずethers直接実行を試す（より安定）
       let tx: any;
       let receipt: any;
       
       try {
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum);
-        const signer = provider.getSigner();
-        const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, signer);
         
         // ガス見積もりを事前に実行
         const gasEstimate = await directContract.estimateGas.tip(parsedAmount.toString());
@@ -475,7 +499,12 @@ export default function TipApp() {
       } else if (errorMsg.includes("user rejected") || errorCode === 4001) {
         userMessage = `🚫 ユーザーキャンセル\n\nトランザクションがキャンセルされました\n再度お試しいただけます`;
       } else if (errorMsg.includes("execution reverted")) {
-        userMessage = `❌ スマートコントラクト実行エラー\n\n考えられる原因:\n• コントラクトの実行条件を満たしていない\n• 一時的なネットワークの問題\n• ガス制限の不足\n\n🔄 時間をおいて再度お試しください`;
+        // リバートの詳細分析
+        if (errorMsg.includes("0xfb8f41b2")) {
+          userMessage = `⚠️ コントラクト実行条件エラー\n\n投げ銭を送信できませんでした:\n• コントラクトが一時的に利用不可\n• 送信先アドレスに問題がある可能性\n• メンテナンス中の可能性\n\n🔄 数分後に再度お試しください\n💡 問題が続く場合は管理者にお問い合わせください`;
+        } else {
+          userMessage = `❌ スマートコントラクト実行エラー\n\n考えられる原因:\n• コントラクトの実行条件を満たしていない\n• 一時的なネットワークの問題\n• ガス制限の不足\n\n🔄 時間をおいて再度お試しください`;
+        }
       } else if (errorMsg.includes("network") || errorMsg.includes("timeout")) {
         userMessage = `🌐 ネットワークエラー\n\n接続に問題があります:\n• インターネット接続を確認\n• VPNを使用している場合は無効化\n• 時間をおいて再度お試し`;
       } else if (errorMsg.includes("401") || errorMsg.includes("unauthorized")) {
@@ -488,7 +517,7 @@ export default function TipApp() {
     }
   };
 
-  const canSend = !!address && !!parsedAmount && tokenKey === "PRIMARY" && !isTipping && !emergency;
+  const canSend = !!address && !!parsedAmount && tokenKey === "PRIMARY" && !isTipping && !emergency && txState === "idle";
   const BUTTON_H = 44;
 
   return (
@@ -571,7 +600,11 @@ export default function TipApp() {
 
       <section style={{ display: "grid", justifyItems: "center", alignContent: "start", rowGap: 12, width: "min(92vw, 720px)", margin: "12px auto 0" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-          <ConnectWallet theme="dark" />
+          <ConnectWallet 
+            theme="dark" 
+            modalTitle="ウォレット接続"
+            modalTitleIconUrl=""
+          />
           <select value={tokenKey} onChange={() => setTokenKey("PRIMARY")} style={{ height: BUTTON_H, borderRadius: 10, border: "1px solid #334155", background: "#0f1a24", color: "#fff", padding: "0 12px", fontWeight: 700 }}>
             <option value="PRIMARY">{TOKEN.SYMBOL}</option>
             <option value="DISABLED" disabled>JPYC（近日予定）</option>
@@ -605,7 +638,7 @@ export default function TipApp() {
               fontWeight: 800
             }}
           >
-            {emergency ? "メンテナンス中" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "投げ銭する"}
+            {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "投げ銭する"}
           </button>
         </div>
 
