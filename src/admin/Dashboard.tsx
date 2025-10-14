@@ -1535,21 +1535,6 @@ export default function AdminDashboard() {
             💾 保存
           </button>
         </div>
-
-        <div style={{ marginTop: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h4 style={{ margin: "0 0 10px 0", fontSize: 14 }}>📊 現在の設定プレビュー:</h4>
-          <pre style={{ 
-            background: "rgba(0,0,0,.3)", 
-            padding: 12, 
-            borderRadius: 4, 
-            fontSize: 12, 
-            overflow: "auto",
-            margin: 0
-          }}>
-            {JSON.stringify({ ads: editingAds }, null, 2)}
-          </pre>
-        </div>
-        </div>
         
         {toastMessage && (
           <div style={{
@@ -1587,7 +1572,7 @@ export default function AdminDashboard() {
         `}</style>
       </div>
     );
-  };
+  }
 
   /* ---------- 画面 ---------- */
   if (!isAdmin) {
