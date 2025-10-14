@@ -399,6 +399,11 @@ export default function DashboardMobile() {
     setIsSliding(true);
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     setSlideStartX(clientX);
+    
+    // スライド開始のフィードバック
+    if (navigator.vibrate) {
+      navigator.vibrate(30);
+    }
   };
   
   const handleSlideMove = (e: React.TouchEvent | React.MouseEvent) => {
@@ -407,30 +412,52 @@ export default function DashboardMobile() {
     
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const diff = clientX - slideStartX;
-    const maxSlide = 150; // スライド最大距離を調整
+    const maxSlide = 200; // スライド最大距離を拡大（より長い距離が必要）
     
-    let progress;
+    let rawProgress;
     if (!emergency) {
       // 停止時は右にスライド
-      progress = Math.max(0, Math.min(100, (diff / maxSlide) * 100));
+      rawProgress = Math.max(0, Math.min(100, (diff / maxSlide) * 100));
     } else {
       // 稼働時は左にスライド
-      progress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
+      rawProgress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
     }
+    
+    // 抵抗カーブを適用（初期は重く、後半は軽く）
+    // 二次曲線を使用して初期の動きを抑制
+    const resistanceFactor = rawProgress < 30 ? 0.3 : rawProgress < 60 ? 0.6 : 0.9;
+    const progress = rawProgress * resistanceFactor;
     
     setSlideProgress(progress);
     
-    // 90%以上スライドしたら実行（より確実な操作を要求）
-    if (progress >= 90) {
+    // 触覚フィードバック（バイブレーション）
+    if (navigator.vibrate) {
+      if (progress >= 30 && slideProgress < 30) {
+        navigator.vibrate(50); // 初期の抵抗感
+      } else if (progress >= 70 && slideProgress < 70) {
+        navigator.vibrate([30, 50, 30]); // 中間ポイント
+      } else if (progress >= 90 && slideProgress < 90) {
+        navigator.vibrate([50, 100, 50]); // 終了直前
+      }
+    }
+    
+    // 95%以上スライドしたら実行（より確実な操作を要求）
+    if (progress >= 95) {
+      if (navigator.vibrate) {
+        navigator.vibrate(200); // 完了時の強いバイブレーション
+      }
       toggleEmergency();
     }
   };
   
   const handleSlideEnd = () => {
     setIsSliding(false);
-    if (slideProgress < 90) {
-      // 90%未満の場合はリセット
-      setTimeout(() => setSlideProgress(0), 100);
+    if (slideProgress < 95) {
+      // 95%未満の場合はリセット（より厳しい条件）
+      if (navigator.vibrate && slideProgress > 20) {
+        navigator.vibrate([100, 50, 100]); // リセット時のフィードバック
+      }
+      setTimeout(() => setSlideProgress(0), 150); // リセット時間も少し延長
     }
   };
 
@@ -803,17 +830,17 @@ export default function DashboardMobile() {
                   top: "2px",
                   width: "46px",
                   height: "46px",
-                  background: slideProgress > 50 ? "#fbbf24" : "white",
+                  background: slideProgress > 80 ? "#10b981" : slideProgress > 50 ? "#fbbf24" : slideProgress > 20 ? "#f3f4f6" : "white",
                   borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "16px",
                   boxShadow: isSliding 
-                    ? "0 4px 12px rgba(0,0,0,0.4)" 
+                    ? `0 ${4 + slideProgress / 10}px ${12 + slideProgress / 5}px rgba(0,0,0,${0.4 + slideProgress / 200})` 
                     : "0 2px 8px rgba(0,0,0,0.3)",
-                  transform: `translateX(-50%) scale(${isSliding ? 1.05 : 1})`,
-                  transition: isSliding ? "background 0.2s ease, box-shadow 0.2s ease" : "all 0.3s ease",
+                  transform: `translateX(-50%) scale(${isSliding ? 1.05 + slideProgress / 500 : 1})`,
+                  transition: isSliding ? "background 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease" : "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                   cursor: "grab",
                   touchAction: "none"
                 }}
@@ -825,7 +852,7 @@ export default function DashboardMobile() {
                 onMouseUp={handleSlideEnd}
                 onMouseLeave={handleSlideEnd}
               >
-                {slideProgress > 70 ? "⚡" : emergency ? "🔄" : "🚨"}
+                {slideProgress > 90 ? "✨" : slideProgress > 70 ? "⚡" : emergency ? "🔄" : "🚨"}
               </div>
               
               {/* スライドテキスト */}
@@ -851,7 +878,7 @@ export default function DashboardMobile() {
                   left: emergency ? `${100 - slideProgress}%` : 0,
                   width: `${slideProgress}%`,
                   height: "100%",
-                  background: slideProgress > 70 
+                  background: slideProgress > 90 
                     ? (emergency 
                         ? "linear-gradient(90deg, rgba(34, 197, 94, 0.6) 0%, rgba(22, 163, 74, 0.8) 100%)"
                         : "linear-gradient(90deg, rgba(239, 68, 68, 0.6) 0%, rgba(220, 38, 38, 0.8) 100%)")
@@ -864,7 +891,7 @@ export default function DashboardMobile() {
               )}
               
               {/* 完了フィードバック */}
-              {slideProgress >= 90 && (
+              {slideProgress >= 95 && (
                 <div style={{
                   position: "absolute",
                   top: "50%",
@@ -880,19 +907,21 @@ export default function DashboardMobile() {
             
             <p style={{
               fontSize: "11px",
-              opacity: slideProgress > 50 ? 1 : 0.7,
+              opacity: slideProgress > 30 ? 1 : 0.6,
               margin: 0,
               lineHeight: 1.4,
               textAlign: "center",
-              color: slideProgress > 70 ? "#fbbf24" : "inherit",
-              fontWeight: slideProgress > 70 ? "600" : "normal",
+              color: slideProgress > 80 ? "#10b981" : slideProgress > 50 ? "#fbbf24" : "inherit",
+              fontWeight: slideProgress > 80 ? "700" : slideProgress > 50 ? "600" : "normal",
               transition: "all 0.2s ease"
             }}>
-              {slideProgress > 70 
-                ? (emergency ? "もう少しで稼働再開！" : "もう少しで緊急停止！")
-                : (emergency 
-                    ? "← 左にスライドして稼働再開" 
-                    : "右にスライドして緊急停止 →")
+              {slideProgress > 90 
+                ? (emergency ? "✨ あと少し！" : "✨ あと少し！")
+                : slideProgress > 70
+                  ? (emergency ? "もう少しで稼働再開" : "もう少しで緊急停止")
+                  : (emergency 
+                      ? "← 左にスライドして稼働再開" 
+                      : "右にスライドして緊急停止 →")
               }
             </p>\n            \n            {/* パルスアニメーション用スタイル */}\n            <style>{`\n              @keyframes pulse {\n                0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }\n                50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.2); }\n              }\n            `}</style>
           </div>
