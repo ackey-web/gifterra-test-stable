@@ -95,7 +95,6 @@ export default function DashboardMobile() {
         CONTRACT_ADDRESS,
         [
           "event TipSent(address indexed from, uint256 amount, string displayName, string message)",
-          "function getTotalTipsByUser(address user) view returns (uint256)",
         ],
         provider
       );
@@ -137,14 +136,28 @@ export default function DashboardMobile() {
         }
       }
 
-      console.log("💰 累積Tip額取得開始...");
-      // 累積Tip額取得
-      const total = await contract.getTotalTipsByUser(address);
-      console.log("💰 累積Tip額:", ethers.utils.formatUnits(total, TOKEN.DECIMALS), TOKEN.SYMBOL);
+      console.log("💰 累積Tip額計算開始...");
+      // 累積Tip額をイベントから集計
+      const total = tipEvents.reduce((sum, event) => {
+        return sum + (event.args?.amount || 0n);
+      }, 0n);
+      console.log("💰 累積Tip額(イベント集計):", ethers.utils.formatUnits(total, TOKEN.DECIMALS), TOKEN.SYMBOL);
 
+      // 管理者用統計: 全体の累積Tip額とユーザー統計
+      const userStats = new Map<string, bigint>();
+      tipEvents.forEach(event => {
+        const userAddr = event.args?.from?.toLowerCase();
+        const amount = event.args?.amount || 0n;
+        if (userAddr) {
+          userStats.set(userAddr, (userStats.get(userAddr) || 0n) + amount);
+        }
+      });
+      
       console.log("✅ データ処理完了:", { 
         tipDataCount: tipData.length, 
-        totalTips: ethers.utils.formatUnits(total, TOKEN.DECIMALS) 
+        totalTipsFromEvents: ethers.utils.formatUnits(total, TOKEN.DECIMALS),
+        uniqueUsers: userStats.size,
+        totalEvents: tipEvents.length
       });
       
       setTips(tipData.reverse());
@@ -159,7 +172,13 @@ export default function DashboardMobile() {
         code: error.code,
         stack: error.stack,
         address,
-        contractAddress: CONTRACT_ADDRESS
+        contractAddress: CONTRACT_ADDRESS,
+        errorDetails: {
+          name: error.name,
+          reason: error.reason,
+          code: error.code,
+          method: error.method || 'unknown'
+        }
       });
       
       // ユーザーにエラーを通知（簡易版）
@@ -690,7 +709,7 @@ export default function DashboardMobile() {
           }}>
             <div>🔗 ウォレット: {address ? `${address.slice(0, 10)}...${address.slice(-6)}` : "未接続"}</div>
             <div>📄 コントラクト: {CONTRACT_ADDRESS.slice(0, 10)}...{CONTRACT_ADDRESS.slice(-6)}</div>
-            <div>📊 データ状況: Tips={tips.length}件, 総額={fmt18(totalTips)} {TOKEN.SYMBOL}</div>
+            <div>📊 データ状況: Tips={tips.length}件, 総額={fmt18(totalTips)} {TOKEN.SYMBOL} (イベント集計)</div>
             <div>⏰ 分析: 今日={dailyTips}, 今週={weeklyTips}, サポーター={topSupporters.length}名</div>
           </div>
 
