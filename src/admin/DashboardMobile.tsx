@@ -52,13 +52,45 @@ export default function DashboardMobile() {
 
   // データ取得
   const fetchData = async () => {
-    if (!address) return;
+    if (!address) {
+      console.log("🚫 アドレスが未接続のためデータ取得をスキップ");
+      return;
+    }
+    
+    console.log("📊 データ取得開始:", { address, contractAddress: CONTRACT_ADDRESS });
     setLoading(true);
 
     try {
-      const provider = new ethers.providers.JsonRpcProvider(
-        "https://rpc-amoy.polygon.technology"
-      );
+      // RPCプロバイダー初期化
+      const rpcUrls = [
+        "https://rpc-amoy.polygon.technology",
+        "https://polygon-amoy.drpc.org",
+        "https://amoy.polygon.technology"
+      ];
+      
+      let provider: ethers.providers.JsonRpcProvider | null = null;
+      let providerUrl = "";
+      
+      // RPCプロバイダーの接続テスト
+      for (const rpcUrl of rpcUrls) {
+        try {
+          console.log("🔗 RPC接続テスト:", rpcUrl);
+          const testProvider = new ethers.providers.JsonRpcProvider(rpcUrl);
+          await testProvider.getBlockNumber(); // 接続テスト
+          provider = testProvider;
+          providerUrl = rpcUrl;
+          console.log("✅ RPC接続成功:", rpcUrl);
+          break;
+        } catch (rpcError) {
+          console.warn("⚠️ RPC接続失敗:", rpcUrl, rpcError);
+        }
+      }
+      
+      if (!provider) {
+        throw new Error("すべてのRPCプロバイダーへの接続に失敗しました");
+      }
+      
+      // コントラクト初期化
       const contract = new ethers.Contract(
         CONTRACT_ADDRESS,
         [
@@ -67,33 +99,71 @@ export default function DashboardMobile() {
         ],
         provider
       );
+      
+      console.log("📄 コントラクト初期化完了:", { contract: CONTRACT_ADDRESS, provider: providerUrl });
+
+      // 現在のブロック番号取得
+      const currentBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, currentBlock - 50000);
+      
+      console.log("📊 イベント取得開始:", { currentBlock, fromBlock, range: currentBlock - fromBlock });
 
       // イベント取得
-      const fromBlock = Math.max(0, (await provider.getBlockNumber()) - 50000);
       const tipEvents = await contract.queryFilter("TipSent", fromBlock);
+      console.log("📩 イベント取得結果:", { eventCount: tipEvents.length });
 
       const tipData: TipItem[] = [];
-      for (const event of tipEvents.slice(-20)) {
-        const block = await provider.getBlock(event.blockNumber);
-        tipData.push({
-          from: event.args?.from,
-          amount: event.args?.amount || 0n,
-          blockNumber: BigInt(event.blockNumber),
-          timestamp: block.timestamp,
-          txHash: event.transactionHash,
-        });
+      const recentEvents = tipEvents.slice(-20); // 最新の20件
+      
+      console.log("🔄 イベント processing 開始:", { eventsToProcess: recentEvents.length });
+      
+      for (let i = 0; i < recentEvents.length; i++) {
+        const event = recentEvents[i];
+        try {
+          const block = await provider.getBlock(event.blockNumber);
+          tipData.push({
+            from: event.args?.from || "",
+            amount: event.args?.amount || 0n,
+            blockNumber: BigInt(event.blockNumber),
+            timestamp: block.timestamp,
+            txHash: event.transactionHash,
+          });
+          
+          if ((i + 1) % 5 === 0) {
+            console.log("📊 処理進捗:", `${i + 1}/${recentEvents.length}`);
+          }
+        } catch (blockError) {
+          console.warn("⚠️ ブロック情報取得失敗:", event.blockNumber, blockError);
+        }
       }
 
+      console.log("💰 累積Tip額取得開始...");
       // 累積Tip額取得
       const total = await contract.getTotalTipsByUser(address);
+      console.log("💰 累積Tip額:", ethers.utils.formatUnits(total, TOKEN.DECIMALS), TOKEN.SYMBOL);
 
+      console.log("✅ データ処理完了:", { 
+        tipDataCount: tipData.length, 
+        totalTips: ethers.utils.formatUnits(total, TOKEN.DECIMALS) 
+      });
+      
       setTips(tipData.reverse());
       setTotalTips(total);
       
       // 分析データ計算
       calculateAnalytics(tipData);
-    } catch (error) {
-      console.error("データ取得エラー:", error);
+      
+    } catch (error: any) {
+      console.error("❌ データ取得エラー:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        address,
+        contractAddress: CONTRACT_ADDRESS
+      });
+      
+      // ユーザーにエラーを通知（簡易版）
+      alert(`データ読み込みエラー: ${error.message || '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
@@ -159,8 +229,14 @@ export default function DashboardMobile() {
   };
 
   useEffect(() => {
+    console.log("🔄 useEffect triggered:", { address, hasAddress: !!address });
     if (address) {
-      fetchData();
+      // 少し遅延してデータ取得を実行
+      const timer = setTimeout(() => {
+        fetchData();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [address]);
 
@@ -534,7 +610,10 @@ export default function DashboardMobile() {
                 padding: "40px",
                 opacity: 0.7
               }}>
-                読み込み中...
+                <div>📡 データ読み込み中...</div>
+                <div style={{ fontSize: "12px", marginTop: "8px", opacity: 0.6 }}>
+                  ブロックチェーンからTip履歴を取得しています
+                </div>
               </div>
             ) : tips.length === 0 ? (
               <div style={{
@@ -542,7 +621,13 @@ export default function DashboardMobile() {
                 padding: "40px",
                 opacity: 0.7
               }}>
-                Tip履歴がありません
+                <div>📝 Tip履歴がありません</div>
+                <div style={{ fontSize: "12px", marginTop: "8px", opacity: 0.6 }}>
+                  ウォレット: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "未接続"}
+                </div>
+                <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.6 }}>
+                  コントラクト: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
+                </div>
               </div>
             ) : (
               <div style={{
@@ -591,6 +676,22 @@ export default function DashboardMobile() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* デバッグ情報セクション */}
+          <div style={{
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: "8px",
+            padding: "12px",
+            marginTop: "16px",
+            fontSize: "11px",
+            fontFamily: "monospace",
+            opacity: 0.7
+          }}>
+            <div>🔗 ウォレット: {address ? `${address.slice(0, 10)}...${address.slice(-6)}` : "未接続"}</div>
+            <div>📄 コントラクト: {CONTRACT_ADDRESS.slice(0, 10)}...{CONTRACT_ADDRESS.slice(-6)}</div>
+            <div>📊 データ状況: Tips={tips.length}件, 総額={fmt18(totalTips)} {TOKEN.SYMBOL}</div>
+            <div>⏰ 分析: 今日={dailyTips}, 今週={weeklyTips}, サポーター={topSupporters.length}名</div>
           </div>
 
           {/* データ更新ボタン */}
