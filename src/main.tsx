@@ -24,13 +24,14 @@ const polygonAmoy = {
     decimals: 18,
   },
   rpc: [
-    // プライマリRPC（CORS対応）
+    // プライマリRPC（モバイル対応）
     "https://rpc-amoy.polygon.technology",
     // 設定済みAlchemy RPC（環境変数から）
     ...(import.meta.env.VITE_ALCHEMY_RPC_URL ? [import.meta.env.VITE_ALCHEMY_RPC_URL] : []),
-    // 追加のフォールバック
+    // モバイル用フォールバックRPC
     "https://polygon-amoy.drpc.org",
-    "https://endpoints.omniatech.io/v1/matic/amoy/public"
+    "https://endpoints.omniatech.io/v1/matic/amoy/public",
+    "https://amoy.polygon.technology"
   ],
   explorers: [
     {
@@ -100,6 +101,7 @@ root.render(
       }}
       autoConnect={true}
       theme="dark"
+      autoSwitch={true}
     >
       {wantsAdminMobile ? (
         <AdminDashboardMobile />
