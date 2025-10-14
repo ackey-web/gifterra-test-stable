@@ -13,7 +13,7 @@ import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
-import { tipSuccessConfetti } from "../utils/confetti";
+import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -188,6 +188,8 @@ export default function TipApp() {
   const [txState, setTxState] = useState<"idle" | "approving" | "sending" | "mined" | "error">("idle");
   const [lastLevel, setLastLevel] = useState(currentLevel);
   const [rankUpMsg, setRankUpMsg] = useState("");
+  const [sbtProcessMsg, setSbtProcessMsg] = useState("");
+  const [showRankUpEffect, setShowRankUpEffect] = useState(false);
 
   const emergency = useEmergency();
 
@@ -209,10 +211,36 @@ export default function TipApp() {
   }, [address]);
 
   useEffect(() => {
-    if (currentLevel > lastLevel) {
+    if (currentLevel > lastLevel && lastLevel > 0) {
+      // 🎆 ランクアップ時の豪華な演出開始
+      setShowRankUpEffect(true);
+      
+      // メインのランクアップメッセージ
       setRankUpMsg(`${RANK_LABELS[currentLevel]?.icon} ${RANK_LABELS[currentLevel]?.label} にランクアップ！ 🎉`);
-      const t = setTimeout(() => setRankUpMsg(""), 3000);
-      return () => clearTimeout(t);
+      
+      // SBT処理の詳細案内
+      const sbtMessages = [
+        "🔥 旧ランクのSBTをバーン中...",
+        "✨ 新ランクのSBTをミント中...",
+        "🎊 SBTアップグレード完了！"
+      ];
+      
+      // 豪華なコンフェッティ演出
+      rankUpConfetti(currentLevel).catch(console.warn);
+      
+      // 段階的なSBT処理メッセージ表示
+      setTimeout(() => setSbtProcessMsg(sbtMessages[0]), 500);  // バーンメッセージ
+      setTimeout(() => setSbtProcessMsg(sbtMessages[1]), 1500); // ミントメッセージ
+      setTimeout(() => setSbtProcessMsg(sbtMessages[2]), 2500); // 完了メッセージ
+      
+      // メッセージクリア
+      const cleanup = setTimeout(() => {
+        setRankUpMsg("");
+        setSbtProcessMsg("");
+        setShowRankUpEffect(false);
+      }, 5000);
+      
+      return () => clearTimeout(cleanup);
     }
     setLastLevel(currentLevel);
   }, [currentLevel, lastLevel]);
@@ -587,6 +615,22 @@ export default function TipApp() {
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
         @keyframes pop { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.05) } }
+        
+        @keyframes fadeInOut {
+          0%, 100% { opacity: 0; transform: translateX(-50%) scale(0.8); }
+          10%, 90% { opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+        
+        @keyframes rankUpPulse {
+          0%, 100% { 
+            transform: translateX(-50%) scale(1); 
+            box-shadow: 0 12px 48px rgba(255,255,255,0.2);
+          }
+          50% { 
+            transform: translateX(-50%) scale(1.05); 
+            box-shadow: 0 16px 64px rgba(255,255,255,0.4);
+          }
+        }
       `}</style>
 
       <header style={{ textAlign: "center", marginBottom: 10 }}>
@@ -709,7 +753,37 @@ export default function TipApp() {
           </div>
         </div>
 
-        {rankUpMsg && <div style={{ fontWeight: 800, animation: "pop 600ms ease" }}>{rankUpMsg}</div>}
+        {rankUpMsg && (
+          <div style={{
+            position: "fixed",
+            top: "15%", left: "50%", transform: "translateX(-50%)",
+            background: showRankUpEffect 
+              ? "linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #96ceb4 75%, #ffeaa7 100%)"
+              : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            color: "white", padding: "20px 30px", borderRadius: 16,
+            fontSize: 20, fontWeight: "bold", textAlign: "center",
+            zIndex: 9999, boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
+            animation: showRankUpEffect ? "rankUpPulse 2s ease-in-out infinite" : "fadeInOut 3s ease-in-out",
+            border: showRankUpEffect ? "3px solid rgba(255,255,255,0.3)" : "none"
+          }}>
+            {rankUpMsg}
+          </div>
+        )}
+        
+        {sbtProcessMsg && (
+          <div style={{
+            position: "fixed",
+            top: "25%", left: "50%", transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.8)",
+            color: "white", padding: "12px 20px", borderRadius: 8,
+            fontSize: 14, textAlign: "center",
+            zIndex: 9998, boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            animation: "fadeInOut 1s ease-in-out",
+            backdropFilter: "blur(8px)"
+          }}>
+            {sbtProcessMsg}
+          </div>
+        )}
 
         {/* 貢献熱量パネル */}
         {userHeatData && (
