@@ -417,9 +417,30 @@ export default function DashboardMobile() {
     }
     
     // 抵抗カーブを適用（初期は重く、後半は軽く）
-    // 二次曲線を使用して初期の動きを抑制
-    const resistanceFactor = rawProgress < 30 ? 0.3 : rawProgress < 60 ? 0.6 : 0.9;
-    const progress = rawProgress * resistanceFactor;
+    // 二次曲線を使用して初期の動きを抑制、終盤は達成しやすく
+    let resistanceFactor;
+    if (rawProgress < 20) {
+      resistanceFactor = 0.2; // 初期の重さ
+    } else if (rawProgress < 50) {
+      resistanceFactor = 0.5; // 中期の軽さ
+    } else if (rawProgress < 80) {
+      resistanceFactor = 0.8; // 後期の軽さ
+    } else {
+      resistanceFactor = 1.0; // 終盤はフルスピード（達成しやすく）
+    }
+    
+    const progress = Math.min(100, rawProgress * resistanceFactor);
+    
+    // デバッグログ追加
+    if (rawProgress > 80) {
+      console.log('📦 スライド進捗:', { 
+        rawProgress: rawProgress.toFixed(1), 
+        resistanceFactor, 
+        finalProgress: progress.toFixed(1),
+        diff,
+        maxSlide 
+      });
+    }
     
     setSlideProgress(progress);
     
@@ -435,26 +456,42 @@ export default function DashboardMobile() {
     }
     
     // 95%以上スライドしたら実行（より確実な操作を要求）
-    if (progress >= 95) {
+    // またはrawProgressが90%以上でも実行（抵抗カーブの影響を考慮）
+    if (progress >= 95 || rawProgress >= 90) {
+      console.log('✨ スライド完了!', { progress: progress.toFixed(1), rawProgress: rawProgress.toFixed(1) });
+      
       if (navigator.vibrate) {
         navigator.vibrate(200); // 完了時の強いバイブレーション
       }
+      
       // 完了フラグを設定して重複実行を防ぐ
       setSlideProgress(100); // 完了状態として100%に固定
+      setIsSliding(false); // スライド状態を終了
       toggleEmergency();
+      return; // 早期リターンで重複実行を防ぐ
     }
   };
   
   const handleSlideEnd = () => {
+    console.log('🔄 スライド終了:', { slideProgress: slideProgress.toFixed(1), isSliding });
+    
     setIsSliding(false);
-    if (slideProgress < 95) {
-      // 95%未満の場合のみリセット（完了時はリセットしない）
+    
+    // 完了状態（100%）でない場合のみリセット
+    if (slideProgress < 100) {
+      console.log('⚠️ スライド未完了、リセットします');
+      
       if (navigator.vibrate && slideProgress > 20) {
         navigator.vibrate([100, 50, 100]); // リセット時のフィードバック
       }
-      setTimeout(() => setSlideProgress(0), 150); // リセット時間も少し延長
+      
+      setTimeout(() => {
+        setSlideProgress(0);
+        console.log('🔄 スライドプログレスを0にリセット');
+      }, 150);
+    } else {
+      console.log('✅ スライド完了、リセットしません');
     }
-    // 95%以上の場合は何もしない（toggleEmergencyが既に呼ばれている）
   };
 
   useEffect(() => {
