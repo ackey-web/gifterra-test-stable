@@ -37,7 +37,7 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "reward-contract-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management";
 
 const fmt18 = (v: bigint) => {
   try {
@@ -1040,7 +1040,7 @@ export default function AdminDashboard() {
         padding: 24,
       }}>
         <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          📱 リワードUI 広告管理
+          📱 リワードUI 総合管理
         </h2>
         
         <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
@@ -1159,20 +1159,62 @@ export default function AdminDashboard() {
             💾 保存
           </button>
         </div>
+
+        {/* リワードコントラクト管理セクション */}
+        <div style={{
+          marginTop: 32,
+          padding: 20,
+          background: "rgba(255,255,255,.03)",
+          borderRadius: 12,
+        }}>
+          <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+            💰 リワードコントラクト管理
+          </h2>
+
+          {/* 現在の状態表示 */}
+          <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>📊 現在の状態</h3>
+            <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
+              <div>
+                <strong>コントラクト残高:</strong> {
+                  (() => {
+                    const { data: contractBalance } = useContractRead(contract, "balanceOf", [CONTRACT_ADDRESS]);
+                    return contractBalance 
+                      ? `${Number(contractBalance) / 1e18} ${TOKEN.SYMBOL}`
+                      : "読み込み中...";
+                  })()
+                }
+              </div>
+              <div>
+                <strong>日次リワード量:</strong> {
+                  (() => {
+                    const { data: currentDailyReward } = useContractRead(contract, "dailyRewardAmount");
+                    return currentDailyReward 
+                      ? `${Number(currentDailyReward) / 1e18} ${TOKEN.SYMBOL}`
+                      : "読み込み中...";
+                  })()
+                }
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                ※ コントラクトアドレス: {CONTRACT_ADDRESS}
+              </div>
+            </div>
+          </div>
+
+          {/* トークンチャージセクション */}
+          <RewardTokenChargeSection />
+
+          {/* 日次リワード量変更セクション */}
+          <RewardAmountSettingSection />
+        </div>
       </div>
     );
   };
 
-  // ---- リワード管理画面コンポーネント ----
-  const RewardManagementPage = () => {
+  // ---- リワードトークンチャージコンポーネント ----
+  const RewardTokenChargeSection = () => {
     const [chargeAmount, setChargeAmount] = useState("");
-    const [newDailyReward, setNewDailyReward] = useState("");
     const [isCharging, setIsCharging] = useState(false);
-    const [isUpdatingReward, setIsUpdatingReward] = useState(false);
-
-    // 現在のコントラクト情報を取得
-    const { data: currentDailyReward } = useContractRead(contract, "dailyRewardAmount");
-    const { data: contractBalance } = useContractRead(contract, "balanceOf", [CONTRACT_ADDRESS]);
 
     const handleChargeTokens = async () => {
       if (!chargeAmount || !contract || !address) {
@@ -1217,6 +1259,60 @@ export default function AdminDashboard() {
         setIsCharging(false);
       }
     };
+
+    return (
+      <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+        <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>🔋 トークンチャージ</h3>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+            チャージ金額 ({TOKEN.SYMBOL})
+          </label>
+          <input
+            type="number"
+            value={chargeAmount}
+            onChange={(e) => setChargeAmount(e.target.value)}
+            placeholder="例: 1000"
+            min="0"
+            step="0.01"
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: 6,
+              border: "1px solid rgba(255,255,255,.2)",
+              background: "rgba(0,0,0,.3)",
+              color: "#fff",
+              fontSize: 14
+            }}
+          />
+        </div>
+        <button
+          onClick={handleChargeTokens}
+          disabled={isCharging || !chargeAmount}
+          style={{
+            background: isCharging ? "#666" : "#16a34a",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "10px 16px",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: isCharging ? "not-allowed" : "pointer",
+            opacity: isCharging || !chargeAmount ? 0.7 : 1
+          }}
+        >
+          {isCharging ? "チャージ中..." : "💰 トークンをチャージ"}
+        </button>
+        <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+          ⚠️ 注意: ウォレットに十分なトークン残高があることを確認してください
+        </div>
+      </div>
+    );
+  };
+
+  // ---- リワード量設定コンポーネント ----
+  const RewardAmountSettingSection = () => {
+    const [newDailyReward, setNewDailyReward] = useState("");
+    const [isUpdatingReward, setIsUpdatingReward] = useState(false);
 
     const handleUpdateDailyReward = async () => {
       if (!newDailyReward || !contract || !address) {
@@ -1263,136 +1359,83 @@ export default function AdminDashboard() {
     };
 
     return (
-      <div style={{
-        padding: 20,
-        background: "rgba(255,255,255,.03)",
-        borderRadius: 12,
-        margin: "20px 0"
-      }}>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          💰 リワードコントラクト管理
-        </h2>
-
-        {/* 現在の状態表示 */}
-        <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>📊 現在の状態</h3>
-          <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
-            <div>
-              <strong>コントラクト残高:</strong> {
-                contractBalance 
-                  ? `${Number(contractBalance) / 1e18} ${TOKEN.SYMBOL}`
-                  : "読み込み中..."
-              }
-            </div>
-            <div>
-              <strong>日次リワード量:</strong> {
-                currentDailyReward 
-                  ? `${Number(currentDailyReward) / 1e18} ${TOKEN.SYMBOL}`
-                  : "読み込み中..."
-              }
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-              ※ コントラクトアドレス: {CONTRACT_ADDRESS}
-            </div>
-          </div>
-        </div>
-
-        {/* トークンチャージセクション */}
-        <div style={{ marginBottom: 24, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>🔋 トークンチャージ</h3>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
-              チャージ金額 ({TOKEN.SYMBOL})
-            </label>
-            <input
-              type="number"
-              value={chargeAmount}
-              onChange={(e) => setChargeAmount(e.target.value)}
-              placeholder="例: 1000"
-              min="0"
-              step="0.01"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,.2)",
-                background: "rgba(0,0,0,.3)",
-                color: "#fff",
-                fontSize: 14
-              }}
-            />
-          </div>
-          <button
-            onClick={handleChargeTokens}
-            disabled={isCharging || !chargeAmount}
+      <div style={{ padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+        <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>⚙️ 日次リワード量設定</h3>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+            新しい日次リワード量 ({TOKEN.SYMBOL})
+          </label>
+          <input
+            type="number"
+            value={newDailyReward}
+            onChange={(e) => setNewDailyReward(e.target.value)}
+            placeholder="例: 10"
+            min="0"
+            step="0.01"
             style={{
-              background: isCharging ? "#666" : "#16a34a",
-              color: "#fff",
-              border: "none",
+              width: "100%",
+              padding: "10px 12px",
               borderRadius: 6,
-              padding: "10px 16px",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: isCharging ? "not-allowed" : "pointer",
-              opacity: isCharging || !chargeAmount ? 0.7 : 1
+              border: "1px solid rgba(255,255,255,.2)",
+              background: "rgba(0,0,0,.3)",
+              color: "#fff",
+              fontSize: 14
             }}
-          >
-            {isCharging ? "チャージ中..." : "💰 トークンをチャージ"}
-          </button>
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
-            ⚠️ 注意: ウォレットに十分なトークン残高があることを確認してください
-          </div>
+          />
         </div>
-
-        {/* 日次リワード量変更セクション */}
-        <div style={{ padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 16 }}>⚙️ 日次リワード量設定</h3>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
-              新しい日次リワード量 ({TOKEN.SYMBOL})
-            </label>
-            <input
-              type="number"
-              value={newDailyReward}
-              onChange={(e) => setNewDailyReward(e.target.value)}
-              placeholder="例: 10"
-              min="0"
-              step="0.01"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,.2)",
-                background: "rgba(0,0,0,.3)",
-                color: "#fff",
-                fontSize: 14
-              }}
-            />
-          </div>
-          <button
-            onClick={handleUpdateDailyReward}
-            disabled={isUpdatingReward || !newDailyReward}
-            style={{
-              background: isUpdatingReward ? "#666" : "#dc2626",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              padding: "10px 16px",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: isUpdatingReward ? "not-allowed" : "pointer",
-              opacity: isUpdatingReward || !newDailyReward ? 0.7 : 1
-            }}
-          >
-            {isUpdatingReward ? "更新中..." : "⚙️ リワード量を更新"}
-          </button>
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
-            ⚠️ 注意: この操作はコントラクトオーナーのみ実行可能です
-          </div>
+        <button
+          onClick={handleUpdateDailyReward}
+          disabled={isUpdatingReward || !newDailyReward}
+          style={{
+            background: isUpdatingReward ? "#666" : "#dc2626",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "10px 16px",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: isUpdatingReward ? "not-allowed" : "pointer",
+            opacity: isUpdatingReward || !newDailyReward ? 0.7 : 1
+          }}
+        >
+          {isUpdatingReward ? "更新中..." : "⚙️ リワード量を更新"}
+        </button>
+        <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+          ⚠️ 注意: この操作はコントラクトオーナーのみ実行可能です
         </div>
       </div>
     );
   };
+
+  // ---- Tip UI管理ページ ----
+  const TipUIManagementPage = () => {
+    return (
+      <div style={{
+        padding: 24,
+      }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+          💸 Tip UI 管理
+        </h2>
+        
+        <div style={{ 
+          padding: 40, 
+          background: "rgba(255,255,255,.04)", 
+          borderRadius: 8, 
+          textAlign: "center",
+          opacity: 0.7
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 18 }}>準備中</h3>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            Tip UI の管理機能は現在開発中です。<br />
+            今後のアップデートでリリース予定です。
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+
 
   /* ---------- 画面 ---------- */
   if (!isAdmin) {
@@ -1468,7 +1511,9 @@ export default function AdminDashboard() {
               ? "GIFTERRA admin : on-chain (Tipped イベント)" 
               : currentPage === "reward-ui-management"
               ? "GIFTERRA admin : リワードUI管理"
-              : "GIFTERRA admin : リワードコントラクト管理"}
+              : currentPage === "tip-ui-management" 
+              ? "GIFTERRA admin : Tip UI 管理" 
+              : "GIFTERRA admin : リワードUI 総合管理"}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1501,9 +1546,9 @@ export default function AdminDashboard() {
             📱 リワードUI管理
           </button>
           <button
-            onClick={() => setCurrentPage("reward-contract-management")}
+            onClick={() => setCurrentPage("tip-ui-management")}
             style={{
-              background: currentPage === "reward-contract-management" ? "#dc2626" : "#374151",
+              background: currentPage === "tip-ui-management" ? "#dc2626" : "#374151",
               color: "#fff",
               border: "none",
               borderRadius: 8,
@@ -1648,8 +1693,8 @@ export default function AdminDashboard() {
       {/* ページ切り替え */}
       {currentPage === "reward-ui-management" ? (
         <RewardUIManagementPage />
-      ) : currentPage === "reward-contract-management" ? (
-        <RewardManagementPage />
+      ) : currentPage === "tip-ui-management" ? (
+        <TipUIManagementPage />
       ) : (
         <>
           {/* 期間タブ */}
