@@ -1013,7 +1013,6 @@ export default function AdminDashboard() {
     // デイリー配布量管理用の状態
     const [dailyRewardAmount, setDailyRewardAmount] = useState<string>("");
     const [newDailyAmount, setNewDailyAmount] = useState<string>("");
-    const [isOwner, setIsOwner] = useState<boolean>(false);
     const [isLoadingReward, setIsLoadingReward] = useState<boolean>(true);
     const [isUpdatingReward, setIsUpdatingReward] = useState<boolean>(false);
 
@@ -1045,19 +1044,14 @@ export default function AdminDashboard() {
       try {
         const provider = new ethers.providers.Web3Provider((window as any).ethereum);
         const contract = new ethers.Contract(CONTRACT_ADDRESS, [
-          "function dailyRewardAmount() view returns (uint256)",
-          "function owner() view returns (address)"
+          "function dailyRewardAmount() view returns (uint256)"
         ], provider);
         
-        const [dailyAmount, ownerAddress] = await Promise.all([
-          contract.dailyRewardAmount(),
-          contract.owner()
-        ]);
+        const dailyAmount = await contract.dailyRewardAmount();
         
         const formattedAmount = ethers.utils.formatUnits(dailyAmount, 18);
         setDailyRewardAmount(formattedAmount);
         setNewDailyAmount(formattedAmount);
-        setIsOwner(address.toLowerCase() === ownerAddress.toLowerCase());
       } catch (error: any) {
         console.error("Failed to load daily reward data:", error);
         alert(`データ読み込みエラー: ${error?.reason || error?.message || "不明なエラー"}`);
@@ -1068,7 +1062,7 @@ export default function AdminDashboard() {
 
     // デイリー配布量の更新
     const updateDailyReward = async () => {
-      if (!address || !isOwner || !newDailyAmount) return;
+      if (!address || !isAdmin || !newDailyAmount) return;
       
       const amount = parseFloat(newDailyAmount);
       if (isNaN(amount) || amount < 1 || amount > 100000) {
@@ -1124,7 +1118,7 @@ export default function AdminDashboard() {
           padding: 20,
           background: "rgba(255,255,255,.06)",
           borderRadius: 12,
-          border: isOwner ? "2px solid #059669" : "1px solid rgba(255,255,255,.1)"
+          border: isAdmin ? "2px solid #059669" : "1px solid rgba(255,255,255,.1)"
         }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
             💰 デイリー配布量設定
@@ -1132,7 +1126,7 @@ export default function AdminDashboard() {
           
           {isLoadingReward ? (
             <div style={{ textAlign: "center", opacity: 0.7 }}>読み込み中...</div>
-          ) : !isOwner ? (
+          ) : !isAdmin ? (
             <div style={{ 
               padding: 16, 
               background: "rgba(239, 68, 68, 0.1)", 
@@ -1141,7 +1135,7 @@ export default function AdminDashboard() {
               textAlign: "center",
               color: "#fca5a5"
             }}>
-              🔒 この機能はオーナーのみ利用可能です<br/>
+              🔒 この機能は管理者のみ利用可能です<br/>
               現在の配布量: {dailyRewardAmount} {TOKEN.SYMBOL}/day
             </div>
           ) : (
