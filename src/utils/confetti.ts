@@ -174,6 +174,87 @@ export async function rewardSuccessConfetti(): Promise<void> {
 }
 
 /**
+ * ランクアップ専用コンフェッティ（超豪華・SBTミント演出）
+ */
+export async function rankUpConfetti(rankLevel: number): Promise<void> {
+  if (shouldReduceMotion()) {
+    console.log('Rank up confetti skipped due to prefers-reduced-motion');
+    return;
+  }
+
+  const confetti = await loadConfetti();
+  if (!confetti) return;
+
+  // ランクレベルに応じた色彩とエフェクト
+  const rankColors = {
+    1: ['#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B'], // Seed: 緑系
+    2: ['#2E7D32', '#388E3C', '#43A047', '#4CAF50'], // Grow: 濃い緑系
+    3: ['#E91E63', '#F48FB1', '#FCE4EC', '#FF69B4'], // Bloom: ピンク系
+    4: ['#9C27B0', '#E1BEE7', '#FF6EC7', '#00BCD4', '#FFEB3B'] // Mythic: 虹色
+  };
+
+  const colors = rankColors[rankLevel as keyof typeof rankColors] || rankColors[4];
+
+  // 🎆 第1段階: 中央からの大爆発（SBTミント表現）
+  await confetti({
+    particleCount: 200,
+    spread: 120,
+    origin: { y: 0.4 },
+    colors: colors,
+    scalar: 1.8,
+    gravity: 0.9,
+    drift: 0.1
+  });
+
+  // 🔥 第2段階: 旧SBTバーン表現（小さな炎のような散り方）
+  setTimeout(async () => {
+    for (let i = 0; i < 3; i++) {
+      await confetti({
+        particleCount: 30,
+        spread: 40,
+        origin: { x: 0.3 + (i * 0.2), y: 0.8 },
+        colors: ['#FF5722', '#FF9800', '#FFC107'],
+        scalar: 0.8,
+        gravity: 1.2
+      });
+    }
+  }, 300);
+
+  // 🌟 第3段階: 新SBTミント表現（輝く星のような効果）
+  setTimeout(async () => {
+    await confetti({
+      particleCount: 100,
+      spread: 80,
+      origin: { y: 0.3 },
+      colors: colors,
+      scalar: 1.5,
+      shapes: ['star'],
+      gravity: 0.6
+    });
+  }, 600);
+
+  // 🎊 第4段階: フィナーレ（四方八方からの祝福）
+  setTimeout(async () => {
+    const positions = [
+      { x: 0, y: 0.7, angle: 60 },
+      { x: 1, y: 0.7, angle: 120 },
+      { x: 0.5, y: 0.1, angle: 90 }
+    ];
+
+    for (const pos of positions) {
+      await confetti({
+        particleCount: 60,
+        angle: pos.angle,
+        spread: 70,
+        origin: pos,
+        colors: colors,
+        scalar: 1.3
+      });
+    }
+  }, 1000);
+}
+
+/**
  * シンプルなコンフェッティ（控えめ）
  */
 export async function simpleConfetti(): Promise<void> {
