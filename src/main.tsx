@@ -6,6 +6,7 @@ import "./index.css";
 import RewardApp from "./reward-ui/App";
 import TipApp from "./tip-ui/App";
 import AdminDashboard from "./admin/Dashboard";
+import AdminDashboardMobile from "./admin/DashboardMobile";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================
@@ -48,13 +49,30 @@ const polygonAmoy = {
 };
 
 // =============================
-// UI 出し分けロジック
+// デバイス判定とルーティング
 // =============================
+const getDeviceType = () => {
+  const width = window.innerWidth;
+  return width <= 600 ? 'mobile' : 'desktop';
+};
+
+// URL判定
 const uiParam = new URLSearchParams(location.search).get("ui");
 const path = location.pathname;
 
 const wantsAdmin = path.includes("/admin") || uiParam === "admin";
 const wantsTip = path.includes("/tip") || uiParam === "tip";
+const wantsAdminMobile = path.includes("/admin-mobile");
+
+// Admin アクセス時のデバイス判定による自動リダイレクト
+if (wantsAdmin && !wantsAdminMobile && getDeviceType() === 'mobile') {
+  // スマホでAdminアクセス時は /admin-mobile にリダイレクト
+  window.location.href = window.location.origin + "/admin-mobile" + window.location.search;
+} else if (wantsAdminMobile && getDeviceType() === 'desktop') {
+  // PCで /admin-mobile アクセス時は /admin にリダイレクト
+  window.location.href = window.location.origin + "/admin" + window.location.search;
+}
+
 // それ以外は Reward UI
 
 // =============================
@@ -83,7 +101,9 @@ root.render(
       autoConnect={true}
       theme="dark"
     >
-      {wantsAdmin ? (
+      {wantsAdminMobile ? (
+        <AdminDashboardMobile />
+      ) : wantsAdmin ? (
         <AdminDashboard />
       ) : wantsTip ? (
         <TipApp />
