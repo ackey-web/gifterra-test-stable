@@ -397,9 +397,9 @@ export default function DashboardMobile() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     setSlideStartX(clientX);
     
-    // スライド開始のフィードバック
+    // スライド開始の強いフィードバック
     if (navigator.vibrate) {
-      navigator.vibrate(30);
+      navigator.vibrate(50); // より強い開始フィードバック
     }
   };
   
@@ -409,7 +409,7 @@ export default function DashboardMobile() {
     
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const diff = clientX - slideStartX;
-    const maxSlide = 200; // スライド最大距離を拡大（より長い距離が必要）
+    const maxSlide = 300; // スライド最大距離を大幅拡大（より重い操作感）
     
     let rawProgress;
     if (!emergency) {
@@ -420,24 +420,26 @@ export default function DashboardMobile() {
       rawProgress = Math.max(0, Math.min(100, (-diff / maxSlide) * 100));
     }
     
-    // スムーズな抵抗カーブを適用（初期は重く、彭々に軽く）
-    // 指数関数を使用してより自然な動きを実現
+    // 重い抵抗カーブを適用（誘操作防止を強化）
+    // 初期から中盤までを大幅に重く設定
     let resistanceFactor;
-    if (rawProgress < 10) {
-      resistanceFactor = 0.1; // 初期の重さ
-    } else if (rawProgress < 30) {
-      resistanceFactor = 0.3; // 漸増
-    } else if (rawProgress < 60) {
-      resistanceFactor = 0.6; // 中期
-    } else if (rawProgress < 85) {
-      resistanceFactor = 0.85; // 後期
+    if (rawProgress < 15) {
+      resistanceFactor = 0.05; // 非常に重い初期
+    } else if (rawProgress < 35) {
+      resistanceFactor = 0.15; // 重い初期〜中期
+    } else if (rawProgress < 55) {
+      resistanceFactor = 0.35; // 中期の抵抗
+    } else if (rawProgress < 75) {
+      resistanceFactor = 0.6; // 後期の軽さ
+    } else if (rawProgress < 90) {
+      resistanceFactor = 0.8; // 終盤手前
     } else {
-      resistanceFactor = 1.0; // 終盤はフルスピード
+      resistanceFactor = 1.0; // 終盤のみフルスピード
     }
     
-    // 指数関数でより滑らかな進行を実現
-    const smoothProgress = Math.min(100, rawProgress * resistanceFactor * (1 + Math.pow(rawProgress / 100, 2) * 0.2));
-    const progress = Math.min(100, smoothProgress);
+    // 二次曲線でさらに重い抵抗を追加
+    const heavyResistance = Math.pow(resistanceFactor, 1.8); // 指数を上げてより重く
+    const progress = Math.min(100, rawProgress * heavyResistance);
     
     // デバッグログ追加
     if (rawProgress > 80) {
@@ -452,14 +454,14 @@ export default function DashboardMobile() {
     
     setSlideProgress(progress);
     
-    // 触覚フィードバック（バイブレーション）をより滑らかに
+    // 触覚フィードバック（重い操作に合わせて強化）
     if (navigator.vibrate) {
-      if (progress >= 25 && slideProgress < 25) {
-        navigator.vibrate(40); // 初期の抵抗感
-      } else if (progress >= 60 && slideProgress < 60) {
-        navigator.vibrate([25, 40, 25]); // 中間ポイント
-      } else if (progress >= 85 && slideProgress < 85) {
-        navigator.vibrate([40, 80, 40]); // 終了直前
+      if (progress >= 20 && slideProgress < 20) {
+        navigator.vibrate(60); // 初期の強い抵抗感
+      } else if (progress >= 50 && slideProgress < 50) {
+        navigator.vibrate([50, 60, 50]); // 中間ポイントを強化
+      } else if (progress >= 80 && slideProgress < 80) {
+        navigator.vibrate([60, 100, 60]); // 終了直前をさらに強化
       }
     }
     
@@ -494,8 +496,8 @@ export default function DashboardMobile() {
     if (slideProgress < 100) {
       console.log('⚠️ スライド未完了、リセットします');
       
-      if (navigator.vibrate && slideProgress > 20) {
-        navigator.vibrate([100, 50, 100]); // リセット時のフィードバック
+      if (navigator.vibrate && slideProgress > 15) {
+        navigator.vibrate([120, 80, 120]); // より強いリセットフィードバック
       }
       
       setTimeout(() => {
