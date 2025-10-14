@@ -15,6 +15,21 @@ import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
 import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
 
+/* ================= 承認ポリシー定義 ================ */
+export type ApprovePolicy = 'exact' | 'toNextRank' | 'fixedCap';
+
+export interface ApproveConfig {
+  policy: ApprovePolicy;
+  fixedCapAmount?: string; // fixedCap用の固定上限額（文字列形式）
+}
+
+export interface UserRankInfo {
+  currentLevel: number;
+  currentTotalTips: ethers.BigNumber;
+  nextRankThreshold?: ethers.BigNumber;
+  allThresholds: ethers.BigNumber[];
+}
+
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
   heatScore: number;
@@ -191,6 +206,13 @@ export default function TipApp() {
   const [sbtProcessMsg, setSbtProcessMsg] = useState("");
   const [showRankUpEffect, setShowRankUpEffect] = useState(false);
 
+  // 承認ポリシー関連の状態
+  const [approveConfig, setApproveConfig] = useState<ApproveConfig>({
+    policy: 'toNextRank', // デフォルトは次ランクまでの必要量
+    fixedCapAmount: '10000' // fixedCap時のデフォルト値
+  });
+  const [rankInfo, setRankInfo] = useState<UserRankInfo | null>(null);
+
   const emergency = useEmergency();
 
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
@@ -298,6 +320,106 @@ export default function TipApp() {
       setUserHeatData(null);
     }
   }, [address, totalTips]);
+
+  /* ================= ランク閾値取得・承認計算 ================ */
+  
+  // ランク閾値を取得して正規化
+  const fetchRankThresholds = async (): Promise<ethers.BigNumber[]> => {
+    try {
+      const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+      const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, provider);
+      
+      const thresholds: ethers.BigNumber[] = [];
+      
+      // ランク0〜10まで取得（契約の実装に応じて調整）
+      for (let i = 0; i <= 10; i++) {
+        try {
+          const threshold = await directContract.rankThresholds(i);
+          if (threshold && !threshold.isZero()) {
+            thresholds.push(threshold);
+          }
+        } catch (e) {
+          // インデックスが存在しない場合は終了
+          break;
+        }
+      }
+      
+      // 重複排除、昇順ソート
+      const uniqueThresholds = Array.from(new Set(thresholds.map(t => t.toString())))
+        .map(s => ethers.BigNumber.from(s))
+        .sort((a, b) => a.lt(b) ? -1 : (a.gt(b) ? 1 : 0));
+      
+      console.log("Fetched rank thresholds:", uniqueThresholds.map(t => ethers.utils.formatUnits(t, TOKEN.DECIMALS)));
+      return uniqueThresholds;
+    } catch (error) {
+      console.error("Failed to fetch rank thresholds:", error);
+      // フォールバック値（現在のハードコードされた値）
+      return [
+        ethers.utils.parseUnits("100", TOKEN.DECIMALS),   // ランク1
+        ethers.utils.parseUnits("500", TOKEN.DECIMALS),   // ランク2
+        ethers.utils.parseUnits("1500", TOKEN.DECIMALS),  // ランク3
+        ethers.utils.parseUnits("5000", TOKEN.DECIMALS),  // ランク4
+      ];
+    }
+  };
+
+  // 承認額を計算する関数
+  const calculateApproveAmount = (
+    tipAmount: ethers.BigNumber,
+    userTotalTips: ethers.BigNumber,
+    config: ApproveConfig,
+    rankThresholds: ethers.BigNumber[]
+  ): ethers.BigNumber => {
+    switch (config.policy) {
+      case 'exact':
+        // 今回のtip分だけ承認
+        return tipAmount;
+        
+      case 'toNextRank': {
+        // 次のランクまでに必要な合計額を承認
+        const nextThreshold = rankThresholds.find(threshold => threshold.gt(userTotalTips));
+        if (nextThreshold) {
+          const neededForNextRank = nextThreshold.sub(userTotalTips);
+          // 今回のtip額と次ランク到達額の大きい方を承認
+          return ethers.BigNumber.from(tipAmount).gte(neededForNextRank) ? tipAmount : neededForNextRank;
+        }
+        // 最高ランク到達済み、または閾値不明の場合はfixedCapにフォールバック
+        return ethers.utils.parseUnits(config.fixedCapAmount || "10000", TOKEN.DECIMALS);
+      }
+      
+      case 'fixedCap':
+        // 固定上限額を承認
+        const fixedAmount = ethers.utils.parseUnits(config.fixedCapAmount || "10000", TOKEN.DECIMALS);
+        // tip額が固定上限を超える場合はtip額を承認
+        return tipAmount.gt(fixedAmount) ? tipAmount : fixedAmount;
+        
+      default:
+        return tipAmount;
+    }
+  };
+
+  // ランク情報を更新
+  useEffect(() => {
+    const updateRankInfo = async () => {
+      if (!address || !totalTips) return;
+      
+      try {
+        const thresholds = await fetchRankThresholds();
+        const nextThreshold = thresholds.find(threshold => threshold.gt(totalTips));
+        
+        setRankInfo({
+          currentLevel,
+          currentTotalTips: typeof totalTips === 'bigint' ? ethers.BigNumber.from(totalTips.toString()) : totalTips,
+          nextRankThreshold: nextThreshold,
+          allThresholds: thresholds
+        });
+      } catch (error) {
+        console.error("Failed to update rank info:", error);
+      }
+    };
+    
+    updateRankInfo();
+  }, [address, totalTips, currentLevel]);
 
   /* ================= Tip送信処理 ================ */
   const doTip = async () => {
@@ -448,8 +570,47 @@ export default function TipApp() {
         console.log("Insufficient allowance, requesting approval...");
         setTxState("approving");
         
-        // 大きな値で承認（将来のTipのため）
-        const approveAmount = ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+        // 動的承認額計算
+        let approveAmount: ethers.BigNumber;
+        
+        if (rankInfo) {
+          const currentTotalTips = typeof totalTips === 'bigint' ? 
+            ethers.BigNumber.from(totalTips.toString()) : 
+            (totalTips || ethers.BigNumber.from(0));
+            
+          approveAmount = calculateApproveAmount(
+            parsedAmount,
+            currentTotalTips,
+            approveConfig,
+            rankInfo.allThresholds
+          );
+          
+          console.log("Dynamic approve amount calculated:", {
+            policy: approveConfig.policy,
+            tipAmount: ethers.utils.formatUnits(parsedAmount, TOKEN.DECIMALS),
+            approveAmount: ethers.utils.formatUnits(approveAmount, TOKEN.DECIMALS),
+            currentTotalTips: ethers.utils.formatUnits(currentTotalTips, TOKEN.DECIMALS),
+            nextRankThreshold: rankInfo.nextRankThreshold ? 
+              ethers.utils.formatUnits(rankInfo.nextRankThreshold, TOKEN.DECIMALS) : "max rank"
+          });
+        } else {
+          // フォールバック: rankInfo未取得の場合は従来の固定値
+          approveAmount = ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+          console.log("Using fallback approve amount (rankInfo not available)");
+        }
+        
+        // 安全な承認パターン（0 → 新しい値）
+        try {
+          // 既存の承認があれば先に0にリセット（一部のトークンで必要）
+          if (!currentAllowance.isZero()) {
+            console.log("Resetting allowance to 0 first...");
+            const resetTx = await tokenContract.approve(CONTRACT_ADDRESS, 0);
+            await resetTx.wait();
+          }
+        } catch (resetError) {
+          console.warn("Reset approval failed (might not be required):", resetError);
+        }
+        
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
         console.log("Approval transaction sent:", approveTx.hash);
         
@@ -834,6 +995,88 @@ export default function TipApp() {
               outline: 'none'
             }}
           />
+
+          {/* 承認ポリシー設定 */}
+          {address && (
+            <div style={{ 
+              padding: '12px', 
+              borderRadius: 8, 
+              background: '#1e293b', 
+              border: '1px solid #475569',
+              fontSize: '14px'
+            }}>
+              <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#e2e8f0' }}>
+                💎 承認設定
+              </div>
+              <select
+                value={approveConfig.policy}
+                onChange={(e) => setApproveConfig(prev => ({ 
+                  ...prev, 
+                  policy: e.target.value as ApprovePolicy 
+                }))}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  borderRadius: 6,
+                  border: '1px solid #475569',
+                  background: '#0f172a',
+                  color: '#fff',
+                  padding: '0 8px',
+                  fontSize: '13px'
+                }}
+              >
+                <option value="toNextRank">🎯 次ランクまで必要分を承認（推奨）</option>
+                <option value="exact">⚡ 今回のTip分のみ承認（最小限）</option>
+                <option value="fixedCap">🔒 固定上限額を承認（安定性重視）</option>
+              </select>
+              
+              {approveConfig.policy === 'fixedCap' && (
+                <input
+                  type="number"
+                  value={approveConfig.fixedCapAmount}
+                  onChange={(e) => setApproveConfig(prev => ({ 
+                    ...prev, 
+                    fixedCapAmount: e.target.value 
+                  }))}
+                  placeholder="固定承認上限額"
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    borderRadius: 6,
+                    border: '1px solid #475569',
+                    background: '#0f172a',
+                    color: '#fff',
+                    padding: '0 8px',
+                    fontSize: '13px',
+                    marginTop: '8px'
+                  }}
+                />
+              )}
+              
+              {/* ランク情報表示 */}
+              {rankInfo && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                  <div>現在: {ethers.utils.formatUnits(rankInfo.currentTotalTips, TOKEN.DECIMALS)} {TOKEN.SYMBOL}</div>
+                  {rankInfo.nextRankThreshold && (
+                    <div>次ランク: {ethers.utils.formatUnits(rankInfo.nextRankThreshold, TOKEN.DECIMALS)} {TOKEN.SYMBOL}</div>
+                  )}
+                  {parsedAmount && (
+                    <div style={{ color: '#fbbf24', marginTop: '4px' }}>
+                      予想承認額: {ethers.utils.formatUnits(
+                        calculateApproveAmount(
+                          parsedAmount,
+                          rankInfo.currentTotalTips,
+                          approveConfig,
+                          rankInfo.allThresholds
+                        ),
+                        TOKEN.DECIMALS
+                      )} {TOKEN.SYMBOL}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Tipボタン */}
           <div style={{
