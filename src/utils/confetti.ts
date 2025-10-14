@@ -71,7 +71,7 @@ export async function burstConfetti(): Promise<void> {
 }
 
 /**
- * 投げ銭成功用コンフェッティ（独立実行）
+ * Tip成功用コンフェッティ（独立実行）
  */
 export async function tipSuccessConfetti(): Promise<void> {
   if (shouldReduceMotion()) {
@@ -82,7 +82,7 @@ export async function tipSuccessConfetti(): Promise<void> {
   const confetti = await loadConfetti();
   if (!confetti) return;
 
-  // 投げ銭専用カラーパレット（温かい色調）
+  // Tip専用カラーパレット（温かい色調）
   const tipColors = ['#ff9a56', '#ffad56', '#ffc93c', '#ff6b9d', '#c44569'];
   
   // メインバースト
