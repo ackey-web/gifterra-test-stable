@@ -546,7 +546,7 @@ export default function TipApp() {
   };
 
   const canSend = !!address && !!parsedAmount && tokenKey === "PRIMARY" && !isTipping && !emergency && txState === "idle";
-  const BUTTON_H = 44;
+
 
   return (
     <main 
@@ -646,27 +646,26 @@ export default function TipApp() {
         display: "grid", 
         justifyItems: "center", 
         alignContent: "start", 
-        rowGap: 'clamp(8px, 2vw, 12px)', 
-        width: "min(95vw, 720px)", 
+        rowGap: '12px', 
+        width: "min(92vw, 640px)", 
         margin: "12px auto 0",
-        padding: "0 clamp(5px, 2vw, 10px)"
+        padding: "0 12px"
       }}>
         <div style={{ 
-          display: "grid", 
-          gap: 'clamp(8px, 2vw, 10px)', 
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          alignItems: "center", 
-          justifyItems: "center",
-          width: "100%"
+          display: "flex", 
+          flexDirection: "column",
+          gap: '12px',
+          width: "100%",
+          alignItems: "center"
         }}>
+          {/* ConnectWalletとSelectボタンの行 */}
           <div style={{
             display: "flex",
-            gap: 'clamp(6px, 1.5vw, 10px)',
+            gap: '12px',
             alignItems: "center",
             flexWrap: "wrap",
             justifyContent: "center",
-            width: "100%",
-            minWidth: "280px"
+            width: "100%"
           }}>
           <ConnectWallet 
             theme="dark" 
@@ -695,84 +694,85 @@ export default function TipApp() {
               <option value="PRIMARY">{TOKEN.SYMBOL}</option>
               <option value="DISABLED" disabled>JPYC（近日予定）</option>
             </select>
-            <div style={{ 
-              display: "inline-flex", 
-              alignItems: "center", 
-              height: 'clamp(44px, 8vw, 48px)', 
-              borderRadius: 10, 
-              background: "#0f1a24", 
-              border: "1px solid #334155",
-              minWidth: 'clamp(130px, 25vw, 150px)'
-            }}>
-              <input 
-                value={amount} 
-                onChange={(e) => setAmount(e.target.value)} 
-                inputMode="decimal" 
-                placeholder="金額" 
-                style={{ 
-                  height: "100%", 
-                  padding: "0 12px", 
-                  outline: "none", 
-                  background: "transparent", 
-                  color: "#fff", 
-                  border: "none", 
-                  width: '100%',
-                  fontSize: 'clamp(14px, 2vw, 16px)'
-                }} 
-              />
-              <span style={{ 
-                opacity: 0.8, 
-                fontSize: 'clamp(11px, 1.8vw, 12px)', 
-                paddingRight: 10 
-              }}>{TOKEN.SYMBOL}</span>
-            </div>
           </div>
+          
+          {/* 金額入力 */}
           <div style={{ 
             display: "flex", 
-            gap: 'clamp(6px, 1.5vw, 10px)', 
-            flexWrap: "wrap",
-            justifyContent: "center",
+            alignItems: "center", 
+            height: '48px', 
+            borderRadius: 10, 
+            background: "#0f1a24", 
+            border: "1px solid #334155",
             width: "100%"
           }}>
             <input 
-              value={displayName} 
-              onChange={(e) => setDisplayName(e.target.value)} 
-              placeholder="ニックネーム（任意）" 
-              maxLength={32} 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)} 
+              inputMode="decimal" 
+              placeholder="金額" 
               style={{ 
-                height: BUTTON_H, 
-                borderRadius: 10, 
-                border: "1px solid #334155", 
-                background: "#0f1a24", 
-                color: "#fff", 
+                height: "100%", 
                 padding: "0 12px", 
-                width: 'clamp(140px, 25vw, 160px)',
-                fontSize: 'clamp(14px, 2vw, 16px)',
-                minHeight: '44px' // モバイルタッチ対応
+                outline: "none", 
+                background: "transparent", 
+                color: "#fff", 
+                border: "none", 
+                flex: 1,
+                fontSize: '16px'
               }} 
             />
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={hasProfile === null ? "確認中..." : hasProfile ? "一言メッセージ（任意）" : "簡易プロフィール（初回のみ）"}
-              maxLength={hasProfile ? 120 : 40}
-              style={{ 
-                height: BUTTON_H, 
-                borderRadius: 10, 
-                border: "1px solid #334155", 
-                background: "#0f1a24", 
-                color: "#fff", 
-                padding: "0 12px", 
-                width: 'clamp(180px, 35vw, 220px)',
-                fontSize: 'clamp(14px, 2vw, 16px)',
-                minHeight: '44px' // モバイルタッチ対応
-              }}
-            />
+            <span style={{ 
+              opacity: 0.8, 
+              fontSize: '12px', 
+              paddingRight: 12 
+            }}>{TOKEN.SYMBOL}</span>
           </div>
+          
+          {/* ニックネーム入力 */}
+          <input 
+            value={displayName} 
+            onChange={(e) => setDisplayName(e.target.value)} 
+            placeholder="ニックネーム（任意）" 
+            maxLength={32} 
+            style={{ 
+              height: '48px', 
+              borderRadius: 10, 
+              border: "1px solid #334155", 
+              background: "#0f1a24", 
+              color: "#fff", 
+              padding: "0 12px", 
+              width: '100%',
+              fontSize: '16px',
+              outline: 'none'
+            }} 
+          />
+          
+          {/* メッセージ入力 */}
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={hasProfile === null ? "確認中..." : hasProfile ? "一言メッセージ（任意）" : "簡易プロフィール（初回のみ）"}
+            maxLength={hasProfile ? 120 : 40}
+            style={{ 
+              height: '48px', 
+              borderRadius: 10, 
+              border: "1px solid #334155", 
+              background: "#0f1a24", 
+              color: "#fff", 
+              padding: "0 12px", 
+              width: '100%',
+              fontSize: '16px',
+              outline: 'none'
+            }}
+          />
+          
+          {/* 投げ銭ボタン */}
           <div style={{
             display: "flex",
             justifyContent: "center",
-            width: "100%"
+            width: "100%",
+            marginTop: '6px'
           }}>
             <button
               onClick={doTip}
