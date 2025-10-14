@@ -8,3 +8,23 @@ body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
                "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
 }
+
+/* モバイル対応 */
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  
+  /* モバイルでのタップ反応を改善 */
+  button, input, select {
+    -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+    touch-action: manipulation;
+  }
+  
+  /* モバイルSafariでのビューポート調整 */
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
