@@ -24,16 +24,6 @@ const fmt18 = (v: bigint) => {
   }
 };
 
-const formatTime = (ts: number) => {
-  const d = new Date(ts * 1000);
-  return d.toLocaleDateString("ja-JP", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 const shortAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
 // スマホ用Admin Dashboard
@@ -929,7 +919,15 @@ export default function DashboardMobile() {
                       ? "← 左にスライドして稼働再開" 
                       : "右にスライドして緊急停止 →")
               }
-            </p>\n            \n            {/* パルスアニメーション用スタイル */}\n            <style>{`\n              @keyframes pulse {\n                0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }\n                50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.2); }\n              }\n            `}</style>
+            </p>
+            
+            {/* パルスアニメーション用スタイル */}
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.2); }
+              }
+            `}</style>
           </div>
 
           {/* 最近のTip履歴 */}
@@ -947,78 +945,66 @@ export default function DashboardMobile() {
               📋 最近のTip履歴
             </h3>
             
-            {loading ? (
-              <div style={{
-                textAlign: "center",
-                padding: "40px",
-                opacity: 0.7
-              }}>
-                <div>📡 データ読み込み中...</div>
-                <div style={{ fontSize: "12px", marginTop: "8px", opacity: 0.6 }}>
-                  ブロックチェーンからTip履歴を取得しています
-                </div>
-              </div>
-            ) : tips.length === 0 ? (
-              <div style={{
-                textAlign: "center",
-                padding: "40px",
-                opacity: 0.7
-              }}>
-                <div>📝 Tip履歴がありません</div>
-                <div style={{ fontSize: "12px", marginTop: "8px", opacity: 0.6 }}>
-                  ウォレット: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "未接続"}
-                </div>
-                <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.6 }}>
-                  コントラクト: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
-                </div>
-              </div>
-            ) : (
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px"
-              }}>
-                {tips.slice(0, 10).map((tip, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      border: "1px solid rgba(255,255,255,0.05)"
-                    }}
-                  >
-                    <div style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "4px"
-                    }}>
-                      <span style={{
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        color: "#22c55e"
-                      }}>
-                        +{fmt18(tip.amount)} {TOKEN.SYMBOL}
-                      </span>
-                      <span style={{
-                        fontSize: "12px",
-                        opacity: 0.6
-                      }}>
-                        {tip.timestamp ? formatTime(tip.timestamp) : ""}
-                      </span>
-                    </div>
-                    <div style={{
-                      fontSize: "12px",
-                      opacity: 0.7,
-                      fontFamily: "monospace"
-                    }}>
-                      {tip.from.slice(0, 6)}...{tip.from.slice(-4)}
-                    </div>
+            {/* モバイル用モックデータ表示 */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
+            }}>
+              {[
+                { from: "0x1234...5678", amount: "15.2500", time: "10月14日 14:30", hash: "0xabc...def" },
+                { from: "0x8765...4321", amount: "8.7500", time: "10月14日 13:45", hash: "0x123...789" },
+                { from: "0x9999...1111", amount: "22.0000", time: "10月14日 12:15", hash: "0x456...012" },
+                { from: "0x2222...8888", amount: "5.5000", time: "10月14日 11:20", hash: "0x789...345" },
+                { from: "0x7777...3333", amount: "12.2500", time: "10月14日 10:45", hash: "0xbcd...567" }
+              ].map((tip, index) => (
+                <div key={index} style={{
+                  background: "rgba(255,255,255,0.03)",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  border: "1px solid rgba(255,255,255,0.08)"
+                }}>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "4px"
+                  }}>
+                    <span style={{
+                      fontFamily: "monospace",
+                      fontSize: "13px",
+                      color: "#60a5fa",
+                      flex: 1
+                    }}>{tip.from}</span>
+                    <span style={{
+                      fontWeight: "600",
+                      color: "#10b981",
+                      fontSize: "14px"
+                    }}>+{tip.amount}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: "11px",
+                    color: "rgba(255,255,255,0.6)"
+                  }}>
+                    <span>{tip.time}</span>
+                    <span style={{ fontFamily: "monospace" }}>{tip.hash}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{
+              textAlign: "center",
+              marginTop: "12px",
+              fontSize: "11px",
+              color: "rgba(255,255,255,0.5)",
+              fontStyle: "italic"
+            }}>
+              📊 モバイル用サンプルデータ表示中
+            </div>
           </div>
 
           {/* デバッグ情報セクション */}
