@@ -388,9 +388,12 @@ export default function DashboardMobile() {
     const newState = !emergency;
     await setEmergencyFlag(newState);
     setEmergency(newState);
-    // スライド状態をリセット
+    // スライド状態をリセット（ただしprogressは状態変更後の適切な位置に保持）
     setIsSliding(false);
-    setSlideProgress(0);
+    // 状態変更が完了したら、スライダーを適切な位置に設定
+    setTimeout(() => {
+      setSlideProgress(newState ? 100 : 100); // 完了状態として100%に設定
+    }, 100);
   };
   
   // スライド処理関数
@@ -446,6 +449,8 @@ export default function DashboardMobile() {
       if (navigator.vibrate) {
         navigator.vibrate(200); // 完了時の強いバイブレーション
       }
+      // 完了フラグを設定して重複実行を防ぐ
+      setSlideProgress(100); // 完了状態として100%に固定
       toggleEmergency();
     }
   };
@@ -453,12 +458,13 @@ export default function DashboardMobile() {
   const handleSlideEnd = () => {
     setIsSliding(false);
     if (slideProgress < 95) {
-      // 95%未満の場合はリセット（より厳しい条件）
+      // 95%未満の場合のみリセット（完了時はリセットしない）
       if (navigator.vibrate && slideProgress > 20) {
         navigator.vibrate([100, 50, 100]); // リセット時のフィードバック
       }
       setTimeout(() => setSlideProgress(0), 150); // リセット時間も少し延長
     }
+    // 95%以上の場合は何もしない（toggleEmergencyが既に呼ばれている）
   };
 
   useEffect(() => {
