@@ -267,12 +267,29 @@ export default function AdminDashboard() {
   
   // 管理者チェック（リアルタイムで評価）
   const isAdmin = useMemo(() => {
-    const result = !!address && adminWallets.includes(address.toLowerCase());
-    console.log('🔒 Desktop Admin check:', {
-      address,
-      adminWallets,
-      isAdmin: result
+    const normalizedAddress = address?.toLowerCase();
+    const result = !!address && adminWallets.includes(normalizedAddress || '');
+    
+    // 詳細デバッグ情報
+    console.log('🔒 Desktop Admin check (詳細):', {
+      originalAddress: address,
+      normalizedAddress,
+      adminWalletsCount: adminWallets.length,
+      adminWallets: adminWallets,
+      initialAdmins: ADMIN_WALLETS,
+      additionalAdmins: (() => {
+        try {
+          const saved = localStorage.getItem('gifterra-admin-wallets');
+          return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+          return `ERROR: ${e}`;
+        }
+      })(),
+      isAddressInList: normalizedAddress ? adminWallets.includes(normalizedAddress) : false,
+      isAdmin: result,
+      timestamp: new Date().toISOString()
     });
+    
     return result;
   }, [address, adminWallets]);
   
