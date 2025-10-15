@@ -325,7 +325,7 @@ export default function TipApp() {
     
     setIsLoadingHeat(true);
     try {
-      // より厳格な熱量計算（累積Tip額ベース）
+      // AI分析システムと統一された熱量計算を使用
       const tipAmount = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
       
       // デバッグログ追加
@@ -336,32 +336,45 @@ export default function TipApp() {
         currentLevel
       });
       
-      // より厳しい判定基準に変更
-      // 基礎スコア: 累積額 × 10（以前は×50）
-      let baseScore = tipAmount * 10;
+      // AI分析ロジックと統一した計算方法
+      // Tipスコア（0-400）: tipAmount / 10で正規化
+      const amountScore = Math.min(400, tipAmount / 10);
       
-      // ランクボーナス（上級者ほど高評価）
-      const rankMultiplier = Math.max(1, currentLevel * 0.5);
-      const finalScore = Math.min(1000, baseScore * rankMultiplier);
+      // 頻度スコア（0-300）: アクティビティレベルから推定
+      const frequencyScore = Math.min(300, currentLevel * 50);
       
-      // 厳格化された判定基準
+      // 感情スコア（0-300）: デフォルト値を使用
+      const sentimentScore = 225; // 75%相当
+      
+      // 基本スコア計算
+      let baseScore = Math.round(amountScore + frequencyScore + sentimentScore);
+      
+      // 時間減衰を考慮（シンプル版）
+      // 最後のTip活動から推定した減衰
+      const decayFactor = totalTips > 0n ? 0.9 : 0.5; // Tipがある場合は軽微な減衰
+      const finalScore = Math.round(baseScore * decayFactor);
+      
+      // AI分析システムと統一されたレベル判定
       let level: UserHeatData["heatLevel"] = "😊ライト";
-      if (finalScore >= 500 && tipAmount >= 50) level = "🔥熱狂";        // 50 GT以上 + 500pt以上
-      else if (finalScore >= 300 && tipAmount >= 30) level = "💎高額";   // 30 GT以上 + 300pt以上  
-      else if (finalScore >= 150 && tipAmount >= 15) level = "🎉アクティブ"; // 15 GT以上 + 150pt以上
+      if (finalScore >= 800) level = "🔥熱狂";
+      else if (finalScore >= 600) level = "💎高額";
+      else if (finalScore >= 400) level = "🎉アクティブ";
       
-      console.log(`🔥 Heat Result:`, {
+      console.log(`🔥 Heat Result (AI統一版):`, {
+        amountScore: Math.round(amountScore),
+        frequencyScore: Math.round(frequencyScore),
+        sentimentScore: Math.round(sentimentScore),
         baseScore,
-        rankMultiplier,
-        finalScore: Math.round(finalScore),
+        decayFactor,
+        finalScore,
         level,
-        thresholds: { 熱狂: '50GT+500pt', 高額: '30GT+300pt', アクティブ: '15GT+150pt' }
+        thresholds: { 熱狂: '800+', 高額: '600+', アクティブ: '400+', ライト: '<400' }
       });
       
       setUserHeatData({
-        heatScore: Math.round(finalScore),
+        heatScore: finalScore,
         heatLevel: level,
-        sentimentScore: 75 // デフォルト値
+        sentimentScore: 75
       });
     } catch (error) {
       console.warn("Heat analysis failed:", error);

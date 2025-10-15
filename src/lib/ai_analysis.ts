@@ -193,12 +193,13 @@ function mockSentimentAnalysis(message: string): SentimentAnalysis {
 }
 
 /**
- * 貢献熱量スコアを計算
+ * 貢献熱量スコアを計算（時間減衰機能付き）
  */
 function calculateHeatScore(
   totalAmount: bigint,
   tipCount: number,
-  avgSentiment: number
+  avgSentiment: number,
+  lastTipDate?: Date
 ): number {
   // Tipスコア（0-400）
   const amountScore = Math.min(400, Number(ethers.utils.formatUnits(totalAmount, 18)) / 10);
@@ -209,7 +210,27 @@ function calculateHeatScore(
   // 感情スコア（0-300）
   const sentimentScore = (avgSentiment / 100) * 300;
   
-  return Math.round(amountScore + frequencyScore + sentimentScore);
+  // 基本スコア計算
+  let baseScore = Math.round(amountScore + frequencyScore + sentimentScore);
+  
+  // 時間減衰計算（最後のTipから経過時間に基づく）
+  if (lastTipDate) {
+    const now = new Date();
+    const daysSinceLastTip = Math.floor((now.getTime() - lastTipDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // 減衰係数計算（7日間で50%減衰、30日で25%まで減衰）
+    let decayFactor = 1.0;
+    if (daysSinceLastTip > 0) {
+      // 指数関数的減衰：7日で50%、30日で25%
+      const decayRate = 0.1; // 減衰率
+      decayFactor = Math.exp(-decayRate * daysSinceLastTip / 7);
+      decayFactor = Math.max(0.25, decayFactor); // 最低25%まで減衰
+    }
+    
+    baseScore = Math.round(baseScore * decayFactor);
+  }
+  
+  return baseScore;
 }
 
 /**
@@ -293,9 +314,6 @@ export async function analyzeContributionHeat(
       .slice(0, 5)
       .map(([kw]) => kw);
     
-    // 熱量スコア計算
-    const heatScore = calculateHeatScore(user.totalAmount, user.tips.length, avgSentiment);
-    
     // タイムスタンプ
     const timestamps = user.tips.filter(t => t.timestamp).map(t => t.timestamp!);
     const firstTipDate = timestamps.length > 0 
@@ -304,6 +322,12 @@ export async function analyzeContributionHeat(
     const lastTipDate = timestamps.length > 0
       ? new Date(Math.max(...timestamps) * 1000).toISOString()
       : "";
+    
+    // 熱量スコア計算（時間減衰を考慮）
+    const lastTipDateObj = timestamps.length > 0 
+      ? new Date(Math.max(...timestamps) * 1000) 
+      : undefined;
+    const heatScore = calculateHeatScore(user.totalAmount, user.tips.length, avgSentiment, lastTipDateObj);
     
     results.push({
       address: addr,

@@ -2323,12 +2323,6 @@ export default function AdminDashboard() {
                       .slice(analysisPage * ANALYSIS_ITEMS_PER_PAGE, (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE)
                       .map((r, i) => {
                         const globalRank = analysisPage * ANALYSIS_ITEMS_PER_PAGE + i + 1;
-                        // 累積熱量ポイント計算（Tip UIと同じロジック）
-                        const tipAmount = parseFloat(r.totalAmount);
-                        const baseScore = tipAmount * 10;
-                        const userLevel = rawTips.filter(tip => tip.from.toLowerCase() === r.address.toLowerCase()).length > 0 ? 1 : 0;
-                        const rankMultiplier = Math.max(1, userLevel * 0.5);
-                        const cumulativeHeatScore = Math.min(1000, Math.round(baseScore * rankMultiplier));
                         
                         return (
                           <tr key={r.address}>
@@ -2338,7 +2332,7 @@ export default function AdminDashboard() {
                               {r.heatScore}
                             </td>
                             <td style={{ ...td, fontWeight: 700, color: "#f59e0b" }}>
-                              {cumulativeHeatScore}
+                              {r.heatScore}
                             </td>
                             <td style={td}>{r.heatLevel}</td>
                             <td style={td}>
