@@ -15,12 +15,6 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           // ThirdWeb関連（大きなライブラリ）
           thirdweb: ['@thirdweb-dev/react', '@thirdweb-dev/sdk'],
-          // Web3関連のウォレットコネクター
-          wallets: [
-            '@thirdweb-dev/wallets/evm/connectors/metamask',
-            '@thirdweb-dev/wallets/evm/connectors/coinbase-wallet',
-            '@thirdweb-dev/wallets/evm/connectors/wallet-connect'
-          ],
         }
       }
     }
