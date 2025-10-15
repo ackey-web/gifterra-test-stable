@@ -214,7 +214,7 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [adManagementData, setAdManagementData] = useState<AdData[]>([]);
   
-  // 動的管理者リスト管理
+  // 動的管理者リスト管理（リアルタイム更新対応）
   const [adminWallets, setAdminWallets] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('gifterra-admin-wallets');
@@ -236,9 +236,40 @@ export default function AdminDashboard() {
       return ADMIN_WALLETS;
     }
   });
+
+  // アドレス変更時の権限チェック更新
+  useEffect(() => {
+    console.log('🔄 Desktop Address changed, updating admin wallets:', {
+      address,
+      currentAdminWallets: adminWallets
+    });
+    
+    // localStorage から最新の管理者リストを再読み込み
+    try {
+      const saved = localStorage.getItem('gifterra-admin-wallets');
+      const additionalAdmins = saved ? JSON.parse(saved) : [];
+      const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
+      
+      // 現在のリストと異なる場合のみ更新
+      if (JSON.stringify(merged.sort()) !== JSON.stringify(adminWallets.sort())) {
+        console.log('🔄 Desktop Updating admin wallets list:', { old: adminWallets, new: merged });
+        setAdminWallets(merged);
+      }
+    } catch (error) {
+      console.warn('🔒 Desktop Admin wallets refresh error:', error);
+    }
+  }, [address]); // address が変更されたときに実行
   
-  // 管理者チェック（初期管理者または追加された管理者）
-  const isAdmin = !!address && adminWallets.includes(address.toLowerCase());
+  // 管理者チェック（リアルタイムで評価）
+  const isAdmin = useMemo(() => {
+    const result = !!address && adminWallets.includes(address.toLowerCase());
+    console.log('🔒 Desktop Admin check:', {
+      address,
+      adminWallets,
+      isAdmin: result
+    });
+    return result;
+  }, [address, adminWallets]);
   
   // 新しいウォレット権限管理
   const [newAdminAddress, setNewAdminAddress] = useState("");

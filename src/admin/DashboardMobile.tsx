@@ -1,5 +1,5 @@
 // src/admin/DashboardMobile.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAddress, ConnectWallet } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import { CONTRACT_ADDRESS, TOKEN } from "../contract";
@@ -36,8 +36,8 @@ const ADMIN_WALLETS = [
 export default function DashboardMobile() {
   const address = useAddress();
   
-  // 管理者権限チェック（Desktop版と統一）
-  const adminWallets = (() => {
+  // 動的管理者リスト管理（リアルタイム更新対応）
+  const [adminWallets, setAdminWallets] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('gifterra-admin-wallets');
       if (saved) {
@@ -57,10 +57,41 @@ export default function DashboardMobile() {
       console.warn('🔒 Mobile Admin wallets loading error:', error);
       return ADMIN_WALLETS;
     }
-  })();
+  });
+
+  // アドレス変更時の権限チェック更新
+  useEffect(() => {
+    console.log('🔄 Mobile Address changed, updating admin wallets:', {
+      address,
+      currentAdminWallets: adminWallets
+    });
+    
+    // localStorage から最新の管理者リストを再読み込み
+    try {
+      const saved = localStorage.getItem('gifterra-admin-wallets');
+      const additionalAdmins = saved ? JSON.parse(saved) : [];
+      const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
+      
+      // 現在のリストと異なる場合のみ更新
+      if (JSON.stringify(merged.sort()) !== JSON.stringify(adminWallets.sort())) {
+        console.log('🔄 Mobile Updating admin wallets list:', { old: adminWallets, new: merged });
+        setAdminWallets(merged);
+      }
+    } catch (error) {
+      console.warn('🔒 Mobile Admin wallets refresh error:', error);
+    }
+  }, [address]); // address が変更されたときに実行
   
-  // 管理者チェック（Desktop版と統一）
-  const isAdmin = !!address && adminWallets.includes(address.toLowerCase());
+  // 管理者チェック（リアルタイムで評価）
+  const isAdmin = useMemo(() => {
+    const result = !!address && adminWallets.includes(address.toLowerCase());
+    console.log('🔒 Mobile Admin check:', {
+      address,
+      adminWallets,
+      isAdmin: result
+    });
+    return result;
+  }, [address, adminWallets]);
   const [loading, setLoading] = useState(false);
   const [tips, setTips] = useState<TipItem[]>([]);
   const [totalTips, setTotalTips] = useState(0n);
