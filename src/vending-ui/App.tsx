@@ -171,16 +171,33 @@ export default function VendingApp() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  // ウォレット残高取得
+  // tNHTトークン残高取得
   useEffect(() => {
     if (address && window.ethereum) {
       const updateBalance = async () => {
         try {
           const provider = new ethers.providers.Web3Provider(window.ethereum);
-          const balance = await provider.getBalance(address);
-          setBalance(ethers.utils.formatEther(balance));
+          // tNHTトークンコントラクトアドレス（実際のアドレスに変更してください）
+          const tNHTAddress = "0x0000000000000000000000000000000000000000"; // 実際のtNHTトークンアドレス
+          const tokenABI = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+          ];
+          
+          const tokenContract = new ethers.Contract(tNHTAddress, tokenABI, provider);
+          const balance = await tokenContract.balanceOf(address);
+          const decimals = await tokenContract.decimals();
+          setBalance(ethers.utils.formatUnits(balance, decimals));
         } catch (error) {
-          console.error("残高取得エラー:", error);
+          console.error("tNHT残高取得エラー:", error);
+          // フォールバック: POL残高を表示
+          try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const balance = await provider.getBalance(address);
+            setBalance(ethers.utils.formatEther(balance));
+          } catch (fallbackError) {
+            console.error("POL残高取得エラー:", fallbackError);
+          }
         }
       };
       updateBalance();
@@ -305,7 +322,7 @@ export default function VendingApp() {
       <div className="wallet-section">
         {/* ギフテラロゴ */}
         <img 
-          src="https://avatars.githubusercontent.com/u/182478703?s=200&v=4" 
+          src="/gifterra-logo.png" 
           alt="Gifterra Logo" 
           className="gifterra-logo"
         />
@@ -313,7 +330,8 @@ export default function VendingApp() {
         {/* 残高表示 */}
         {address && (
           <div className="balance-display">
-            {parseFloat(balance).toFixed(4)} tNHT
+            <span className="balance-label">残高</span>
+            <span className="balance-amount">{parseFloat(balance).toFixed(4)} tNHT</span>
           </div>
         )}
         
