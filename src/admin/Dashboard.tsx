@@ -1194,11 +1194,11 @@ export default function AdminDashboard() {
                   )
                 }
               </div>
-              {(contractBalanceError || dailyRewardError) && (
+              {(!!contractBalanceError || !!dailyRewardError) && (
                 <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 8, padding: 8, background: "rgba(251, 191, 36, 0.1)", borderRadius: 4 }}>
                   ⚠️ 読み込みエラーの詳細:<br/>
-                  {contractBalanceError && `• 残高エラー: ${(contractBalanceError as any)?.message || String(contractBalanceError)}`}<br/>
-                  {dailyRewardError && `• リワードエラー: ${(dailyRewardError as any)?.message || String(dailyRewardError)}`}<br/>
+                  {!!contractBalanceError && <span>• 残高エラー: {(contractBalanceError as any)?.message || String(contractBalanceError)}</span>}<br/>
+                  {!!dailyRewardError && <span>• リワードエラー: {(dailyRewardError as any)?.message || String(dailyRewardError)}</span>}<br/>
                   <br/>
                   💡 Amoyテストネットの制限により、データ読み込みが失敗する場合があります。<br/>
                   ページを再読み込みするか、数分後に再度お試しください。
