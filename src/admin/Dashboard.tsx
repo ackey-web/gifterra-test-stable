@@ -3004,6 +3004,7 @@ function VendingManagementPage() {
       slug: "machine-1",
       displayImage: "https://via.placeholder.com/837x768/2a2a2a/FFD700?text=ART+%26+3D+COLLECTION",
       headerImage: "https://via.placeholder.com/400x120/1a1a1a/FFD700?text=EXCLUSIVE+ART+COLLECTION",
+      backgroundImage: "https://via.placeholder.com/1920x1080/1a1a1a/333333?text=BACKGROUND",
       isActive: true,
       products: [
         { slot: 'A', title: "限定3Dモデル", price: 0.01, buttonLabel: "A1", isActive: true, fileType: 'GLB' },
@@ -3017,6 +3018,7 @@ function VendingManagementPage() {
       slug: "machine-2",
       displayImage: "https://via.placeholder.com/837x768/2a2a2a/9370DB?text=GAME+%26+ENTERTAINMENT",
       headerImage: "https://via.placeholder.com/400x120/1a1a1a/9370DB?text=GAME+COLLECTION",
+      backgroundImage: "https://via.placeholder.com/1920x1080/1a1a2a/444444?text=GAME+BACKGROUND",
       isActive: true,
       products: [
         { slot: 'A', title: "ゲームアセット", price: 0.03, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
@@ -3030,6 +3032,7 @@ function VendingManagementPage() {
       slug: "machine-3",
       displayImage: "https://via.placeholder.com/837x768/2a2a2a/FF8C00?text=CREATOR+EXCLUSIVE",
       headerImage: "https://via.placeholder.com/400x120/1a1a1a/FF8C00?text=CREATOR+COLLECTION",
+      backgroundImage: "https://via.placeholder.com/1920x1080/2a1a1a/555555?text=CREATOR+BACKGROUND",
       isActive: true,
       products: [
         { slot: 'A', title: "制作ツール", price: 0.06, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
@@ -3040,10 +3043,13 @@ function VendingManagementPage() {
   ]);
 
   // 画像URL更新
-  const handleImageUpdate = (machineId: number, type: 'header' | 'display', newUrl: string) => {
+  const handleImageUpdate = (machineId: number, type: 'header' | 'display' | 'background', newUrl: string) => {
     setMachines(prev => prev.map(machine => 
       machine.id === machineId 
-        ? { ...machine, [type === 'header' ? 'headerImage' : 'displayImage']: newUrl }
+        ? { 
+            ...machine, 
+            [type === 'header' ? 'headerImage' : type === 'background' ? 'backgroundImage' : 'displayImage']: newUrl 
+          }
         : machine
     ));
   };
@@ -3158,7 +3164,7 @@ function VendingManagementPage() {
               </div>
 
               {/* 商品展示画像 */}
-              <div>
+              <div style={{ marginBottom: 20 }}>
                 <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
                   商品展示画像 (837×768比率)
                 </label>
@@ -3187,6 +3193,53 @@ function VendingManagementPage() {
                   placeholder="商品展示画像URL (837×768)"
                   value={machine.displayImage}
                   onChange={(e) => handleImageUpdate(machine.id, 'display', e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    background: "#374151",
+                    color: "#f9fafb",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
+              {/* 背景画像 */}
+              <div>
+                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
+                  背景画像 (1920×1080推奨)
+                </label>
+                <div style={{ 
+                  background: "#111827",
+                  border: "2px dashed rgba(255,255,255,0.2)",
+                  borderRadius: 8,
+                  padding: 16,
+                  textAlign: "center",
+                  marginBottom: 12
+                }}>
+                  {machine.backgroundImage ? (
+                    <img 
+                      src={machine.backgroundImage} 
+                      alt="Background preview"
+                      style={{ 
+                        maxWidth: "100%", 
+                        height: 80, 
+                        objectFit: "cover", 
+                        borderRadius: 4
+                      }}
+                    />
+                  ) : (
+                    <div style={{ color: "#6b7280", fontSize: 14 }}>
+                      背景画像なし
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  placeholder="背景画像URL (1920×1080)"
+                  value={machine.backgroundImage || ''}
+                  onChange={(e) => handleImageUpdate(machine.id, 'background', e.target.value)}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
