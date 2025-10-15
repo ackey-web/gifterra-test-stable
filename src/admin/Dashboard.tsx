@@ -116,35 +116,33 @@ async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
   console.log("🔗 RPC call:", { 
     method, 
     paramsLength: params.length,
-    primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
+    primaryRPC: PUBLIC_RPC, // 履歴表示優先: Public RPCを最初に試行
     fullRequest: method === "eth_getLogs" ? requestBody : { method, paramsCount: params.length }
   });
   
-  // Try Alchemy first (if configured)
-  if (ALCHEMY_RPC) {
-    try {
-      const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
-      console.log("✅ RPC success (Alchemy):", { method, resultType: typeof result });
-      return result;
-    } catch (error: any) {
-      console.warn("⚠️ Alchemy failed, trying public RPC:", error.message);
-      
-      // If it's an Alchemy limit error for eth_getLogs, fall back to public RPC
-      if (error.isAlchemyLimit && method === "eth_getLogs") {
-        console.log("🔄 Falling back to public RPC due to Alchemy limits");
-      }
-    }
-  }
-  
-  // Fallback to public RPC
+  // 🔧 履歴表示優先: Public RPCを最初に試行してAlchemyをフォールバックに
   try {
     const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
     console.log("✅ RPC success (Public):", { method, resultType: typeof result });
     return result;
   } catch (publicError: any) {
-    console.error("❌ All RPC endpoints failed");
-    throw publicError;
+    console.warn("⚠️ Public RPC failed, trying Alchemy:", publicError.message);
   }
+  
+  // Fallback to Alchemy (if configured and if Public RPC failed)
+  if (ALCHEMY_RPC) {
+    try {
+      const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
+      console.log("✅ RPC success (Alchemy fallback):", { method, resultType: typeof result });
+      return result;
+    } catch (error: any) {
+      console.error("❌ All RPC endpoints failed");
+      throw error;
+    }
+  }
+  
+  console.error("❌ All RPC endpoints failed");
+  throw new Error("All RPC endpoints failed");
 }
 async function getLatestBlockNumber(): Promise<number> {
   const hex = await rpc<string>("eth_blockNumber");
@@ -169,18 +167,19 @@ const ADMIN_WALLETS = [
   // 追加の管理者ウォレットをここに追加可能（テストネット用）
   // 🏭 メインネット: プロジェクト別管理者は動的に取得
 ].map((x) => x.toLowerCase());
-// Alchemy Free Tierの10ブロック制限に対応した適切なブロック範囲
+// 🔧 履歴表示優先設定: Public RPCを使用して広範囲のブロックから履歴を取得
+// Alchemy制限を回避してTip履歴を表示するため、Public RPCを優先使用
 const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
-  day: 10n,       // Alchemy制限: 10ブロック（約20秒分）
-  week: 10n,      // Alchemy制限: 10ブロック（約20秒分）
-  month: 10n,     // Alchemy制限: 10ブロック（約20秒分）
+  day: 0n,        // 全履歴から取得（fromBlock=0）
+  week: 0n,       // 全履歴から取得（fromBlock=0）  
+  month: 0n,      // 全履歴から取得（fromBlock=0）
 };
 
-// Public RPCでの最大ブロック範囲（制限が緩い場合）
+// Public RPCでの最大ブロック範囲（履歴表示優先）
 const PUBLIC_RPC_LOOKBACK: Record<Exclude<Period, "all">, bigint> = {
-  day: 43_200n,   // 1日分（約43,200ブロック）
-  week: 302_400n, // 1週間分（約302,400ブロック）
-  month: 1_296_000n, // 1ヶ月分（約1,296,000ブロック）
+  day: 0n,        // 全履歴から取得（fromBlock=0）
+  week: 0n,       // 全履歴から取得（fromBlock=0）
+  month: 0n,      // 全履歴から取得（fromBlock=0）
 };
 const TOPIC_TIPPED = ethers.utils.keccak256(
   ethers.utils.toUtf8Bytes("Tipped(address,uint256)")
@@ -475,10 +474,11 @@ export default function AdminDashboard() {
         }
         
         const latest = await getLatestBlockNumber();
-        // Alchemy使用時は制限あり、Public RPC使用時は大きな範囲可能
-        const isUsingAlchemy = !!ALCHEMY_RPC;
-        const lookback = isUsingAlchemy ? LOOKBACK_BY_PERIOD[period] : PUBLIC_RPC_LOOKBACK[period];
-        const fb = BigInt(latest) > lookback ? BigInt(latest) - lookback : 0n;
+        // 🔧 履歴表示優先: 常にfromBlock=0で全履歴を取得
+        // Alchemy制限を回避してPublic RPCで履歴表示を優先
+        const isUsingAlchemy = false; // 強制的にPublic RPC使用
+        const lookback = PUBLIC_RPC_LOOKBACK[period]; // 常に0nを使用
+        const fb = 0n; // 常に全履歴から取得
         
         console.log("🔗 Block range calculated:", {
           period,
@@ -518,35 +518,26 @@ export default function AdminDashboard() {
           period
         });
 
-        // RPC制限に応じた適切なブロック範囲調整
+        // 🔧 履歴表示優先: 広範囲のブロックから履歴を取得
         const currentBlock = await getLatestBlockNumber();
-        const isUsingAlchemy = !!ALCHEMY_RPC;
-        const maxBlockRange = isUsingAlchemy ? 10n : 100000n; // Alchemy: 10ブロック, Public: 100000ブロック
+        const isUsingAlchemy = false; // Public RPC使用を強制
+        const maxBlockRange = 1000000n; // Public RPCで大きな範囲を使用
         
         let actualFromBlock: number;
-        if (fromBlock === 0n) {
-          // "all"期間の場合はできるだけ過去から
-          actualFromBlock = Math.max(0, currentBlock - Number(maxBlockRange));
-        } else {
-          // 指定期間の場合は制限内に調整
-          const requestedRange = currentBlock - Number(fromBlock);
-          if (requestedRange <= Number(maxBlockRange)) {
-            actualFromBlock = Number(fromBlock);
-          } else {
-            actualFromBlock = currentBlock - Number(maxBlockRange);
-            console.warn(`⚠️ Block range too large (${requestedRange}), adjusted to ${Number(maxBlockRange)} blocks`);
-          }
-        }
+        // 常に全履歴から取得（fromBlock = 0）
+        actualFromBlock = 0;
         
-        const finalFromBlockHex = "0x" + actualFromBlock.toString(16);
+        const finalFromBlockHex = "0x0"; // 常に0から開始
         
-        console.log("📊 Adjusted block range for Alchemy limits:", {
+        console.log("📊 🔧 履歴表示優先設定:", {
+          message: "全履歴からTipイベントを検索中（fromBlock=0）",
           originalFromBlock: fromBlock.toString(),
           currentBlock,
-          maxBlockRange: maxBlockRange.toString(),
-          adjustedFromBlock: actualFromBlock,
+          actualFromBlock: actualFromBlock,
           finalFromBlockHex,
-          blockRangeSize: currentBlock - actualFromBlock
+          blockRangeSize: currentBlock - actualFromBlock,
+          usingPublicRPC: true,
+          alchemyBypass: "Alchemy制限を回避してPublic RPCを使用"
         });
 
         const logRequest = {
