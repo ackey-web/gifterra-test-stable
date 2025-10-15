@@ -927,7 +927,7 @@ export default function TipApp() {
               }}
             >
               <option value="exact">最小承認</option>
-              <option value="toNextRank">次ランクまで</option>
+              <option value="toNextRank">次ランクまで（推奨）</option>
               <option value="fixedCap">大きく承認</option>
             </select>
           </div>
@@ -942,6 +942,8 @@ export default function TipApp() {
               marginTop: -8
             }}>
               💡 承認予定額: {ethersUtils.formatUnits(calculateApprovalAmount, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
+              <br />
+              <span style={{ fontSize: 10, opacity: 0.8 }}>承認上限はトークン使用許可の最大額です</span>
             </div>
           )}
           
