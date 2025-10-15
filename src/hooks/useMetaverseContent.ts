@@ -1,6 +1,46 @@
 // src/hooks/useMetaverseContent.ts
 import { useState, useEffect } from "react";
 
+// 文字列の類似度を計算（簡易版）
+function calculateSimilarity(str1: string, str2: string): number {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const matrix = Array(len1 + 1).fill(null).map(() => Array(len2 + 1).fill(null));
+  
+  for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+  for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+  
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  
+  const maxLen = Math.max(len1, len2);
+  return 1 - matrix[len1][len2] / maxLen;
+}
+
+// 最も近い候補を提案
+function findClosestMatch(input: string, candidates: string[]): string | null {
+  let bestMatch = null;
+  let bestScore = 0;
+  
+  for (const candidate of candidates) {
+    const score = calculateSimilarity(input.toLowerCase(), candidate.toLowerCase());
+    if (score > bestScore && score > 0.3) {
+      bestScore = score;
+      bestMatch = candidate;
+    }
+  }
+  
+  return bestMatch;
+}
+
 // 🗄️ 型定義
 interface SpaceInfo {
   spaceId: string;
@@ -244,19 +284,35 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
       setIsLoading(true);
       setError(null);
 
+      console.log("🔍 Hook Debug - Loading content for:", { spaceId, machineId });
+      console.log("🗄️ Available Spaces:", Object.keys(MOCK_SPACES));
+      console.log("🏪 Available Machines:", Object.keys(MOCK_MACHINES));
+
       try {
         // 🏰 空間情報取得
         const space = MOCK_SPACES[spaceId];
         if (!space) {
-          throw new Error(`Space not found: ${spaceId}`);
+          console.error(`❌ Space not found: ${spaceId}`);
+          const suggestion = findClosestMatch(spaceId, Object.keys(MOCK_SPACES));
+          const errorMsg = suggestion 
+            ? `Space not found: ${spaceId}. Did you mean "${suggestion}"?`
+            : `Space not found: ${spaceId}`;
+          throw new Error(errorMsg);
         }
+        console.log("✅ Space found:", space);
         setSpaceInfo(space);
 
         // 🏪 マシン情報取得
         const machine = MOCK_MACHINES[machineId];
         if (!machine) {
-          throw new Error(`Machine not found: ${machineId}`);
+          console.error(`❌ Machine not found: ${machineId}`);
+          const suggestion = findClosestMatch(machineId, Object.keys(MOCK_MACHINES));
+          const errorMsg = suggestion 
+            ? `Machine not found: ${machineId}. Did you mean "${suggestion}"?`
+            : `Machine not found: ${machineId}`;
+          throw new Error(errorMsg);
         }
+        console.log("✅ Machine found:", machine);
         
         // マシンが指定された空間に属しているかチェック
         if (machine.spaceId !== spaceId && spaceId !== "default") {
@@ -267,11 +323,14 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
         // 📦 コンテンツセット取得
         const content = MOCK_CONTENT_SETS[machine.contentSetId];
         if (!content) {
+          console.error(`❌ Content set not found: ${machine.contentSetId}`);
           throw new Error(`Content set not found: ${machine.contentSetId}`);
         }
+        console.log("✅ Content set found:", content);
         setContentSet(content);
 
       } catch (err) {
+        console.error("🚨 Hook Error:", err);
         setError(err instanceof Error ? err.message : "Unknown error occurred");
       } finally {
         setIsLoading(false);

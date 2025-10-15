@@ -26,8 +26,26 @@ export default function MetaverseApp() {
   
   // URL パラメータから空間・マシン情報を取得
   const urlParams = new URLSearchParams(window.location.search);
-  const spaceId = urlParams.get("space") || "default";
-  const machineId = urlParams.get("machine") || "main";
+  let spaceId = urlParams.get("space") || "default";
+  let machineId = urlParams.get("machine") || "main";
+  
+  // テンプレート文字列の場合はデフォルト値を使用
+  if (spaceId === "{spaceId}") {
+    spaceId = "default";
+  }
+  if (machineId === "{machineId}") {
+    machineId = "main";
+  }
+  
+  // デバッグ用ログ
+  console.log("🔍 URL Debug:", {
+    url: window.location.href,
+    search: window.location.search,
+    originalSpaceId: urlParams.get("space"),
+    originalMachineId: urlParams.get("machine"),
+    processedSpaceId: spaceId,
+    processedMachineId: machineId
+  });
 
   // 🎮 メタバース空間・コンテンツ情報
   const {
@@ -37,6 +55,15 @@ export default function MetaverseApp() {
     isLoading: contentLoading,
     error: contentError
   } = useMetaverseContent(spaceId, machineId);
+  
+  // デバッグ用ログ
+  console.log("🎯 Content Hook Result:", {
+    spaceInfo,
+    machineInfo,
+    contentSet,
+    isLoading: contentLoading,
+    error: contentError
+  });
 
   // 💰 既存チップシステム連携
   const { data: totalTipsReceived } = useContractRead(
@@ -62,14 +89,72 @@ export default function MetaverseApp() {
     }
   }, [totalTipsReceived, contentSet]);
 
+  // 🔍 テンプレート文字列が使われた場合の特別な警告
+  const isTemplateUrl = urlParams.get("space") === "{spaceId}" || urlParams.get("machine") === "{machineId}";
+  
   // ❌ エラー処理
   if (contentError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-2xl font-bold mb-4">🚫 アクセスエラー</h1>
-          <p className="mb-4">指定された空間またはマシンが見つかりません</p>
-          <p className="text-sm opacity-75">Space: {spaceId} | Machine: {machineId}</p>
+        <div className="text-center text-white max-w-2xl mx-auto p-8">
+          <h1 className="text-2xl font-bold mb-4">
+            {isTemplateUrl ? "⚠️ URLフォーマット エラー" : "🚫 アクセスエラー"}
+          </h1>
+          <p className="mb-4">
+            {isTemplateUrl 
+              ? "URLのテンプレート文字列を実際の値に置き換えてください" 
+              : "指定された空間またはマシンが見つかりません"
+            }
+          </p>
+          <div className="bg-black/20 p-4 rounded-lg mb-6">
+            <p className="text-sm opacity-75 mb-2">
+              <strong>リクエスト情報:</strong>
+            </p>
+            <p className="text-sm opacity-75">Space: {spaceId}</p>
+            <p className="text-sm opacity-75">Machine: {machineId}</p>
+            <p className="text-sm opacity-75 mt-2">
+              <strong>エラー詳細:</strong>
+            </p>
+            <p className="text-sm opacity-75 text-red-300">{contentError}</p>
+          </div>
+          
+          {isTemplateUrl && (
+            <div className="bg-yellow-600/20 border border-yellow-400/30 p-4 rounded-lg mb-6">
+              <p className="text-sm font-semibold text-yellow-200 mb-2">
+                📝 正しいURL形式の例:
+              </p>
+              <div className="text-xs text-yellow-100 space-y-1">
+                <p>✅ /content?space=world-1&machine=entrance-01</p>
+                <p>✅ /content?space=gallery-a&machine=gallery-01</p>
+                <p>✅ /content?space=default&machine=main</p>
+                <p className="text-red-300 mt-2">❌ /content?space={"{spaceId}"}&machine={"{machineId}"}</p>
+              </div>
+            </div>
+          )}
+          
+          <div className="text-sm opacity-60">
+            <p className="mb-2">利用可能な空間・マシン:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+              <div>
+                <p className="font-semibold mb-1">🏰 世界:</p>
+                <p>world-1 (メインワールド)</p>
+                <p>gallery-a (アートギャラリー)</p>
+                <p>default (デフォルト空間)</p>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">🏪 マシン:</p>
+                <p>entrance-01, vip-lounge</p>
+                <p>gallery-01, creator-corner</p>
+                <p>main</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6">
+            <a href="/metaverse-test.html" 
+               className="inline-block bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
+              🔙 テストページに戻る
+            </a>
+          </div>
         </div>
       </div>
     );
