@@ -169,11 +169,6 @@ const ADMIN_WALLETS = [
 ].map((x) => x.toLowerCase());
 // 🔧 履歴表示優先設定: Public RPCを使用して広範囲のブロックから履歴を取得
 // Alchemy制限を回避してTip履歴を表示するため、Public RPCを優先使用
-const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
-  day: 0n,        // 全履歴から取得（fromBlock=0）
-  week: 0n,       // 全履歴から取得（fromBlock=0）  
-  month: 0n,      // 全履歴から取得（fromBlock=0）
-};
 
 // Public RPCでの最大ブロック範囲（履歴表示優先）
 const PUBLIC_RPC_LOOKBACK: Record<Exclude<Period, "all">, bigint> = {
@@ -520,8 +515,6 @@ export default function AdminDashboard() {
 
         // 🔧 履歴表示優先: 広範囲のブロックから履歴を取得
         const currentBlock = await getLatestBlockNumber();
-        const isUsingAlchemy = false; // Public RPC使用を強制
-        const maxBlockRange = 1000000n; // Public RPCで大きな範囲を使用
         
         let actualFromBlock: number;
         // 常に全履歴から取得（fromBlock = 0）
