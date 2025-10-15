@@ -219,12 +219,20 @@ export default function AdminDashboard() {
     try {
       const saved = localStorage.getItem('gifterra-admin-wallets');
       if (saved) {
-        const parsed = JSON.parse(saved);
+        const additionalAdmins = JSON.parse(saved);
         // 基本管理者と追加管理者をマージ（重複排除）
-        return [...new Set([...ADMIN_WALLETS, ...parsed])];
+        const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
+        console.log('🔒 Desktop Admin wallets loaded:', {
+          initial: ADMIN_WALLETS,
+          additional: additionalAdmins,
+          merged
+        });
+        return merged;
       }
+      console.log('🔒 Desktop Using initial admin wallets:', ADMIN_WALLETS);
       return ADMIN_WALLETS;
-    } catch {
+    } catch (error) {
+      console.warn('🔒 Desktop Admin wallets loading error:', error);
       return ADMIN_WALLETS;
     }
   });
@@ -237,36 +245,81 @@ export default function AdminDashboard() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   
   const addAdminWallet = () => {
-    if (!newAdminAddress.trim()) return;
+    if (!newAdminAddress.trim()) {
+      alert("ウォレットアドレスを入力してください");
+      return;
+    }
+    
     const cleanAddress = newAdminAddress.trim().toLowerCase();
-    if (ethers.utils.isAddress(cleanAddress)) {
-      if (adminWallets.includes(cleanAddress)) {
-        alert("このアドレスは既に管理者です");
-        return;
-      }
+    
+    // アドレス形式の検証
+    if (!ethers.utils.isAddress(cleanAddress)) {
+      alert("有効なウォレットアドレスを入力してください（0x...形式）");
+      return;
+    }
+    
+    // 重複チェック
+    if (adminWallets.includes(cleanAddress)) {
+      alert("このアドレスは既に管理者として登録されています");
+      return;
+    }
+    
+    try {
       const updatedList = [...new Set([...adminWallets, cleanAddress])];
       setAdminWallets(updatedList);
+      
       // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
       const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
       localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
+      
+      console.log('🔒 Admin added successfully:', {
+        newAdmin: cleanAddress,
+        totalAdmins: updatedList.length,
+        additionalAdmins
+      });
+      
       setNewAdminAddress("");
-      alert(`管理者権限を追加しました: ${cleanAddress}`);
-    } else {
-      alert("有効なウォレットアドレスを入力してください");
+      alert(`✅ 管理者権限を追加しました\n\nアドレス: ${cleanAddress}\n総管理者数: ${updatedList.length}名`);
+    } catch (error) {
+      console.error('🔒 Admin addition error:', error);
+      alert("❌ 管理者追加中にエラーが発生しました");
     }
   };
   
   const removeAdminWallet = (addressToRemove: string) => {
-    if (ADMIN_WALLETS.includes(addressToRemove.toLowerCase())) {
-      alert("初期管理者アドレスは削除できません");
+    const targetAddress = addressToRemove.toLowerCase();
+    
+    // 初期管理者の削除を防止
+    if (ADMIN_WALLETS.includes(targetAddress)) {
+      alert("⚠️ 初期管理者アドレスは削除できません");
       return;
     }
-    const updatedList = adminWallets.filter(addr => addr !== addressToRemove.toLowerCase());
-    setAdminWallets(updatedList);
-    // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
-    const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
-    localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
-    alert(`管理者権限を削除しました: ${addressToRemove}`);
+    
+    // 現在ログイン中のアドレスの削除を防止
+    if (address && address.toLowerCase() === targetAddress) {
+      alert("⚠️ 現在ログイン中のアドレスは削除できません");
+      return;
+    }
+    
+    try {
+      const updatedList = adminWallets.filter(addr => addr !== targetAddress);
+      setAdminWallets(updatedList);
+      
+      // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
+      const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
+      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
+      
+      console.log('🔒 Admin removed successfully:', {
+        removedAdmin: targetAddress,
+        remainingAdmins: updatedList.length,
+        additionalAdmins
+      });
+      
+      alert(`✅ 管理者権限を削除しました\n\nアドレス: ${addressToRemove}\n残り管理者数: ${updatedList.length}名`);
+    } catch (error) {
+      console.error('🔒 Admin removal error:', error);
+      alert("❌ 管理者削除中にエラーが発生しました");
+    }
   };
 
   const [period, setPeriod] = useState<Period>("day");
@@ -2494,6 +2547,20 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            {/* デバッグ情報表示 */}
+            <div style={{ marginBottom: 16, padding: 12, background: "rgba(34, 197, 94, 0.1)", borderRadius: 8, border: "1px solid rgba(34, 197, 94, 0.2)" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#22c55e" }}>
+                🔍 権限管理デバッグ情報
+              </div>
+              <div style={{ fontSize: 11, color: "#e5e7eb", lineHeight: 1.4 }}>
+                <div>現在のログインアドレス: <code>{address || "未接続"}</code></div>
+                <div>管理者権限: <span style={{ color: isAdmin ? "#22c55e" : "#ef4444" }}>{isAdmin ? "✅ あり" : "❌ なし"}</span></div>
+                <div>総管理者数: {adminWallets.length}名</div>
+                <div>初期管理者数: {ADMIN_WALLETS.length}名</div>
+                <div>追加管理者数: {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).length}名</div>
+              </div>
+            </div>
+
             {/* 新規管理者追加 */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
@@ -2531,6 +2598,28 @@ export default function AdminDashboard() {
                   }}
                 >
                   ➕ 管理者追加
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("⚠️ 管理者権限のキャッシュをリセットします。\n\n初期管理者のみが残り、追加された管理者は全て削除されます。\n\n実行しますか？")) {
+                      localStorage.removeItem('gifterra-admin-wallets');
+                      setAdminWallets(ADMIN_WALLETS);
+                      alert("✅ 管理者権限のキャッシュをリセットしました");
+                    }
+                  }}
+                  style={{
+                    background: "#f59e0b",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  🔄 リセット
                 </button>
               </div>
             </div>
