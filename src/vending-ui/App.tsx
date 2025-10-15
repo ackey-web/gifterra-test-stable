@@ -177,8 +177,8 @@ export default function VendingApp() {
       const updateBalance = async () => {
         try {
           const provider = new ethers.providers.Web3Provider(window.ethereum);
-          // tNHTトークンコントラクトアドレス（実際のアドレスに変更してください）
-          const tNHTAddress = "0x0000000000000000000000000000000000000000"; // 実際のtNHTトークンアドレス
+          // tNHTトークンコントラクトアドレス
+          const tNHTAddress = "0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea"; // tNHTトークンアドレス
           const tokenABI = [
             "function balanceOf(address owner) view returns (uint256)",
             "function decimals() view returns (uint8)"

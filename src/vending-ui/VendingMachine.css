@@ -215,29 +215,25 @@
 .wallet-section {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 12px 15px;
   margin: 12px 0;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  gap: 15px;
+  gap: 10px;
 }
 
 .gifterra-logo {
   width: 35px;
   height: 35px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
+  object-fit: contain;
   transition: all 0.3s ease;
 }
 
 .gifterra-logo:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-  border-color: rgba(255, 215, 0, 0.6);
 }
 
 .balance-display {
@@ -254,6 +250,8 @@
   flex-direction: column;
   gap: 2px;
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  flex-grow: 1;
+  margin: 0 10px;
 }
 
 .balance-label {
@@ -295,10 +293,12 @@
 .connect-wallet-btn {
   background: linear-gradient(45deg, #e67e22, #d68910) !important;
   border: none !important;
-  padding: 12px 20px !important;
-  border-radius: 25px !important;
+  padding: 8px 16px !important;
+  border-radius: 20px !important;
   font-weight: bold !important;
+  font-size: 12px !important;
   transition: all 0.3s ease !important;
+  white-space: nowrap !important;
 }
 
 .connect-wallet-btn:hover {
@@ -320,11 +320,12 @@
 
 .pickup-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
 .pickup-header h3 {
@@ -333,7 +334,6 @@
   font-size: 16px;
   font-weight: 600;
   text-align: center;
-  flex: 1;
 }
 
 .pickup-count {
@@ -343,6 +343,9 @@
   border-radius: 15px;
   font-size: 0.8rem;
   font-weight: bold;
+  position: absolute;
+  right: 0;
+  top: 0;
 }
 
 /* 取り出し口 */
