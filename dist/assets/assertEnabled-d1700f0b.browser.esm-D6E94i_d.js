@@ -1,0 +1,1 @@
+import{ag as n,aA as o,bd as s,b6 as m,B as a}from"./index-BDhfQJ6j.js";const t=o([s().transform(e=>a.from(Math.floor(e.getTime()/1e3))),m().transform(e=>a.from(e))]),u=t.default(new Date(0)),d=t.default(new Date(Date.now()+1e3*60*60*24*365*10));function i(e,r){if(!e)throw new n(r);return e}export{d as E,t as R,u as S,i as a};
