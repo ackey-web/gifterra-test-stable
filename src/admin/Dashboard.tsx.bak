@@ -89,6 +89,14 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
     
     if (j.error) {
       console.error("❌ RPC error response:", j.error);
+      
+      // Alchemy特有のエラーを検出
+      if (j.error.message && j.error.message.includes("10 block range")) {
+        const error = new Error(`Alchemy Free tier limit: ${j.error.message}`);
+        (error as any).isAlchemyLimit = true;
+        throw error;
+      }
+      
       throw new Error(`RPC Error: ${j.error.message} (code: ${j.error.code})`);
     }
     
@@ -161,11 +169,18 @@ const ADMIN_WALLETS = [
   // 追加の管理者ウォレットをここに追加可能（テストネット用）
   // 🏭 メインネット: プロジェクト別管理者は動的に取得
 ].map((x) => x.toLowerCase());
-// Alchemy RPCの制限を考慮した適切なブロック範囲（Polygon Amoyは約2秒/ブロック）
+// Alchemy Free Tierの10ブロック制限に対応した適切なブロック範囲
 const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
-  day: 43_200n,    // 1日分（約43,200ブロック）
-  week: 10_000n,   // Alchemy制限に合わせて調整（約5.5時間分）
-  month: 10_000n,  // Alchemy制限に合わせて調整（約5.5時間分）
+  day: 10n,       // Alchemy制限: 10ブロック（約20秒分）
+  week: 10n,      // Alchemy制限: 10ブロック（約20秒分）
+  month: 10n,     // Alchemy制限: 10ブロック（約20秒分）
+};
+
+// Public RPCでの最大ブロック範囲（制限が緩い場合）
+const PUBLIC_RPC_LOOKBACK: Record<Exclude<Period, "all">, bigint> = {
+  day: 43_200n,   // 1日分（約43,200ブロック）
+  week: 302_400n, // 1週間分（約302,400ブロック）
+  month: 1_296_000n, // 1ヶ月分（約1,296,000ブロック）
 };
 const TOPIC_TIPPED = ethers.utils.keccak256(
   ethers.utils.toUtf8Bytes("Tipped(address,uint256)")
@@ -460,7 +475,9 @@ export default function AdminDashboard() {
         }
         
         const latest = await getLatestBlockNumber();
-        const lookback = LOOKBACK_BY_PERIOD[period];
+        // Alchemy使用時は制限あり、Public RPC使用時は大きな範囲可能
+        const isUsingAlchemy = !!ALCHEMY_RPC;
+        const lookback = isUsingAlchemy ? LOOKBACK_BY_PERIOD[period] : PUBLIC_RPC_LOOKBACK[period];
         const fb = BigInt(latest) > lookback ? BigInt(latest) - lookback : 0n;
         
         console.log("🔗 Block range calculated:", {
@@ -468,6 +485,7 @@ export default function AdminDashboard() {
           latestBlock: latest,
           lookback: lookback.toString(),
           fromBlock: fb.toString(),
+          isUsingAlchemy,
           primaryRPC: ALCHEMY_RPC || PUBLIC_RPC
         });
         
@@ -500,14 +518,25 @@ export default function AdminDashboard() {
           period
         });
 
-        // Alchemy RPCの制限を考慮: eth_getLogsは最大10,000ブロック範囲まで
-        // TODO: メインネット移行時は maxBlockRange を増やす (例: 100000n = 約1週間分)
-        // テストネット用設定: 10,000ブロック (約1-2日分)
+        // RPC制限に応じた適切なブロック範囲調整
         const currentBlock = await getLatestBlockNumber();
-        const maxBlockRange = 10000n; // MAINNET: 100000n に変更予定
-        const actualFromBlock = fromBlock === 0n ? 
-          Math.max(0, currentBlock - Number(maxBlockRange)) : 
-          Math.max(Number(fromBlock), currentBlock - Number(maxBlockRange));
+        const isUsingAlchemy = !!ALCHEMY_RPC;
+        const maxBlockRange = isUsingAlchemy ? 10n : 100000n; // Alchemy: 10ブロック, Public: 100000ブロック
+        
+        let actualFromBlock: number;
+        if (fromBlock === 0n) {
+          // "all"期間の場合はできるだけ過去から
+          actualFromBlock = Math.max(0, currentBlock - Number(maxBlockRange));
+        } else {
+          // 指定期間の場合は制限内に調整
+          const requestedRange = currentBlock - Number(fromBlock);
+          if (requestedRange <= Number(maxBlockRange)) {
+            actualFromBlock = Number(fromBlock);
+          } else {
+            actualFromBlock = currentBlock - Number(maxBlockRange);
+            console.warn(`⚠️ Block range too large (${requestedRange}), adjusted to ${Number(maxBlockRange)} blocks`);
+          }
+        }
         
         const finalFromBlockHex = "0x" + actualFromBlock.toString(16);
         
