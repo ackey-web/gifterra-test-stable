@@ -5,8 +5,10 @@ import "./index.css";
 
 import RewardApp from "./reward-ui/App";
 import TipApp from "./tip-ui/App";
-import AdminDashboard from "./admin/Dashboard";
-import AdminDashboardMobile from "./admin/DashboardMobile";
+import MetaverseApp from "./metaverse-ui/App";
+// 一時的にコメントアウト - ABI整備後に有効化
+// import AdminDashboard from "./admin/Dashboard";
+// import AdminDashboardMobile from "./admin/DashboardMobile";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================
@@ -63,6 +65,7 @@ const path = location.pathname;
 
 const wantsAdmin = path.includes("/admin") || uiParam === "admin";
 const wantsTip = path.includes("/tip") || uiParam === "tip";
+const wantsContent = path.includes("/content") || uiParam === "content";
 const wantsAdminMobile = path.includes("/admin-mobile");
 
 // Admin アクセス時のデバイス判定による自動リダイレクト
@@ -104,11 +107,23 @@ root.render(
       autoSwitch={true}
     >
       {wantsAdminMobile ? (
-        <AdminDashboardMobile />
+        <div className="min-h-screen bg-gradient-to-br from-red-900 to-orange-900 flex items-center justify-center text-white">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">🚧 Admin機能 一時停止中</h1>
+            <p>システム整備中です。しばらくお待ちください。</p>
+          </div>
+        </div>
       ) : wantsAdmin ? (
-        <AdminDashboard />
+        <div className="min-h-screen bg-gradient-to-br from-red-900 to-orange-900 flex items-center justify-center text-white">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">🚧 Admin機能 一時停止中</h1>
+            <p>システム整備中です。しばらくお待ちください。</p>
+          </div>
+        </div>
       ) : wantsTip ? (
         <TipApp />
+      ) : wantsContent ? (
+        <MetaverseApp />
       ) : (
         <RewardApp />
       )}

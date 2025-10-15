@@ -36,7 +36,84 @@ export const MANAGER_CONTRACT = {
 // 🔄 後方互換性のため現在のCONTRACT_ADDRESSを維持
 export const CONTRACT_ADDRESS = SBT_CONTRACT.ADDRESS;
 
-// 🏭 将来のファクトリー機構用設定（メインネット移行時に使用）
+// � メタバースEC設定
+export const METAVERSE_CONFIG = {
+  // 🏰 メタバース空間設定
+  SPACES: {
+    "world-1": {
+      name: "メインワールド",
+      description: "ギフテラの中心となるメタバース空間",
+      isActive: true,
+      machines: ["entrance-01", "vip-lounge"]
+    },
+    "gallery-a": {
+      name: "アートギャラリー", 
+      description: "クリエイター作品を展示するアート空間",
+      isActive: true,
+      machines: ["gallery-01", "creator-corner"]
+    },
+    "game-zone": {
+      name: "ゲームゾーン",
+      description: "ゲーム関連コンテンツの配布エリア", 
+      isActive: true,
+      machines: ["game-machine-01"]
+    }
+  },
+  
+  // 🏪 自販機設定
+  MACHINES: {
+    "entrance-01": {
+      name: "エントランス自販機",
+      spaceId: "world-1",
+      contentSetId: "starter-pack",
+      position: { x: 0, y: 0, z: 5 }
+    },
+    "vip-lounge": {
+      name: "VIPラウンジ",
+      spaceId: "world-1", 
+      contentSetId: "premium-collection",
+      position: { x: 10, y: 2, z: -5 }
+    },
+    "gallery-01": {
+      name: "ギャラリー自販機",
+      spaceId: "gallery-a",
+      contentSetId: "art-collection",
+      position: { x: -5, y: 0, z: 0 }
+    },
+    "creator-corner": {
+      name: "クリエーターコーナー",
+      spaceId: "gallery-a",
+      contentSetId: "creator-pack", 
+      position: { x: 5, y: 1, z: 3 }
+    }
+  },
+  
+  // 📦 コンテンツセット設定
+  CONTENT_SETS: {
+    "starter-pack": {
+      name: "スターターパック",
+      description: "初心者向けの基本コンテンツセット",
+      tipThresholds: [25, 50, 100] // 段階的なアンロック
+    },
+    "premium-collection": {
+      name: "プレミアムコレクション", 
+      description: "限定的なプレミアムコンテンツ",
+      tipThresholds: [200, 300, 500]
+    },
+    "art-collection": {
+      name: "アートコレクション",
+      description: "アーティスト作品のデジタルコレクション",
+      tipThresholds: [100, 250]
+    },
+    "creator-pack": {
+      name: "クリエーターパック",
+      description: "クリエイター制作のオリジナルコンテンツ",
+      tipThresholds: [150, 350]
+    }
+  }
+} as const;
+
+// �🏭 将来のファクトリー機構用設定（メインネット移行時に使用）
 export const FACTORY_CONFIG = {
   // FACTORY_ADDRESS: "0x...", // メインネット展開時に設定
   // MASTER_TEMPLATE: "0x...", // マスターコントラクトテンプレート

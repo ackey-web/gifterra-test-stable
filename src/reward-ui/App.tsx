@@ -676,6 +676,14 @@ export default function App() {
           )}
         </div>
 
+        {/* 特許回避NFTウィジェット（オプション） */}
+        {/*
+        <PatentSafeNFTWidget 
+          systemId={1}
+          className="patent-safe-integration"
+        />
+        */}
+
         {/* 広告スライドショー（localStorageから自動読み込み） */}
         <AdCarousel
           style={{
