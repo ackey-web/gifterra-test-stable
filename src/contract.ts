@@ -5,15 +5,36 @@ import { polygonAmoy } from "viem/chains";
 /* =========================================
    ✅ Gifterra コントラクト設定
    
-   📝 現在: テストネット単一コントラクト
+   📝 現在: SBT専用コントラクト + 将来のNFT拡張準備
    🏭 将来: ファクトリーパターンでマルチプロジェクト対応
        - ファクトリーアドレス: TBD (メインネット)
        - プロジェクト別コントラクト管理
        - 導入ユーザー別オーナー権限
 ========================================= */
-export const CONTRACT_ADDRESS = getAddress(
-  "0x0174477A1FCEb9dE25289Cd1CA48b6998C9cD7FC" // ← 最新デプロイの Gifterra (テストネット)
-);
+
+// 🎯 SBTコントラクト (現在の主力)
+export const SBT_CONTRACT = {
+  ADDRESS: getAddress("0x0174477A1FCEb9dE25289Cd1CA48b6998C9cD7FC"),
+  TYPE: "SBT" as const,
+  FEATURES: ["dailyReward", "tip", "soulbound"] as const,
+} as const;
+
+// 🆕 NFTコントラクト (譲渡可能NFT用 - 将来実装)
+export const NFT_CONTRACT = {
+  // ADDRESS: getAddress("0x..."), // 開発中 - NFTコントラクトデプロイ後に設定
+  TYPE: "NFT" as const,
+  FEATURES: ["transferable", "marketplace", "metadata"] as const,
+} as const;
+
+// 🔗 統合管理コントラクト (SBT ⟷ NFT 連携用 - 将来実装)
+export const MANAGER_CONTRACT = {
+  // ADDRESS: getAddress("0x..."), // 開発中 - マネージャーコントラクトデプロイ後に設定
+  TYPE: "MANAGER" as const,
+  FEATURES: ["sbt-nft-bridge", "level-sync", "unified-management"] as const,
+} as const;
+
+// 🔄 後方互換性のため現在のCONTRACT_ADDRESSを維持
+export const CONTRACT_ADDRESS = SBT_CONTRACT.ADDRESS;
 
 // 🏭 将来のファクトリー機構用設定（メインネット移行時に使用）
 export const FACTORY_CONFIG = {
@@ -122,6 +143,123 @@ export const CONTRACT_ABI = [
   {
     inputs: [],
     name: "unpause",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+] as const;
+
+/* =========================================
+   ✅ NFT コントラクト用 ABI (将来実装)
+   📝 ERC721準拠 + Gifterra拡張機能
+========================================= */
+export const NFT_ABI = [
+  // ERC721 標準関数
+  {
+    inputs: [{ internalType: "address", name: "owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "ownerOf",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "tokenURI",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "from", type: "address" },
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "operator", type: "address" },
+      { internalType: "bool", name: "approved", type: "bool" },
+    ],
+    name: "setApprovalForAll",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  
+  // Gifterra 拡張機能
+  {
+    inputs: [
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "level", type: "uint256" },
+    ],
+    name: "mintLevelNFT",
+    outputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "getTokenLevel",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
+/* =========================================
+   ✅ Manager コントラクト用 ABI (将来実装)
+   📝 SBT ⟷ NFT 連携管理
+========================================= */
+export const MANAGER_ABI = [
+  {
+    inputs: [{ internalType: "address", name: "user", type: "address" }],
+    name: "getUserLevel",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "sbtLevel", type: "uint256" }],
+    name: "convertSBTtoNFT",
+    outputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "convertNFTtoSBT",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "user", type: "address" },
+      { internalType: "uint256", name: "level", type: "uint256" },
+    ],
+    name: "syncLevel",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
