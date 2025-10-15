@@ -183,6 +183,62 @@ export default function TipApp() {
   const [message, setMessage] = useState("");
   const [tokenKey, setTokenKey] = useState<"PRIMARY">("PRIMARY");
 
+  // 承認ポリシー関連の状態管理
+  const [approvalPolicy, setApprovalPolicy] = useState<"exact" | "toNextRank" | "fixedCap">("toNextRank");
+  const [rankThresholds, setRankThresholds] = useState<bigint[]>([]);
+
+  // ランク閾値の取得
+  useEffect(() => {
+    const fetchRankThresholds = async () => {
+      if (!contract) return;
+      try {
+        const thresholds: bigint[] = [];
+        for (let i = 1; i <= 4; i++) {
+          try {
+            const threshold = await contract.call("rankThresholds", [i]);
+            if (threshold && BigInt(threshold) > 0n) {
+              thresholds.push(BigInt(threshold));
+            }
+          } catch {
+            // このランクの閾値が存在しない場合はスキップ
+          }
+        }
+        // 重複を除去し、昇順でソート
+        const uniqueThresholds = [...new Set(thresholds)].sort((a, b) => a < b ? -1 : 1);
+        setRankThresholds(uniqueThresholds);
+      } catch (error) {
+        console.warn("ランク閾値の取得に失敗:", error);
+      }
+    };
+    fetchRankThresholds();
+  }, [contract]);
+
+  // 承認額の計算
+  const calculateApprovalAmount = useMemo(() => {
+    if (!parsedAmount) return null;
+    
+    switch (approvalPolicy) {
+      case "exact":
+        return parsedAmount;
+      
+      case "toNextRank": {
+        const nextRankThreshold = rankThresholds.find(threshold => threshold > totalTips);
+        if (nextRankThreshold) {
+          const remainingToNextRank = nextRankThreshold - totalTips;
+          const remainingAmount = ethersUtils.parseUnits(remainingToNextRank.toString(), 0);
+          return remainingAmount.gt(parsedAmount) ? remainingAmount : parsedAmount;
+        }
+        return ethersUtils.parseUnits("100000", TOKEN.DECIMALS); // 最高ランク到達後のデフォルト
+      }
+      
+      case "fixedCap":
+        return ethersUtils.parseUnits("1000000", TOKEN.DECIMALS);
+      
+      default:
+        return parsedAmount;
+    }
+  }, [approvalPolicy, parsedAmount, totalTips, rankThresholds]);
+
   const { mutateAsync: tipFn, isLoading: isTipping } = useContractWrite(contract, "tip");
 
   const [txState, setTxState] = useState<"idle" | "approving" | "sending" | "mined" | "error">("idle");
@@ -472,8 +528,19 @@ export default function TipApp() {
         console.log("Insufficient allowance, requesting approval...");
         setTxState("approving");
         
-        // 大きな値で承認（将来のTipのため）
-        const approveAmount = ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+        // ポリシーに基づく承認額を計算
+        const approveAmount = calculateApprovalAmount || ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+        console.log(`Approval policy: ${approvalPolicy}, Amount: ${ethers.utils.formatUnits(approveAmount, TOKEN.DECIMALS)} ${TOKEN.SYMBOL}`);
+        
+        // 安全な承認パターン: 0リセット → 新値設定
+        try {
+          const resetTx = await tokenContract.approve(CONTRACT_ADDRESS, 0);
+          await resetTx.wait();
+          console.log("Allowance reset to 0");
+        } catch (resetError) {
+          console.warn("Reset failed, proceeding with direct approval:", resetError);
+        }
+        
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
         console.log("Approval transaction sent:", approveTx.hash);
         
@@ -787,39 +854,83 @@ export default function TipApp() {
             </select>
           </div>
           
-          {/* Tip入力 */}
-          <div style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            height: '48px', 
-            borderRadius: 10, 
-            background: "#0f1a24", 
-            border: "1px solid #334155",
-            width: "100%"
+          {/* Tip入力と承認ポリシー選択 */}
+          <div style={{
+            display: "flex",
+            gap: '8px',
+            width: "100%",
+            alignItems: "center"
           }}>
-            <input 
-              value={amount} 
-              onChange={(e) => setAmount(e.target.value)} 
-              inputMode="decimal" 
-              placeholder="Tip" 
-              style={{ 
-                height: "100%", 
-                padding: "0 12px", 
-                outline: "none", 
-                background: "transparent", 
-                color: "#fff", 
-                border: "none", 
+            {/* Tip入力 */}
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              height: '48px', 
+              borderRadius: 10, 
+              background: "#0f1a24", 
+              border: "1px solid #334155",
+              flex: 2
+            }}>
+              <input 
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)} 
+                inputMode="decimal" 
+                placeholder="Tip" 
+                style={{ 
+                  height: "100%", 
+                  padding: "0 12px", 
+                  outline: "none", 
+                  background: "transparent", 
+                  color: "#fff", 
+                  border: "none", 
+                  flex: 1,
+                  fontSize: '16px',
+                  textAlign: "right"
+                }} 
+              />
+              <span style={{ 
+                opacity: 0.8, 
+                fontSize: '12px', 
+                paddingRight: 12 
+              }}>{TOKEN.SYMBOL}</span>
+            </div>
+            
+            {/* 承認ポリシー選択 */}
+            <select
+              value={approvalPolicy}
+              onChange={(e) => setApprovalPolicy(e.target.value as any)}
+              style={{
+                height: '48px',
+                borderRadius: 10,
+                border: "1px solid #334155",
+                background: "#0f1a24",
+                color: "#fff",
+                padding: "0 8px",
+                fontSize: '12px',
+                fontWeight: 600,
                 flex: 1,
-                fontSize: '16px',
-                textAlign: "right"
-              }} 
-            />
-            <span style={{ 
-              opacity: 0.8, 
-              fontSize: '12px', 
-              paddingRight: 12 
-            }}>{TOKEN.SYMBOL}</span>
+                minWidth: '120px',
+                outline: 'none'
+              }}
+            >
+              <option value="exact">最小承認</option>
+              <option value="toNextRank">次ランクまで</option>
+              <option value="fixedCap">大きく承認</option>
+            </select>
           </div>
+          
+          {/* 承認額の表示 */}
+          {calculateApprovalAmount && calculateApprovalAmount.toString() !== "0" && (
+            <div style={{
+              width: "100%",
+              fontSize: 11,
+              color: "rgba(255,255,255,0.7)",
+              textAlign: "center",
+              marginTop: -8
+            }}>
+              💡 承認予定額: {ethersUtils.formatUnits(calculateApprovalAmount, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
+            </div>
+          )}
           
           {/* ニックネーム入力 */}
           <input 
