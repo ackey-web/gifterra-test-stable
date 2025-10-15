@@ -498,7 +498,7 @@ export default function App() {
     alert(userMessage);
   };
 
-  const BTN_H = 42;
+  const BTN_H = 48; // ウォレット接続ボタンの高さに合わせて統一
 
   return (
     <main
@@ -566,24 +566,28 @@ export default function App() {
           {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレットを接続してください"}
         </p>
 
-        {/* ボタン行（高さ・gapなど元のまま） */}
+        {/* ボタン行（高さ統一・配置修正） */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: 10,
+            gap: 12,
             flexWrap: "wrap",
-            marginTop: 4
+            marginTop: 8
           }}
         >
-                  <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
-          <ConnectWallet 
-            theme="dark" 
-            modalTitle="リワード受け取り用ウォレット接続"
-            modalTitleIconUrl=""
-          />
-        </div>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center",
+            height: 48 // ウォレット接続ボタンの高さ基準
+          }}>
+            <ConnectWallet 
+              theme="dark" 
+              modalTitle="リワード受け取り用ウォレット接続"
+              modalTitleIconUrl=""
+            />
+          </div>
           <button
             onClick={isMaintenance ? undefined : onClaim}
             disabled={!canClaim}
@@ -591,8 +595,8 @@ export default function App() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              height: BTN_H,
-              padding: "0 14px",
+              height: 48, // ウォレット接続ボタンと同じ高さに変更
+              padding: "0 16px",
               backgroundColor: canClaim ? "#ff7a00" : "#3a3f46",
               color: "#fff",
               borderRadius: 10,
