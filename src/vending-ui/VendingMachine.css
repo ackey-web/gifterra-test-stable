@@ -1,6 +1,27 @@
 /* src/vending-ui/VendingMachine.css */
 
+.vending-app {
+  position: relative;
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+
+.vending-app::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .vending-machine {
+  position: relative;
+  z-index: 1;
   max-width: 600px;
   margin: 60px auto 0;
   background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
@@ -102,15 +123,32 @@
   position: relative;
 }
 
-.compact-purchase-btn:hover:not(:disabled) {
-  transform: translateY(-4px) translateZ(8px) scale(1.05);
+.compact-purchase-btn:hover:not(.disabled) {
+  transform: translateY(-3px) translateZ(5px);
   box-shadow: 
-    0 15px 40px rgba(102, 126, 234, 0.6),
-    0 8px 25px rgba(118, 75, 162, 0.4),
-    inset 0 2px 0 rgba(255,255,255,0.4),
-    inset 0 -2px 0 rgba(0,0,0,0.3),
-    0 0 20px rgba(102, 126, 234, 0.4);
-  background: linear-gradient(145deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
+    0 15px 25px rgba(0, 0, 0, 0.8),
+    0 8px 15px rgba(0, 0, 0, 0.6),
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 215, 0, 0.8);
+}
+
+.compact-purchase-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+  color: #666;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.compact-purchase-btn.disabled:hover {
+  transform: none;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.05),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .compact-purchase-btn:active:not(:disabled) {
@@ -145,14 +183,30 @@
 
 /* ウォレット接続エリア */
 .wallet-section {
-  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-  padding: 20px;
-  border-top: 1px solid rgba(255,255,255,0.1);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  color: white;
-  backdrop-filter: blur(20px);
+  justify-content: space-between;
+  padding: 15px 20px;
+  margin: 15px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gifterra-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.gifterra-logo:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+  border-color: rgba(255, 215, 0, 0.6);
 }
 
 .wallet-info {
@@ -201,12 +255,17 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  color: white;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .pickup-header h3 {
+  color: #FFD700;
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  flex: 1;
 }
 
 .pickup-count {
@@ -245,12 +304,17 @@
 .empty-tray {
   text-align: center;
   color: #bdc3c7;
-  padding: 20px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-tray p {
-  margin: 0 0 8px 0;
+  margin: 8px 0;
   line-height: 1.4;
+  text-align: center;
 }
 
 .download-item {

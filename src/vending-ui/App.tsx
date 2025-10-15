@@ -7,7 +7,7 @@ import {
   useContractWrite,
 } from "@thirdweb-dev/react";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
-import { utils as ethersUtils } from "ethers";
+import { ethers } from "ethers";
 import { tipSuccessConfetti } from "../utils/confetti";
 import "./VendingMachine.css";
 
@@ -34,6 +34,7 @@ interface VendingMachine {
   slug: string;
   displayImage: string; // 837x768比率の商品画像
   headerImage?: string; // カスタムヘッダー画像
+  backgroundImage?: string; // 背景画像
   products: Product[];
   isActive: boolean;
 }
@@ -55,6 +56,7 @@ const MOCK_MACHINES: VendingMachine[] = [
     slug: "machine-1", 
     displayImage: "https://via.placeholder.com/837x768/2a2a2a/FFD700?text=ART+%26+3D+COLLECTION",
     headerImage: "https://via.placeholder.com/400x120/1a1a1a/FFD700?text=EXCLUSIVE+ART+COLLECTION",
+    backgroundImage: "https://via.placeholder.com/1920x1080/1a1a1a/333333?text=BACKGROUND",
     isActive: true,
     products: [
       {
@@ -89,6 +91,7 @@ const MOCK_MACHINES: VendingMachine[] = [
     slug: "machine-2",
     displayImage: "https://via.placeholder.com/837x768/2a2a2a/9370DB?text=GAME+%26+ENTERTAINMENT",
     headerImage: "https://via.placeholder.com/400x120/1a1a1a/9370DB?text=GAME+COLLECTION",
+    backgroundImage: "https://via.placeholder.com/1920x1080/1a1a2a/444444?text=GAME+BACKGROUND",
     isActive: true,
     products: [
       {
@@ -123,6 +126,7 @@ const MOCK_MACHINES: VendingMachine[] = [
     slug: "machine-3",
     displayImage: "https://via.placeholder.com/837x768/2a2a2a/FF8C00?text=CREATOR+EXCLUSIVE",
     headerImage: "https://via.placeholder.com/400x120/1a1a1a/FF8C00?text=CREATOR+COLLECTION",
+    backgroundImage: "https://via.placeholder.com/1920x1080/2a1a1a/555555?text=CREATOR+BACKGROUND",
     isActive: true,
     products: [
       {
@@ -165,15 +169,16 @@ export default function VendingApp() {
   const [balance, setBalance] = useState<string>("0.0");
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // ウォレット残高取得
   useEffect(() => {
     if (address && window.ethereum) {
       const updateBalance = async () => {
         try {
-          const provider = new ethersUtils.providers.Web3Provider(window.ethereum);
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
           const balance = await provider.getBalance(address);
-          setBalance(ethersUtils.formatEther(balance));
+          setBalance(ethers.utils.formatEther(balance));
         } catch (error) {
           console.error("残高取得エラー:", error);
         }
@@ -189,10 +194,16 @@ export default function VendingApp() {
       return;
     }
 
+    if (isPurchasing) {
+      alert('処理中です。しばらくお待ちください。');
+      return;
+    }
+
+    setIsPurchasing(true);
     setIsLoading(true);
     try {
       // ETHをweiに変換
-      const priceInWei = ethersUtils.parseEther(product.price.toString());
+      const priceInWei = ethers.utils.parseEther(product.price.toString());
       
       console.log(`🛒 購入処理開始: ${product.title} (${product.price} ETH)`);
       
@@ -227,6 +238,7 @@ export default function VendingApp() {
       alert(`購入に失敗しました: ${error.message || '不明なエラー'}`);
     } finally {
       setIsLoading(false);
+      setIsPurchasing(false);
     }
   };
 
@@ -253,6 +265,14 @@ export default function VendingApp() {
   };
 
   return (
+    <div className="vending-app" style={{
+      backgroundImage: machine.backgroundImage ? `url(${machine.backgroundImage})` : 'none',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      minHeight: '100vh',
+      padding: '20px 0'
+    }}>
     <div className="vending-machine">
       {/* 統合商品表示エリア（837×768比率） */}
       <div className="unified-display">
@@ -270,13 +290,13 @@ export default function VendingApp() {
         {machine.products.map(product => (
           <button 
             key={product.slot}
-            className={`compact-purchase-btn ${product.isActive ? '' : 'disabled'}`}
+            className={`compact-purchase-btn ${(!product.isActive || isPurchasing) ? 'disabled' : ''}`}
             onClick={() => handlePurchase(product)}
-            disabled={!product.isActive || isLoading}
-            title={`${product.title} - ${product.price} ETH`}
+            disabled={!product.isActive || isLoading || isPurchasing}
+            title={`${product.title} - ${product.price} tNHT`}
           >
             <span className="button-label">{product.buttonLabel}</span>
-            <span className="button-price">{product.price} ETH</span>
+            <span className="button-price">{product.price} tNHT</span>
           </button>
         ))}
       </div>
@@ -290,7 +310,11 @@ export default function VendingApp() {
               <span className="balance">残高: {parseFloat(balance).toFixed(4)} ETH</span>
             </div>
           ) : (
-            <span>ウォレットを接続してください</span>
+            <img 
+              src="https://avatars.githubusercontent.com/u/182478703?s=200&v=4" 
+              alt="Gifterra Logo" 
+              className="gifterra-logo"
+            />
           )}
         </div>
         <ConnectWallet 
@@ -303,7 +327,7 @@ export default function VendingApp() {
       {/* 取り出し口 */}
       <div className="pickup-area">
         <div className="pickup-header">
-          <h3>📥 商品取り出し口</h3>
+          <h3>商品取出し口</h3>
           <span className="pickup-count">{downloads.length}個の商品</span>
         </div>
         <div className="pickup-tray">
@@ -341,6 +365,7 @@ export default function VendingApp() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
