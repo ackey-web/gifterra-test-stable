@@ -2395,7 +2395,6 @@ export default function AdminDashboard() {
                       <th style={th}>Rank</th>
                       <th style={th}>Name</th>
                       <th style={th}>熱量</th>
-                      <th style={th}>累積</th>
                       <th style={th}>レベル</th>
                       <th style={th}>感情</th>
                       <th style={th}>キーワード</th>
@@ -2413,9 +2412,6 @@ export default function AdminDashboard() {
                             <td style={td}>{globalRank}</td>
                             <td style={{ ...td, fontWeight: 800 }}>{r.name}</td>
                             <td style={{ ...td, fontWeight: 800, color: "#8b5cf6" }}>
-                              {r.heatScore}
-                            </td>
-                            <td style={{ ...td, fontWeight: 700, color: "#f59e0b" }}>
                               {r.heatScore}
                             </td>
                             <td style={td}>{r.heatLevel}</td>
