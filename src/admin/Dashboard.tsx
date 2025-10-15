@@ -271,6 +271,18 @@ export default function AdminDashboard() {
     return result;
   }, [address, adminWallets]);
   
+  // コントラクト読み取り（適切なHook使用）
+  const { data: contractBalance, error: contractBalanceError } = useContractRead(
+    contract,
+    "balanceOf",
+    [CONTRACT_ADDRESS]
+  );
+  
+  const { data: currentDailyReward, error: dailyRewardError } = useContractRead(
+    contract,
+    "dailyRewardAmount"
+  );
+  
   // 新しいウォレット権限管理
   const [newAdminAddress, setNewAdminAddress] = useState("");
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -1157,24 +1169,36 @@ export default function AdminDashboard() {
             <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
               <div>
                 <strong>コントラクト残高:</strong> {
-                  (() => {
-                    const { data: contractBalance } = useContractRead(contract, "balanceOf", [CONTRACT_ADDRESS]);
-                    return contractBalance 
-                      ? `${Number(contractBalance) / 1e18} ${TOKEN.SYMBOL}`
-                      : "読み込み中...";
-                  })()
+                  contractBalanceError ? (
+                    <span style={{ color: "#ff6b6b" }}>読み込みエラー (Amoyネットワーク制限の可能性)</span>
+                  ) : contractBalance ? (
+                    `${Number(contractBalance) / 1e18} ${TOKEN.SYMBOL}`
+                  ) : (
+                    "読み込み中..."
+                  )
                 }
               </div>
               <div>
                 <strong>日次リワード量:</strong> {
-                  (() => {
-                    const { data: currentDailyReward } = useContractRead(contract, "dailyRewardAmount");
-                    return currentDailyReward 
-                      ? `${Number(currentDailyReward) / 1e18} ${TOKEN.SYMBOL}`
-                      : "読み込み中...";
-                  })()
+                  dailyRewardError ? (
+                    <span style={{ color: "#ff6b6b" }}>読み込みエラー</span>
+                  ) : currentDailyReward ? (
+                    `${Number(currentDailyReward) / 1e18} ${TOKEN.SYMBOL}`
+                  ) : (
+                    "読み込み中..."
+                  )
                 }
               </div>
+              {(contractBalanceError || dailyRewardError) && (
+                <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 8, padding: 8, background: "rgba(251, 191, 36, 0.1)", borderRadius: 4 }}>
+                  ⚠️ 読み込みエラーの詳細:<br/>
+                  {contractBalanceError && `• 残高エラー: ${contractBalanceError.message || contractBalanceError}`}<br/>
+                  {dailyRewardError && `• リワードエラー: ${dailyRewardError.message || dailyRewardError}`}<br/>
+                  <br/>
+                  💡 Amoyテストネットの制限により、データ読み込みが失敗する場合があります。<br/>
+                  ページを再読み込みするか、数分後に再度お試しください。
+                </div>
+              )}
               <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
                 ※ コントラクトアドレス: {CONTRACT_ADDRESS}
               </div>
