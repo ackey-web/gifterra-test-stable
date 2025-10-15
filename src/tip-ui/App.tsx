@@ -108,8 +108,19 @@ export default function TipApp() {
       
       const level = await contract.call("userNFTLevel", [address]);
       setLevelRaw(level);
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
+    } catch (error: any) {
+      const errorMsg = error?.message || error?.data?.message || "Unknown error";
+      
+      if (errorMsg.includes("state histories haven't been fully indexed yet")) {
+        console.warn("🏗️ User data fetch skipped due to blockchain indexing");
+        // インデックス処理中は空のデータを設定
+        setUserInfoRaw(null);
+        setLevelRaw(null);
+      } else {
+        console.error("Failed to fetch user data:", error);
+        setUserInfoRaw(null);
+        setLevelRaw(null);
+      }
     }
   };
 
@@ -528,14 +539,29 @@ export default function TipApp() {
       const signer = provider.getSigner();
       const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, signer);
       
-      // ERC20承認チェック
+      // ERC20承認チェック（インデックスエラー対応）
       const tokenContract = new ethers.Contract(TOKEN.ADDRESS, [
         "function allowance(address owner, address spender) view returns (uint256)",
         "function approve(address spender, uint256 amount) returns (bool)"
       ], signer);
       
-      const currentAllowance = await tokenContract.allowance(address, CONTRACT_ADDRESS);
-      console.log("Current allowance:", ethers.utils.formatUnits(currentAllowance, TOKEN.DECIMALS), TOKEN.SYMBOL);
+      let currentAllowance: ethers.BigNumber;
+      
+      try {
+        currentAllowance = await tokenContract.allowance(address, CONTRACT_ADDRESS);
+        console.log("Current allowance:", ethers.utils.formatUnits(currentAllowance, TOKEN.DECIMALS), TOKEN.SYMBOL);
+      } catch (allowanceError: any) {
+        const errorMsg = allowanceError?.message || allowanceError?.data?.message || "Unknown error";
+        
+        if (errorMsg.includes("state histories haven't been fully indexed yet")) {
+          console.warn("🏗️ Blockchain indexing in progress - assuming zero allowance and requesting approval");
+          // インデックス処理中の場合、承認が必要と仮定
+          currentAllowance = ethers.BigNumber.from(0);
+        } else {
+          console.error("Allowance check failed:", allowanceError);
+          throw new Error(`承認状態の確認に失敗しました: ${errorMsg}`);
+        }
+      }
       
       if (currentAllowance.lt(parsedAmount)) {
         console.log("Insufficient allowance, requesting approval...");
@@ -545,20 +571,34 @@ export default function TipApp() {
         const approveAmount = calculateApprovalAmount || ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
         console.log(`Approval policy: ${approvalPolicy}, Amount: ${ethers.utils.formatUnits(approveAmount, TOKEN.DECIMALS)} ${TOKEN.SYMBOL}`);
         
-        // 安全な承認パターン: 0リセット → 新値設定
+        // 安全な承認パターン: 0リセット → 新値設定（インデックスエラー対応）
         try {
           const resetTx = await tokenContract.approve(CONTRACT_ADDRESS, 0);
           await resetTx.wait();
           console.log("Allowance reset to 0");
-        } catch (resetError) {
-          console.warn("Reset failed, proceeding with direct approval:", resetError);
+        } catch (resetError: any) {
+          const resetErrorMsg = resetError?.message || resetError?.data?.message || "Unknown error";
+          if (resetErrorMsg.includes("state histories haven't been fully indexed yet")) {
+            console.warn("🏗️ Reset skipped due to blockchain indexing - proceeding with direct approval");
+          } else {
+            console.warn("Reset failed, proceeding with direct approval:", resetError);
+          }
         }
         
-        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
-        console.log("Approval transaction sent:", approveTx.hash);
-        
-        await approveTx.wait();
-        console.log("Approval confirmed");
+        try {
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
+          console.log("Approval transaction sent:", approveTx.hash);
+          
+          await approveTx.wait();
+          console.log("Approval confirmed");
+        } catch (approveError: any) {
+          const approveErrorMsg = approveError?.message || approveError?.data?.message || "Unknown error";
+          if (approveErrorMsg.includes("state histories haven't been fully indexed yet")) {
+            throw new Error("🏗️ ブロックチェーン履歴インデックス処理中です。15分程度お待ちいただき、再度お試しください。");
+          } else {
+            throw new Error(`承認処理に失敗しました: ${approveErrorMsg}`);
+          }
+        }
         setTxState("sending");
       }
       
@@ -568,8 +608,19 @@ export default function TipApp() {
       
       try {
         
-        // ガス見積もりを事前に実行
-        const gasEstimate = await directContract.estimateGas.tip(parsedAmount.toString());
+        // ガス見積もりを事前に実行（インデックスエラー対応）
+        let gasEstimate: ethers.BigNumber;
+        try {
+          gasEstimate = await directContract.estimateGas.tip(parsedAmount.toString());
+        } catch (gasError: any) {
+          const gasErrorMsg = gasError?.message || gasError?.data?.message || "Unknown error";
+          if (gasErrorMsg.includes("state histories haven't been fully indexed yet")) {
+            console.warn("🏗️ Gas estimation skipped due to blockchain indexing - using default gas limit");
+            gasEstimate = ethers.BigNumber.from("300000"); // デフォルトガス制限
+          } else {
+            throw gasError;
+          }
+        }
         
         tx = await directContract.tip(parsedAmount.toString(), {
           gasLimit: gasEstimate.mul(120).div(100) // 20%のバッファ
@@ -578,6 +629,12 @@ export default function TipApp() {
         receipt = await tx.wait();
         console.log("Direct ethers success");
       } catch (directError: any) {
+        const directErrorMsg = directError?.message || directError?.data?.message || "Unknown error";
+        
+        if (directErrorMsg.includes("state histories haven't been fully indexed yet")) {
+          throw new Error("🏗️ ブロックチェーン履歴インデックス処理中です。15分程度お待ちいただき、再度お試しください。");
+        }
+        
         console.warn("Direct ethers failed, trying ThirdWeb:", directError);
         
         // ethersが失敗した場合のThirdWebフォールバック
