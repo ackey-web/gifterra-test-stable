@@ -303,20 +303,21 @@ export default function VendingApp() {
 
       {/* ウォレット接続エリア */}
       <div className="wallet-section">
-        <div className="wallet-info">
-          {address ? (
-            <div className="connected-info">
-              <span className="address">{address.slice(0,6)}...{address.slice(-4)}</span>
-              <span className="balance">残高: {parseFloat(balance).toFixed(4)} ETH</span>
-            </div>
-          ) : (
-            <img 
-              src="https://avatars.githubusercontent.com/u/182478703?s=200&v=4" 
-              alt="Gifterra Logo" 
-              className="gifterra-logo"
-            />
-          )}
-        </div>
+        {/* ギフテラロゴ */}
+        <img 
+          src="https://avatars.githubusercontent.com/u/182478703?s=200&v=4" 
+          alt="Gifterra Logo" 
+          className="gifterra-logo"
+        />
+        
+        {/* 残高表示 */}
+        {address && (
+          <div className="balance-display">
+            {parseFloat(balance).toFixed(4)} tNHT
+          </div>
+        )}
+        
+        {/* 接続ボタン */}
         <ConnectWallet 
           theme="dark"
           btnTitle="ウォレット接続"
