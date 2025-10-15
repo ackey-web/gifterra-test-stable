@@ -37,7 +37,7 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management";
 
 const fmt18 = (v: bigint) => {
   try {
@@ -1845,6 +1845,8 @@ export default function AdminDashboard() {
               ? "GIFTERRA admin : リワードUI管理"
               : currentPage === "tip-ui-management" 
               ? "GIFTERRA admin : Tip UI 管理" 
+              : currentPage === "vending-management"
+              ? "GIFTERRA admin : 自販機管理"
               : "GIFTERRA admin : リワードUI 総合管理"}
           </h1>
         </div>
@@ -1890,6 +1892,20 @@ export default function AdminDashboard() {
             }}
           >
             💸 TipUI管理
+          </button>
+          <button
+            onClick={() => setCurrentPage("vending-management")}
+            style={{
+              background: currentPage === "vending-management" ? "#f59e0b" : "#374151",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 12px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            🏪 自販機管理
           </button>
           <button
             onClick={() => window.location.reload()}
@@ -2036,6 +2052,8 @@ export default function AdminDashboard() {
         <RewardUIManagementPage />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
+      ) : currentPage === "vending-management" ? (
+        <VendingManagementPage />
       ) : (
         <>
           {/* 期間タブ（⚡ パフォーマンス情報付き） */}
@@ -2972,5 +2990,356 @@ export default function AdminDashboard() {
 
       {isLoading && <LoadingOverlay period={period} />}
     </main>
+  );
+}
+
+/* ========================================
+   🏪 自販機管理ページ
+======================================== */
+function VendingManagementPage() {
+  const [machines, setMachines] = useState([
+    {
+      id: 1,
+      name: "アート & 3D コレクション",
+      slug: "machine-1",
+      displayImage: "https://via.placeholder.com/837x768/2a2a2a/FFD700?text=ART+%26+3D+COLLECTION",
+      headerImage: "https://via.placeholder.com/400x120/1a1a1a/FFD700?text=EXCLUSIVE+ART+COLLECTION",
+      isActive: true,
+      products: [
+        { slot: 'A', title: "限定3Dモデル", price: 0.01, buttonLabel: "A1", isActive: true, fileType: 'GLB' },
+        { slot: 'B', title: "プレミアムBGM", price: 0.02, buttonLabel: "B2", isActive: true, fileType: 'MP3' },
+        { slot: 'C', title: "デジタルアート", price: 0.05, buttonLabel: "C3", isActive: true, fileType: 'IMAGE' }
+      ]
+    },
+    {
+      id: 2,
+      name: "ゲーム & エンタメ",
+      slug: "machine-2",
+      displayImage: "https://via.placeholder.com/837x768/2a2a2a/9370DB?text=GAME+%26+ENTERTAINMENT",
+      headerImage: "https://via.placeholder.com/400x120/1a1a1a/9370DB?text=GAME+COLLECTION",
+      isActive: true,
+      products: [
+        { slot: 'A', title: "ゲームアセット", price: 0.03, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
+        { slot: 'B', title: "効果音パック", price: 0.015, buttonLabel: "B2", isActive: true, fileType: 'MP3' },
+        { slot: 'C', title: "キャラクター3D", price: 0.08, buttonLabel: "C3", isActive: true, fileType: 'GLB' }
+      ]
+    },
+    {
+      id: 3,
+      name: "クリエイター限定",
+      slug: "machine-3",
+      displayImage: "https://via.placeholder.com/837x768/2a2a2a/FF8C00?text=CREATOR+EXCLUSIVE",
+      headerImage: "https://via.placeholder.com/400x120/1a1a1a/FF8C00?text=CREATOR+COLLECTION",
+      isActive: true,
+      products: [
+        { slot: 'A', title: "制作ツール", price: 0.06, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
+        { slot: 'B', title: "テンプレート集", price: 0.04, buttonLabel: "B2", isActive: true, fileType: 'ZIP' },
+        { slot: 'C', title: "限定エディション", price: 0.1, buttonLabel: "C3", isActive: true, fileType: 'GLB' }
+      ]
+    },
+  ]);
+
+  // 画像URL更新
+  const handleImageUpdate = (machineId: number, type: 'header' | 'display', newUrl: string) => {
+    setMachines(prev => prev.map(machine => 
+      machine.id === machineId 
+        ? { ...machine, [type === 'header' ? 'headerImage' : 'displayImage']: newUrl }
+        : machine
+    ));
+  };
+
+  // 商品情報更新
+  const handleProductUpdate = (machineId: number, slot: string, field: string, value: any) => {
+    setMachines(prev => prev.map(machine => 
+      machine.id === machineId 
+        ? {
+            ...machine,
+            products: machine.products.map(product =>
+              product.slot === slot ? { ...product, [field]: value } : product
+            )
+          }
+        : machine
+    ));
+  };
+
+  return (
+    <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ 
+        background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+        borderRadius: 12,
+        padding: 24,
+        marginBottom: 24,
+        border: "1px solid rgba(255,255,255,0.1)"
+      }}>
+        <h2 style={{ margin: 0, marginBottom: 16, color: "#f9fafb", fontSize: 24, fontWeight: 700 }}>
+          🏪 自販機管理システム
+        </h2>
+        <p style={{ margin: 0, color: "#d1d5db", lineHeight: 1.6 }}>
+          3台の自販機の商品画像、ヘッダー画像、価格設定を管理できます。
+          画像は837×768比率で表示され、余白は黒色で統一されます。
+        </p>
+      </div>
+
+      {machines.map(machine => (
+        <div key={machine.id} style={{
+          background: "#1f2937",
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 24,
+          border: "1px solid rgba(255,255,255,0.1)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, color: "#f9fafb", fontSize: 20, fontWeight: 600 }}>
+                自販機 #{machine.id}: {machine.name}
+              </h3>
+              <p style={{ margin: "4px 0", color: "#9ca3af", fontSize: 14 }}>
+                URL: /vending/?ui=vending (Machine #{machine.id})
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ 
+                color: machine.isActive ? "#10b981" : "#ef4444",
+                fontWeight: 600,
+                fontSize: 14
+              }}>
+                {machine.isActive ? "🟢 稼働中" : "🔴 停止中"}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+            {/* 画像管理 */}
+            <div>
+              <h4 style={{ color: "#f9fafb", margin: "0 0 16px 0", fontSize: 16, fontWeight: 600 }}>
+                📷 画像管理
+              </h4>
+              
+              {/* ヘッダー画像 */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
+                  ヘッダー画像 (400×120推奨)
+                </label>
+                <div style={{ 
+                  background: "#111827",
+                  border: "2px dashed rgba(255,255,255,0.2)",
+                  borderRadius: 8,
+                  padding: 16,
+                  textAlign: "center",
+                  marginBottom: 12
+                }}>
+                  {machine.headerImage ? (
+                    <img 
+                      src={machine.headerImage} 
+                      alt="Header preview"
+                      style={{ maxWidth: "100%", height: 60, objectFit: "cover", borderRadius: 4 }}
+                    />
+                  ) : (
+                    <div style={{ color: "#6b7280", fontSize: 14 }}>
+                      ヘッダー画像なし
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  placeholder="ヘッダー画像URL"
+                  value={machine.headerImage || ''}
+                  onChange={(e) => handleImageUpdate(machine.id, 'header', e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    background: "#374151",
+                    color: "#f9fafb",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+
+              {/* 商品展示画像 */}
+              <div>
+                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
+                  商品展示画像 (837×768比率)
+                </label>
+                <div style={{ 
+                  background: "#111827",
+                  border: "2px dashed rgba(255,255,255,0.2)",
+                  borderRadius: 8,
+                  padding: 16,
+                  textAlign: "center",
+                  marginBottom: 12
+                }}>
+                  <img 
+                    src={machine.displayImage} 
+                    alt="Display preview"
+                    style={{ 
+                      maxWidth: "100%", 
+                      height: 120, 
+                      objectFit: "cover", 
+                      borderRadius: 4,
+                      aspectRatio: "837/768"
+                    }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="商品展示画像URL (837×768)"
+                  value={machine.displayImage}
+                  onChange={(e) => handleImageUpdate(machine.id, 'display', e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    background: "#374151",
+                    color: "#f9fafb",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 商品管理 */}
+            <div>
+              <h4 style={{ color: "#f9fafb", margin: "0 0 16px 0", fontSize: 16, fontWeight: 600 }}>
+                🛍️ 商品管理
+              </h4>
+              
+              {machine.products.map(product => (
+                <div key={product.slot} style={{
+                  background: "#111827",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  padding: 16,
+                  marginBottom: 12
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <h5 style={{ margin: 0, color: "#f9fafb", fontSize: 16, fontWeight: 600 }}>
+                      スロット {product.slot} ({product.buttonLabel})
+                    </h5>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ 
+                        background: product.fileType === 'GLB' ? '#8b5cf6' : 
+                                   product.fileType === 'MP3' ? '#06b6d4' :
+                                   product.fileType === 'IMAGE' ? '#10b981' : '#f59e0b',
+                        color: 'white',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        fontSize: 12,
+                        fontWeight: 600
+                      }}>
+                        {product.fileType}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+                    <input
+                      type="text"
+                      placeholder="商品名"
+                      value={product.title}
+                      onChange={(e) => handleProductUpdate(machine.id, product.slot, 'title', e.target.value)}
+                      style={{
+                        padding: "6px 10px",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        borderRadius: 4,
+                        background: "#374151",
+                        color: "#f9fafb",
+                        fontSize: 14
+                      }}
+                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="number"
+                        placeholder="価格"
+                        value={product.price}
+                        onChange={(e) => handleProductUpdate(machine.id, product.slot, 'price', parseFloat(e.target.value))}
+                        step="0.001"
+                        min="0"
+                        style={{
+                          width: "80px",
+                          padding: "6px 8px",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          borderRadius: 4,
+                          background: "#374151",
+                          color: "#f9fafb",
+                          fontSize: 14
+                        }}
+                      />
+                      <span style={{ color: "#9ca3af", fontSize: 14 }}>ETH</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ 
+            marginTop: 20, 
+            padding: 16, 
+            background: "#065f46", 
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}>
+            <div>
+              <div style={{ color: "#d1fae5", fontWeight: 600, fontSize: 14 }}>
+                💾 設定を保存
+              </div>
+              <div style={{ color: "#a7f3d0", fontSize: 12, marginTop: 2 }}>
+                変更内容をデータベースに保存します
+              </div>
+            </div>
+            <button style={{
+              background: "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              padding: "10px 20px",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 600
+            }}>
+              💾 保存
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {/* プレビューリンク */}
+      <div style={{
+        background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
+        borderRadius: 12,
+        padding: 24,
+        textAlign: "center",
+        color: "white"
+      }}>
+        <h3 style={{ margin: "0 0 12px 0", fontSize: 18, fontWeight: 600 }}>
+          🔍 自販機プレビュー
+        </h3>
+        <p style={{ margin: "0 0 16px 0", fontSize: 14, opacity: 0.9 }}>
+          設定した自販機をプレビューで確認できます
+        </p>
+        <a 
+          href="/vending" 
+          target="_blank"
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            color: "white",
+            textDecoration: "none",
+            padding: "10px 20px",
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            display: "inline-block",
+            backdropFilter: "blur(10px)"
+          }}
+        >
+          🚀 自販機を開く
+        </a>
+      </div>
+    </div>
   );
 }
