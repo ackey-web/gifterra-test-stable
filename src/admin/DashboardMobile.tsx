@@ -36,18 +36,31 @@ const ADMIN_WALLETS = [
 export default function DashboardMobile() {
   const address = useAddress();
   
-  // 管理者権限チェック（ローカルストレージと初期管理者）
+  // 管理者権限チェック（Desktop版と統一）
   const adminWallets = (() => {
     try {
       const saved = localStorage.getItem('gifterra-admin-wallets');
-      return saved ? JSON.parse(saved) : ADMIN_WALLETS;
-    } catch {
+      if (saved) {
+        const additionalAdmins = JSON.parse(saved);
+        // 基本管理者と追加管理者をマージ（重複排除）
+        const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
+        console.log('🔒 Mobile Admin wallets loaded:', {
+          initial: ADMIN_WALLETS,
+          additional: additionalAdmins,
+          merged
+        });
+        return merged;
+      }
+      console.log('🔒 Mobile Using initial admin wallets:', ADMIN_WALLETS);
+      return ADMIN_WALLETS;
+    } catch (error) {
+      console.warn('🔒 Mobile Admin wallets loading error:', error);
       return ADMIN_WALLETS;
     }
   })();
   
-  // 管理者チェック（初期管理者または追加された管理者）
-  const isAdmin = !!address && (ADMIN_WALLETS.includes(address.toLowerCase()) || adminWallets.includes(address.toLowerCase()));
+  // 管理者チェック（Desktop版と統一）
+  const isAdmin = !!address && adminWallets.includes(address.toLowerCase());
   const [loading, setLoading] = useState(false);
   const [tips, setTips] = useState<TipItem[]>([]);
   const [totalTips, setTotalTips] = useState(0n);
