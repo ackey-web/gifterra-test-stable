@@ -4,10 +4,23 @@ import { polygonAmoy } from "viem/chains";
 
 /* =========================================
    ✅ Gifterra コントラクト設定
+   
+   📝 現在: テストネット単一コントラクト
+   🏭 将来: ファクトリーパターンでマルチプロジェクト対応
+       - ファクトリーアドレス: TBD (メインネット)
+       - プロジェクト別コントラクト管理
+       - 導入ユーザー別オーナー権限
 ========================================= */
 export const CONTRACT_ADDRESS = getAddress(
-  "0x0174477A1FCEb9dE25289Cd1CA48b6998C9cD7FC" // ← 最新デプロイの Gifterra
+  "0x0174477A1FCEb9dE25289Cd1CA48b6998C9cD7FC" // ← 最新デプロイの Gifterra (テストネット)
 );
+
+// 🏭 将来のファクトリー機構用設定（メインネット移行時に使用）
+export const FACTORY_CONFIG = {
+  // FACTORY_ADDRESS: "0x...", // メインネット展開時に設定
+  // MASTER_TEMPLATE: "0x...", // マスターコントラクトテンプレート
+  // METATRON_OWNER: "0x66f1274ad5d042b7571c2efa943370dbcd3459ab", // METATRON管理者
+} as const;
 
 /* =========================================
    ✅ tNHT トークン設定（新デプロイ版）
