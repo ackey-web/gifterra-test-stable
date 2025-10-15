@@ -30,7 +30,9 @@
     0 30px 60px rgba(0,0,0,0.6),
     0 15px 30px rgba(0,0,0,0.4),
     0 0 0 1px rgba(255,255,255,0.1),
-    0 0 15px rgba(102, 126, 234, 0.3),
+    0 0 25px rgba(102, 126, 234, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    0 0 60px rgba(255, 0, 255, 0.2),
     inset 0 1px 0 rgba(255,255,255,0.1),
     inset 0 -1px 0 rgba(0,0,0,0.5);
   overflow: hidden;
@@ -39,6 +41,32 @@
   position: relative;
   transform: perspective(800px) rotateX(1.5deg);
   transform-style: preserve-3d;
+  animation: vendingGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes vendingGlow {
+  0% {
+    box-shadow: 
+      0 30px 60px rgba(0,0,0,0.6),
+      0 15px 30px rgba(0,0,0,0.4),
+      0 0 0 1px rgba(255,255,255,0.1),
+      0 0 25px rgba(102, 126, 234, 0.4),
+      0 0 40px rgba(0, 255, 255, 0.3),
+      0 0 60px rgba(255, 0, 255, 0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+  }
+  100% {
+    box-shadow: 
+      0 30px 60px rgba(0,0,0,0.6),
+      0 15px 30px rgba(0,0,0,0.4),
+      0 0 0 1px rgba(255,255,255,0.15),
+      0 0 35px rgba(102, 126, 234, 0.6),
+      0 0 50px rgba(0, 255, 255, 0.4),
+      0 0 80px rgba(255, 0, 255, 0.3),
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+  }
 }
 
 /* 統合表示エリア（837×768比率） */
@@ -213,15 +241,34 @@
 }
 
 .balance-display {
-  color: #FFD700;
+  color: #00ff00;
   font-weight: 600;
   font-size: 14px;
   text-align: center;
-  background: rgba(255, 215, 0, 0.1);
-  padding: 6px 12px;
+  background: rgba(0, 255, 0, 0.1);
+  padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(0, 255, 0, 0.3);
   min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.balance-label {
+  font-size: 10px;
+  opacity: 0.8;
+  color: #00ff00;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.balance-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #00ff00;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
 }
 
 .wallet-info {
