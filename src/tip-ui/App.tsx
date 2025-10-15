@@ -689,7 +689,9 @@ export default function TipApp() {
       
       let userMessage = "";
       
-      if (errorMsg.includes("internal json-rpc error")) {
+      if (errorMsg.includes("state histories haven't been fully indexed yet")) {
+        userMessage = `🏗️ ブロックチェーン履歴インデックス処理中\n\nPolygon Amoyネットワークで履歴の同期処理中です:\n• これは正常な処理で、一時的な現象です\n• 新しいトランザクションは通常5-15分で処理されます\n• 履歴データの完全性を保つための処理です\n\n⏰ 15分程度お待ちいただき、再度お試しください\n💡 このエラーはテストネット特有の現象です`;
+      } else if (errorMsg.includes("internal json-rpc error")) {
         userMessage = `🔧 RPC接続エラーが発生しました\n\n原因と対処法:\n• Polygon Amoyネットワークの一時的な混雑\n• RPC エンドポイントの問題\n• ウォレットの接続状態\n\n⏰ 数分待ってから再度お試しください\n💡 他のRPCエンドポイントも自動で試行済みです`;
       } else if (errorMsg.includes("insufficient funds") || errorCode === -32000) {
         userMessage = `💰 ガス代不足エラー\n\nMATICが不足しています:\n• Polygon Amoy testnet用のMATICが必要\n• 最低 0.01 MATIC以上を推奨\n\n🚰 Faucetから無料でMATICを取得:\nhttps://faucet.polygon.technology/`;

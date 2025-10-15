@@ -88,16 +88,28 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
     const j = await res.json();
     
     if (j.error) {
-      console.error("❌ RPC error response:", j.error);
+      const errorMessage = j.error.message || "Unknown RPC error";
+      
+      // インデックス処理中エラーの特別扱い
+      if (errorMessage.includes("state histories haven't been fully indexed yet")) {
+        console.warn("🏗️ Blockchain state indexing in progress:", {
+          error: j.error,
+          note: "This is normal for testnet - blockchain is building historical index"
+        });
+        const error = new Error(`Blockchain indexing in progress: ${errorMessage}`);
+        (error as any).isIndexingError = true;
+        throw error;
+      }
       
       // Alchemy特有のエラーを検出
-      if (j.error.message && j.error.message.includes("10 block range")) {
-        const error = new Error(`Alchemy Free tier limit: ${j.error.message}`);
+      if (errorMessage.includes("10 block range")) {
+        const error = new Error(`Alchemy Free tier limit: ${errorMessage}`);
         (error as any).isAlchemyLimit = true;
         throw error;
       }
       
-      throw new Error(`RPC Error: ${j.error.message} (code: ${j.error.code})`);
+      console.error("❌ RPC error response:", j.error);
+      throw new Error(`RPC Error: ${errorMessage} (code: ${j.error.code})`);
     }
     
     return j.result as T;
@@ -574,15 +586,36 @@ export default function AdminDashboard() {
           setIsLoading(false);
         }
       } catch (e: any) {
-        console.error("❌ Log fetch failed:", e);
-        console.error("Error details:", {
-          message: e?.message || "Unknown error",
-          stack: e?.stack,
-          primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
-          CONTRACT_ADDRESS,
-          fromBlock: fromBlock.toString(),
-          period
-        });
+        const errorMsg = e?.message || e?.data?.message || "Unknown error";
+        const isIndexingError = errorMsg.includes("state histories haven't been fully indexed yet");
+        const isRpcError = errorMsg.includes("Internal JSON-RPC error");
+        
+        if (isIndexingError) {
+          console.warn("🏗️ Blockchain indexing in progress - this is normal for testnet:", {
+            message: errorMsg,
+            fromBlock: fromBlock.toString(),
+            period,
+            note: "履歴インデックス処理中 - テストネット特有の現象"
+          });
+        } else if (isRpcError) {
+          console.warn("🔧 RPC endpoint issue - trying alternative endpoints:", {
+            message: errorMsg,
+            primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
+            fromBlock: fromBlock.toString(),
+            period
+          });
+        } else {
+          console.error("❌ Log fetch failed:", e);
+          console.error("Error details:", {
+            message: errorMsg,
+            stack: e?.stack,
+            primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
+            CONTRACT_ADDRESS,
+            fromBlock: fromBlock.toString(),
+            period
+          });
+        }
+        
         if (!cancelled) {
           setRawTips([]); // エラー時は空配列を設定
           setIsLoading(false);
