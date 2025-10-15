@@ -218,14 +218,19 @@ export default function AdminDashboard() {
   const [adminWallets, setAdminWallets] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('gifterra-admin-wallets');
-      return saved ? JSON.parse(saved) : ADMIN_WALLETS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 基本管理者と追加管理者をマージ（重複排除）
+        return [...new Set([...ADMIN_WALLETS, ...parsed])];
+      }
+      return ADMIN_WALLETS;
     } catch {
       return ADMIN_WALLETS;
     }
   });
   
   // 管理者チェック（初期管理者または追加された管理者）
-  const isAdmin = !!address && (ADMIN_WALLETS.includes(address.toLowerCase()) || adminWallets.includes(address.toLowerCase()));
+  const isAdmin = !!address && adminWallets.includes(address.toLowerCase());
   
   // 新しいウォレット権限管理
   const [newAdminAddress, setNewAdminAddress] = useState("");
@@ -235,9 +240,15 @@ export default function AdminDashboard() {
     if (!newAdminAddress.trim()) return;
     const cleanAddress = newAdminAddress.trim().toLowerCase();
     if (ethers.utils.isAddress(cleanAddress)) {
+      if (adminWallets.includes(cleanAddress)) {
+        alert("このアドレスは既に管理者です");
+        return;
+      }
       const updatedList = [...new Set([...adminWallets, cleanAddress])];
       setAdminWallets(updatedList);
-      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(updatedList));
+      // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
+      const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
+      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
       setNewAdminAddress("");
       alert(`管理者権限を追加しました: ${cleanAddress}`);
     } else {
@@ -252,7 +263,9 @@ export default function AdminDashboard() {
     }
     const updatedList = adminWallets.filter(addr => addr !== addressToRemove.toLowerCase());
     setAdminWallets(updatedList);
-    localStorage.setItem('gifterra-admin-wallets', JSON.stringify(updatedList));
+    // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
+    const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
+    localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
     alert(`管理者権限を削除しました: ${addressToRemove}`);
   };
 
@@ -2298,6 +2311,7 @@ export default function AdminDashboard() {
                       <th style={th}>Rank</th>
                       <th style={th}>Name</th>
                       <th style={th}>熱量</th>
+                      <th style={th}>累積</th>
                       <th style={th}>レベル</th>
                       <th style={th}>感情</th>
                       <th style={th}>キーワード</th>
@@ -2309,12 +2323,22 @@ export default function AdminDashboard() {
                       .slice(analysisPage * ANALYSIS_ITEMS_PER_PAGE, (analysisPage + 1) * ANALYSIS_ITEMS_PER_PAGE)
                       .map((r, i) => {
                         const globalRank = analysisPage * ANALYSIS_ITEMS_PER_PAGE + i + 1;
+                        // 累積熱量ポイント計算（Tip UIと同じロジック）
+                        const tipAmount = parseFloat(r.totalAmount);
+                        const baseScore = tipAmount * 10;
+                        const userLevel = rawTips.filter(tip => tip.from.toLowerCase() === r.address.toLowerCase()).length > 0 ? 1 : 0;
+                        const rankMultiplier = Math.max(1, userLevel * 0.5);
+                        const cumulativeHeatScore = Math.min(1000, Math.round(baseScore * rankMultiplier));
+                        
                         return (
                           <tr key={r.address}>
                             <td style={td}>{globalRank}</td>
                             <td style={{ ...td, fontWeight: 800 }}>{r.name}</td>
                             <td style={{ ...td, fontWeight: 800, color: "#8b5cf6" }}>
                               {r.heatScore}
+                            </td>
+                            <td style={{ ...td, fontWeight: 700, color: "#f59e0b" }}>
+                              {cumulativeHeatScore}
                             </td>
                             <td style={td}>{r.heatLevel}</td>
                             <td style={td}>
@@ -2520,7 +2544,7 @@ export default function AdminDashboard() {
             {/* 現在の管理者リスト */}
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
-                現在の管理者 ({adminWallets.length + ADMIN_WALLETS.length}名)
+                現在の管理者 ({adminWallets.length}名)
               </div>
               <div style={{ display: "grid", gap: 8, maxHeight: 300, overflow: "auto" }}>
                 {/* 初期管理者（削除不可） */}
