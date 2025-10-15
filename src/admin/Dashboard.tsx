@@ -151,10 +151,15 @@ async function getBlockTimestamp(num: number): Promise<number> {
 }
 
 /* ---------- Admin & Lookback ---------- */
-// 一時的にアクセス制限を緩和（テスト用）
+// 📝 現在: テストネット用METATRON管理者
+// 🏭 将来: ファクトリー機構では以下の権限分離を実装
+//    - METATRON管理者: ファクトリー・全体統計管理
+//    - プロジェクト管理者: 各導入ユーザー（コントラクトオーナー）
+//    - 管理画面アクセス: プロジェクト別に動的制御
 const ADMIN_WALLETS = [
-  "0x66f1274ad5d042b7571c2efa943370dbcd3459ab",
-  // 追加の管理者ウォレットをここに追加可能
+  "0x66f1274ad5d042b7571c2efa943370dbcd3459ab", // METATRON管理者（現在はコントラクトオーナー兼任）
+  // 追加の管理者ウォレットをここに追加可能（テストネット用）
+  // 🏭 メインネット: プロジェクト別管理者は動的に取得
 ].map((x) => x.toLowerCase());
 // Alchemy RPCの制限を考慮した適切なブロック範囲（Polygon Amoyは約2秒/ブロック）
 const LOOKBACK_BY_PERIOD: Record<Exclude<Period, "all">, bigint> = {
@@ -1192,8 +1197,8 @@ export default function AdminDashboard() {
               {(contractBalanceError || dailyRewardError) && (
                 <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 8, padding: 8, background: "rgba(251, 191, 36, 0.1)", borderRadius: 4 }}>
                   ⚠️ 読み込みエラーの詳細:<br/>
-                  {contractBalanceError && `• 残高エラー: ${contractBalanceError.message || contractBalanceError}`}<br/>
-                  {dailyRewardError && `• リワードエラー: ${dailyRewardError.message || dailyRewardError}`}<br/>
+                  {contractBalanceError && `• 残高エラー: ${(contractBalanceError as any)?.message || String(contractBalanceError)}`}<br/>
+                  {dailyRewardError && `• リワードエラー: ${(dailyRewardError as any)?.message || String(dailyRewardError)}`}<br/>
                   <br/>
                   💡 Amoyテストネットの制限により、データ読み込みが失敗する場合があります。<br/>
                   ページを再読み込みするか、数分後に再度お試しください。
