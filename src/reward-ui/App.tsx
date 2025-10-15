@@ -498,8 +498,6 @@ export default function App() {
     alert(userMessage);
   };
 
-  const BTN_H = 48; // ウォレット接続ボタンの高さに合わせて統一
-
   return (
     <main
       style={{
