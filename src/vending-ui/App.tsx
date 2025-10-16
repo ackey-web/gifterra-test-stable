@@ -373,6 +373,14 @@ export default function VendingApp() {
   };
   
   const themeColors = getThemeColors();
+  
+  // グローエフェクト用のCSS変数を計算
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
 
   return (
     <div 
@@ -387,7 +395,13 @@ export default function VendingApp() {
         // CSS変数としてテーマカラーを設定
         '--theme-primary': themeColors.primary,
         '--theme-background': themeColors.background,
-        '--theme-text': themeColors.text
+        '--theme-text': themeColors.text,
+        // グローエフェクト用のCSS変数
+        '--theme-primary-glow-1': hexToRgba(themeColors.primary, 0.4),
+        '--theme-primary-glow-2': hexToRgba(themeColors.primary, 0.3),
+        '--theme-primary-glow-strong': hexToRgba(themeColors.primary, 0.5),
+        '--theme-primary-glow-stronger': hexToRgba(themeColors.primary, 0.6),
+        '--theme-background-glow': hexToRgba(themeColors.background, 0.3)
       } as React.CSSProperties}
     >
     <div className="vending-machine">

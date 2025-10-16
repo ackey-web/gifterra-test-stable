@@ -3420,14 +3420,31 @@ export default function AdminDashboard() {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
             const selectedTheme = formData.get('theme') as string;
-            const theme = selectedTheme ? JSON.parse(selectedTheme) : machine.theme;
             
-            // 画像URL設定を更新
-            const updatedTheme = {
-              ...theme,
-              machineImageUrl: formData.get('machineImageUrl') as string || theme.machineImageUrl,
-              backgroundImageUrl: formData.get('backgroundImageUrl') as string || theme.backgroundImageUrl
-            };
+            // テーマカラーの更新処理を修正
+            let updatedTheme;
+            if (selectedTheme) {
+              const newThemeColors = JSON.parse(selectedTheme);
+              updatedTheme = {
+                ...machine.theme,
+                ...newThemeColors,
+                machineImageUrl: formData.get('machineImageUrl') as string || machine.theme.machineImageUrl,
+                backgroundImageUrl: formData.get('backgroundImageUrl') as string || machine.theme.backgroundImageUrl
+              };
+            } else {
+              // テーマカラーは変更せず、画像のみ更新
+              updatedTheme = {
+                ...machine.theme,
+                machineImageUrl: formData.get('machineImageUrl') as string || machine.theme.machineImageUrl,
+                backgroundImageUrl: formData.get('backgroundImageUrl') as string || machine.theme.backgroundImageUrl
+              };
+            }
+            
+            console.log('保存前のデータ:', {
+              name: formData.get('name') as string,
+              description: formData.get('description') as string,
+              theme: updatedTheme
+            });
             
             onUpdate(machineId, {
               name: formData.get('name') as string,
@@ -3435,6 +3452,17 @@ export default function AdminDashboard() {
               slug: (formData.get('name') as string).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
               theme: updatedTheme
             });
+            
+            // 保存後にlocalStorageも更新
+            setTimeout(() => {
+              const updatedMachines = vendingMachines.map(m => 
+                m.id === machineId 
+                  ? { ...m, theme: updatedTheme, name: formData.get('name') as string, description: formData.get('description') as string }
+                  : m
+              );
+              localStorage.setItem('gifterra-admin-machines', JSON.stringify(updatedMachines));
+            }, 100);
+            
             onClose();
           }}>
             <div style={{ display: "grid", gap: 16 }}>
