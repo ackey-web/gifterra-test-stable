@@ -455,7 +455,6 @@ export default function AdminDashboard() {
   const [isManagingProducts, setIsManagingProducts] = useState<string | null>(null);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [isEditingMachine, setIsEditingMachine] = useState<string | null>(null);
-  const [uploadingImages, setUploadingImages] = useState<{[key: string]: string}>({});
   
 
 
