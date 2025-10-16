@@ -176,6 +176,10 @@ export default function VendingApp() {
         const machines = JSON.parse(adminData);
         const adminMachine = machines.find((m: any) => m.slug === machineSlug);
         if (adminMachine) {
+          console.log('管理画面データ:', adminMachine);
+          console.log('背景画像URL:', adminMachine.theme.backgroundImageUrl);
+          console.log('自販機画像URL:', adminMachine.theme.machineImageUrl);
+          
           // 管理画面のデータ形式を自販機UI用に変換
           return {
             id: parseInt(adminMachine.id.replace('vm_', '')) || 1,
