@@ -117,9 +117,6 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
 }
 
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
-  const requestBody = { jsonrpc: "2.0", id: 1, method, params };
-
-  
   // 🔧 履歴表示優先: Public RPCを最初に試行してAlchemyをフォールバックに
   try {
     const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
@@ -1745,7 +1742,6 @@ export default function AdminDashboard() {
         >
           {emergencyStop ? "🟢 稼働再開" : "🛑 緊急停止"}
         </button>
-        </div>
       </div>
 
       {/* システム状況・ウォレット接続パネル */}
