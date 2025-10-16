@@ -455,6 +455,7 @@ export default function AdminDashboard() {
   const [isManagingProducts, setIsManagingProducts] = useState<string | null>(null);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [isEditingMachine, setIsEditingMachine] = useState<string | null>(null);
+  const [uploadingImages, setUploadingImages] = useState<{[key: string]: string}>({});
   
 
 
@@ -3643,8 +3644,25 @@ export default function AdminDashboard() {
                       fontSize: 12
                     }}
                     onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // ファイルサイズチェック（5MB以下）
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('ファイルサイズは5MB以下にしてください');
+                          return;
+                        }
+                        
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const dataUrl = event.target?.result as string;
+                          // URL入力フィールドを更新
+                          const form = e.target.closest('form');
+                          const urlInput = form?.querySelector('input[name="machineImageUrl"]') as HTMLInputElement;
+                          if (urlInput) {
+                            urlInput.value = dataUrl;
+                          }
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
                   />
@@ -3718,8 +3736,25 @@ export default function AdminDashboard() {
                       fontSize: 12
                     }}
                     onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // ファイルサイズチェック（5MB以下）
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('ファイルサイズは5MB以下にしてください');
+                          return;
+                        }
+                        
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const dataUrl = event.target?.result as string;
+                          // URL入力フィールドを更新
+                          const form = e.target.closest('form');
+                          const urlInput = form?.querySelector('input[name="backgroundImageUrl"]') as HTMLInputElement;
+                          if (urlInput) {
+                            urlInput.value = dataUrl;
+                          }
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
                   />
