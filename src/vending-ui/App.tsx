@@ -162,9 +162,67 @@ export default function VendingApp() {
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
   const { mutateAsync: sendTip } = useContractWrite(contract, "sendTip");
   
-  // URLから自販機IDを取得
-  const machineSlug = window.location.pathname.split('/').pop() || 'machine-1';
-  const machine = MOCK_MACHINES.find(m => m.slug === machineSlug) || MOCK_MACHINES[0];
+  // URLから自販機IDを取得（管理画面からのプレビュー対応）
+  const urlParams = new URLSearchParams(window.location.search);
+  const machineParam = urlParams.get('machine');
+  const machineSlug = machineParam || window.location.pathname.split('/').pop() || 'machine-1';
+  
+  // 管理画面のデータを取得（プレビュー時）
+  const getAdminMachineData = () => {
+    try {
+      // localStorage から管理画面のデータを取得
+      const adminData = localStorage.getItem('gifterra-admin-machines');
+      if (adminData) {
+        const machines = JSON.parse(adminData);
+        const adminMachine = machines.find((m: any) => m.slug === machineSlug);
+        if (adminMachine) {
+          // 管理画面のデータ形式を自販機UI用に変換
+          return {
+            id: parseInt(adminMachine.id.replace('vm_', '')) || 1,
+            name: adminMachine.name,
+            slug: adminMachine.slug,
+            displayImage: adminMachine.theme.machineImageUrl || "https://via.placeholder.com/837x768/2a2a2a/FFD700?text=" + encodeURIComponent(adminMachine.name),
+            headerImage: adminMachine.theme.logoUrl,
+            backgroundImage: adminMachine.theme.backgroundImageUrl,
+            isActive: adminMachine.isPublished,
+            products: [
+              {
+                slot: 'A' as const,
+                title: "商品A", 
+                price: 0.01,
+                buttonLabel: "A1",
+                isActive: true,
+                fileType: 'GLB' as const
+              },
+              {
+                slot: 'B' as const,
+                title: "商品B",
+                price: 0.02, 
+                buttonLabel: "B2",
+                isActive: true,
+                fileType: 'MP3' as const
+              },
+              {
+                slot: 'C' as const,
+                title: "商品C",
+                price: 0.05,
+                buttonLabel: "C3",
+                isActive: true,
+                fileType: 'IMAGE' as const
+              }
+            ]
+          };
+        }
+      }
+    } catch (error) {
+      console.log('管理画面データの取得に失敗、モックデータを使用:', error);
+    }
+    return null;
+  };
+  
+  // 管理画面のデータがあればそれを使用、なければモックデータ
+  const adminMachine = getAdminMachineData();
+  const machine = adminMachine || MOCK_MACHINES.find(m => m.slug === machineSlug) || MOCK_MACHINES[0];
   
   const [balance, setBalance] = useState<string>("0.0");
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
@@ -287,15 +345,51 @@ export default function VendingApp() {
     return `${minutes}分`;
   };
 
+  // 管理画面のテーマカラーを取得
+  const getThemeColors = () => {
+    if (adminMachine) {
+      try {
+        const adminData = localStorage.getItem('gifterra-admin-machines');
+        if (adminData) {
+          const machines = JSON.parse(adminData);
+          const adminMachineData = machines.find((m: any) => m.slug === machineSlug);
+          if (adminMachineData?.theme) {
+            return {
+              primary: adminMachineData.theme.primaryColor || '#3b82f6',
+              background: adminMachineData.theme.backgroundColor || '#1e40af',
+              text: adminMachineData.theme.textColor || '#ffffff'
+            };
+          }
+        }
+      } catch (error) {
+        console.log('テーマカラー取得エラー:', error);
+      }
+    }
+    return {
+      primary: '#3b82f6',
+      background: '#1e40af', 
+      text: '#ffffff'
+    };
+  };
+  
+  const themeColors = getThemeColors();
+
   return (
-    <div className="vending-app" style={{
-      backgroundImage: machine.backgroundImage ? `url(${machine.backgroundImage})` : 'none',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      minHeight: '100vh',
-      padding: '20px 0'
-    }}>
+    <div 
+      className="vending-app" 
+      style={{
+        backgroundImage: machine.backgroundImage ? `url(${machine.backgroundImage})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        minHeight: '100vh',
+        padding: '20px 0',
+        // CSS変数としてテーマカラーを設定
+        '--theme-primary': themeColors.primary,
+        '--theme-background': themeColors.background,
+        '--theme-text': themeColors.text
+      } as React.CSSProperties}
+    >
     <div className="vending-machine">
       {/* 統合商品表示エリア（837×768比率） */}
       <div className="unified-display">
