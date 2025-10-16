@@ -6,7 +6,6 @@ import "./index.css";
 import RewardApp from "./reward-ui/App";
 import TipApp from "./tip-ui/App";
 import MetaverseApp from "./metaverse-ui/App";
-import VendingApp from "./vending-ui/App";
 import AdminDashboard from "./admin/Dashboard";
 import AdminDashboardMobile from "./admin/DashboardMobile";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
@@ -66,7 +65,6 @@ const path = location.pathname;
 const wantsAdmin = path.includes("/admin") || uiParam === "admin";
 const wantsTip = path.includes("/tip") || uiParam === "tip";
 const wantsContent = path.includes("/content") || uiParam === "content";
-const wantsVending = path.includes("/vending") || uiParam === "vending";
 const wantsAdminMobile = path.includes("/admin-mobile");
 
 // Admin アクセス時のデバイス判定による自動リダイレクト
@@ -115,8 +113,6 @@ root.render(
         <TipApp />
       ) : wantsContent ? (
         <MetaverseApp />
-      ) : wantsVending ? (
-        <VendingApp />
       ) : (
         <RewardApp />
       )}
