@@ -37,7 +37,7 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-ui-management";
 
 const fmt18 = (v: bigint) => {
   try {
@@ -1587,7 +1587,86 @@ export default function AdminDashboard() {
     );
   };
 
+  // ---- 自販機UI管理ページ ----
+  const VendingUIManagementPage = () => {
+    return (
+      <div style={{
+        padding: 24,
+      }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+          🎁 GIFT HUB (自販機UI) 管理
+        </h2>
+        
+        <div style={{
+          display: "grid",
+          gap: 20,
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))"
+        }}>
+          {/* 自販機プレビューリンク */}
+          <div style={{
+            background: "rgba(245, 158, 11, 0.1)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: 12,
+            padding: 20,
+          }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 18, color: "#f59e0b" }}>
+              🎰 自販機プレビュー
+            </h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: 14, opacity: 0.8 }}>
+              実際の自販機UIをプレビューできます
+            </p>
+            <button
+              onClick={() => window.open('/vending', '_blank')}
+              style={{
+                background: "#f59e0b",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 16px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: 14,
+              }}
+            >
+              🔗 プレビューを開く
+            </button>
+          </div>
 
+          {/* 設定管理（準備中） */}
+          <div style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 12,
+            padding: 20,
+            textAlign: "center",
+            opacity: 0.7
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🚧</div>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>商品管理</h3>
+            <p style={{ margin: 0, fontSize: 12 }}>
+              商品の追加・編集機能は準備中です
+            </p>
+          </div>
+
+          {/* 売上管理（準備中） */}
+          <div style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 12,
+            padding: 20,
+            textAlign: "center",
+            opacity: 0.7
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>売上統計</h3>
+            <p style={{ margin: 0, fontSize: 12 }}>
+              売上データの表示機能は準備中です
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   /* ---------- 画面 ---------- */
 
@@ -1610,6 +1689,7 @@ export default function AdminDashboard() {
           margin: "0 auto",
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           gap: 12,
           padding: "16px 0 24px 0",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
@@ -1677,9 +1757,9 @@ export default function AdminDashboard() {
           � TipUI管理
         </button>
         <button
-          onClick={() => window.open('/vending', '_blank')}
+          onClick={() => setCurrentPage("vending-ui-management")}
           style={{
-            background: "#f59e0b",
+            background: currentPage === "vending-ui-management" ? "#f59e0b" : "#374151",
             color: "#fff",
             border: "none",
             borderRadius: 8,
@@ -1824,6 +1904,8 @@ export default function AdminDashboard() {
         <RewardUIManagementPage />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
+      ) : currentPage === "vending-ui-management" ? (
+        <VendingUIManagementPage />
       ) : (
         <>
           {/* 期間タブ（⚡ パフォーマンス情報付き） */}
