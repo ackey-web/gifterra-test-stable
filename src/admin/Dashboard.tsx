@@ -37,7 +37,7 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management";
 
 const fmt18 = (v: bigint) => {
   try {
@@ -62,13 +62,6 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(requestBody),
-    });
-    
-    console.log("📡 HTTP Response:", {
-      url: rpcUrl,
-      status: res.status,
-      statusText: res.statusText,
-      ok: res.ok
     });
     
     if (!res.ok) {
@@ -125,17 +118,11 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
 
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
   const requestBody = { jsonrpc: "2.0", id: 1, method, params };
-  console.log("🔗 RPC call:", { 
-    method, 
-    paramsLength: params.length,
-    primaryRPC: PUBLIC_RPC, // 履歴表示優先: Public RPCを最初に試行
-    fullRequest: method === "eth_getLogs" ? requestBody : { method, paramsCount: params.length }
-  });
+
   
   // 🔧 履歴表示優先: Public RPCを最初に試行してAlchemyをフォールバックに
   try {
     const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
-    console.log("✅ RPC success (Public):", { method, resultType: typeof result });
     return result;
   } catch (publicError: any) {
     console.warn("⚠️ Public RPC failed, trying Alchemy:", publicError.message);
@@ -145,7 +132,6 @@ async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
   if (ALCHEMY_RPC) {
     try {
       const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
-      console.log("✅ RPC success (Alchemy fallback):", { method, resultType: typeof result });
       return result;
     } catch (error: any) {
       console.error("❌ All RPC endpoints failed");
@@ -168,17 +154,7 @@ async function getBlockTimestamp(num: number): Promise<number> {
   return block?.timestamp ? parseInt(block.timestamp, 16) : 0;
 }
 
-/* ---------- Admin & Lookback ---------- */
-// 📝 現在: テストネット用METATRON管理者
-// 🏭 将来: ファクトリー機構では以下の権限分離を実装
-//    - METATRON管理者: ファクトリー・全体統計管理
-//    - プロジェクト管理者: 各導入ユーザー（コントラクトオーナー）
-//    - 管理画面アクセス: プロジェクト別に動的制御
-const ADMIN_WALLETS = [
-  "0x66f1274ad5d042b7571c2efa943370dbcd3459ab", // METATRON管理者（現在はコントラクトオーナー兼任）
-  // 追加の管理者ウォレットをここに追加可能（テストネット用）
-  // 🏭 メインネット: プロジェクト別管理者は動的に取得
-].map((x) => x.toLowerCase());
+/* ---------- Lookback ---------- */
 // 🔧 パフォーマンス最適化: 期間別の適切なブロック範囲制限
 // Polygon Amoyテストネットの平均ブロック時間: 約2秒
 
@@ -283,79 +259,11 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [adManagementData, setAdManagementData] = useState<AdData[]>([]);
   
-  // 動的管理者リスト管理（リアルタイム更新対応）
-  const [adminWallets, setAdminWallets] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('gifterra-admin-wallets');
-      if (saved) {
-        const additionalAdmins = JSON.parse(saved);
-        // 基本管理者と追加管理者をマージ（重複排除）
-        const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
-        console.log('🔒 Desktop Admin wallets loaded:', {
-          initial: ADMIN_WALLETS,
-          additional: additionalAdmins,
-          merged
-        });
-        return merged;
-      }
-      console.log('🔒 Desktop Using initial admin wallets:', ADMIN_WALLETS);
-      return ADMIN_WALLETS;
-    } catch (error) {
-      console.warn('🔒 Desktop Admin wallets loading error:', error);
-      return ADMIN_WALLETS;
-    }
-  });
 
-  // アドレス変更時の権限チェック更新
-  useEffect(() => {
-    console.log('🔄 Desktop Address changed, updating admin wallets:', {
-      address,
-      currentAdminWallets: adminWallets
-    });
-    
-    // localStorage から最新の管理者リストを再読み込み
-    try {
-      const saved = localStorage.getItem('gifterra-admin-wallets');
-      const additionalAdmins = saved ? JSON.parse(saved) : [];
-      const merged = [...new Set([...ADMIN_WALLETS, ...additionalAdmins])];
-      
-      // 現在のリストと異なる場合のみ更新
-      if (JSON.stringify(merged.sort()) !== JSON.stringify(adminWallets.sort())) {
-        console.log('🔄 Desktop Updating admin wallets list:', { old: adminWallets, new: merged });
-        setAdminWallets(merged);
-      }
-    } catch (error) {
-      console.warn('🔒 Desktop Admin wallets refresh error:', error);
-    }
-  }, [address]); // address が変更されたときに実行
+
+
   
-  // 管理者チェック（リアルタイムで評価）
-  const isAdmin = useMemo(() => {
-    const normalizedAddress = address?.toLowerCase();
-    const result = !!address && adminWallets.includes(normalizedAddress || '');
-    
-    // 詳細デバッグ情報
-    console.log('🔒 Desktop Admin check (詳細):', {
-      originalAddress: address,
-      normalizedAddress,
-      adminWalletsCount: adminWallets.length,
-      adminWallets: adminWallets,
-      initialAdmins: ADMIN_WALLETS,
-      additionalAdmins: (() => {
-        try {
-          const saved = localStorage.getItem('gifterra-admin-wallets');
-          return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-          return `ERROR: ${e}`;
-        }
-      })(),
-      isAddressInList: normalizedAddress ? adminWallets.includes(normalizedAddress) : false,
-      isAdmin: result,
-      timestamp: new Date().toISOString()
-    });
-    
-    return result;
-  }, [address, adminWallets]);
+
   
   // コントラクト読み取り（適切なHook使用）
   const { data: contractBalance, error: contractBalanceError } = useContractRead(
@@ -369,87 +277,9 @@ export default function AdminDashboard() {
     "dailyRewardAmount"
   );
   
-  // 新しいウォレット権限管理
-  const [newAdminAddress, setNewAdminAddress] = useState("");
-  const [showAdminModal, setShowAdminModal] = useState(false);
+
   
-  const addAdminWallet = () => {
-    if (!newAdminAddress.trim()) {
-      alert("ウォレットアドレスを入力してください");
-      return;
-    }
-    
-    const cleanAddress = newAdminAddress.trim().toLowerCase();
-    
-    // アドレス形式の検証
-    if (!ethers.utils.isAddress(cleanAddress)) {
-      alert("有効なウォレットアドレスを入力してください（0x...形式）");
-      return;
-    }
-    
-    // 重複チェック
-    if (adminWallets.includes(cleanAddress)) {
-      alert("このアドレスは既に管理者として登録されています");
-      return;
-    }
-    
-    try {
-      const updatedList = [...new Set([...adminWallets, cleanAddress])];
-      setAdminWallets(updatedList);
-      
-      // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
-      const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
-      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
-      
-      console.log('🔒 Admin added successfully:', {
-        newAdmin: cleanAddress,
-        totalAdmins: updatedList.length,
-        additionalAdmins
-      });
-      
-      setNewAdminAddress("");
-      alert(`✅ 管理者権限を追加しました\n\nアドレス: ${cleanAddress}\n総管理者数: ${updatedList.length}名`);
-    } catch (error) {
-      console.error('🔒 Admin addition error:', error);
-      alert("❌ 管理者追加中にエラーが発生しました");
-    }
-  };
-  
-  const removeAdminWallet = (addressToRemove: string) => {
-    const targetAddress = addressToRemove.toLowerCase();
-    
-    // 初期管理者の削除を防止
-    if (ADMIN_WALLETS.includes(targetAddress)) {
-      alert("⚠️ 初期管理者アドレスは削除できません");
-      return;
-    }
-    
-    // 現在ログイン中のアドレスの削除を防止
-    if (address && address.toLowerCase() === targetAddress) {
-      alert("⚠️ 現在ログイン中のアドレスは削除できません");
-      return;
-    }
-    
-    try {
-      const updatedList = adminWallets.filter(addr => addr !== targetAddress);
-      setAdminWallets(updatedList);
-      
-      // localStorageには追加分のみ保存（ADMIN_WALLETSを除く）
-      const additionalAdmins = updatedList.filter(addr => !ADMIN_WALLETS.includes(addr));
-      localStorage.setItem('gifterra-admin-wallets', JSON.stringify(additionalAdmins));
-      
-      console.log('🔒 Admin removed successfully:', {
-        removedAdmin: targetAddress,
-        remainingAdmins: updatedList.length,
-        additionalAdmins
-      });
-      
-      alert(`✅ 管理者権限を削除しました\n\nアドレス: ${addressToRemove}\n残り管理者数: ${updatedList.length}名`);
-    } catch (error) {
-      console.error('🔒 Admin removal error:', error);
-      alert("❌ 管理者削除中にエラーが発生しました");
-    }
-  };
+
 
   const [period, setPeriod] = useState<Period>("day");
   const [fromBlock, setFromBlock] = useState<bigint | undefined>();
@@ -515,7 +345,6 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
-        console.log("⚡ Setting up optimized block range for period:", period);
         
         const latest = await getLatestBlockNumber();
         let fb: bigint;
@@ -524,7 +353,7 @@ export default function AdminDashboard() {
           // 全期間でも最大範囲を制限（パフォーマンス保護）
           const maxFrom = Math.max(0, latest - MAX_BLOCK_RANGE);
           fb = BigInt(maxFrom);
-          console.log("⚡ Performance protection: Limiting 'all' period to recent", MAX_BLOCK_RANGE, "blocks");
+
         } else {
           // 期間別の最適化されたブロック範囲
           const lookback = OPTIMIZED_LOOKBACK[period];
@@ -600,9 +429,7 @@ export default function AdminDashboard() {
           topics: [TOPIC_TIPPED],
         };
         
-        console.log("🔗 eth_getLogs request:", JSON.stringify(logRequest, null, 2));
-
-        const logs: any[] = await rpc("eth_getLogs", [logRequest]);
+                const logs: any[] = await rpc("eth_getLogs", [logRequest]);
         
         console.log("📊 Raw logs received:", {
           count: logs.length,
@@ -688,10 +515,6 @@ export default function AdminDashboard() {
       );
       if (!need.length) return;
       
-      console.log("⚡ Batch fetching block timestamps:", {
-        blocksToFetch: need.length,
-        estimatedTime: `${Math.ceil(need.length / 10)}s (parallel batches)`
-      });
       
       const add: Record<string, number> = {};
       
@@ -719,7 +542,7 @@ export default function AdminDashboard() {
       }
       
       setBlockTimeMap((prev) => ({ ...prev, ...add }));
-      console.log("✅ Block timestamps cached:", Object.keys(add).length, "blocks");
+
     };
     run();
   }, [rawTips.length]);
@@ -1124,7 +947,7 @@ export default function AdminDashboard() {
         : allAddrsToAnnotate;
       
       if (limitedAddrs.length !== allAddrsToAnnotate.length) {
-        console.log("⚡ Performance optimization: Limited annotation fetch to", limitedAddrs.length, "addresses");
+
       }
       
       await prefetchAnnotations(limitedAddrs);
@@ -1151,7 +974,7 @@ export default function AdminDashboard() {
       
       try {
         if (limitedAddrs.length !== allAddrsToAnnotate.length) {
-          console.log("⚡ Performance optimization: Limited TX message fetch to", limitedAddrs.length, "addresses");
+
         }
         const m = await fetchTxMessages(limitedAddrs);
         if (!cancelled) setTxMsgMap(m || {});
@@ -1770,48 +1593,6 @@ export default function AdminDashboard() {
 
 
   /* ---------- 画面 ---------- */
-  if (!isAdmin) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#0b1620",
-          color: "#fff",
-          display: "grid",
-          placeItems: "center",
-          textAlign: "center",
-          padding: 20,
-        }}
-      >
-        <div
-          style={{
-            background: "rgba(255,255,255,.06)",
-            padding: 24,
-            borderRadius: 16,
-            width: "min(720px, 92vw)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "center", gap: 10, alignItems: "center" }}>
-            <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
-            <h2 style={{ margin: 0 }}>GIFTERRA admin : on-chain (Tipped イベント)</h2>
-          </div>
-          <p style={{ opacity: 0.85 }}>
-            このページは管理者のみ閲覧できます。ウォレットを接続し、権限があるアドレスでアクセスしてください。
-          </p>
-          <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
-            <ConnectWallet 
-              theme="dark" 
-              modalTitle="管理者ウォレット接続"
-              modalTitleIconUrl=""
-            />
-          </div>
-          <div style={{ marginTop: 16, opacity: 0.7, fontSize: 12 }}>
-            Presented by <strong>METATRON.</strong>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main
@@ -1825,125 +1606,145 @@ export default function AdminDashboard() {
         flexDirection: "column",
       }}
     >
-      {/* ヘッダー */}
+      {/* 最上部ヘッダー */}
+      <header
+        style={{
+          width: "min(1120px, 96vw)",
+          margin: "0 auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "16px 0 24px 0",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
+          GIFTERRA admin : Dashboard
+        </h1>
+      </header>
+
+      {/* ナビゲーションボタン */}
+      <nav
+        style={{
+          width: "min(1120px, 96vw)",
+          margin: "0 auto 24px",
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => setCurrentPage("dashboard")}
+          style={{
+            background: currentPage === "dashboard" ? "#16a34a" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          📊 ダッシュボード
+        </button>
+        <button
+          onClick={() => setCurrentPage("reward-ui-management")}
+          style={{
+            background: currentPage === "reward-ui-management" ? "#7c3aed" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          � リワードUI管理
+        </button>
+        <button
+          onClick={() => setCurrentPage("tip-ui-management")}
+          style={{
+            background: currentPage === "tip-ui-management" ? "#dc2626" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          � TipUI管理
+        </button>
+        <button
+          onClick={() => window.open('/vending', '_blank')}
+          style={{
+            background: "#f59e0b",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          🎁 GIFT HUB管理
+        </button>
+      </nav>
+
+      {/* システム制御ボタン */}
       <div
         style={{
           width: "min(1120px, 96vw)",
-          margin: "0 auto 8px",
+          margin: "0 auto 16px",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
+          gap: 8,
+          justifyContent: "flex-end",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
-            {currentPage === "dashboard" 
-              ? "GIFTERRA admin : on-chain (Tipped イベント)" 
-              : currentPage === "reward-ui-management"
-              ? "GIFTERRA admin : リワードUI管理"
-              : currentPage === "tip-ui-management" 
-              ? "GIFTERRA admin : Tip UI 管理" 
-              : currentPage === "vending-management"
-              ? "GIFTERRA admin : 自販機管理"
-              : "GIFTERRA admin : リワードUI 総合管理"}
-          </h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            onClick={() => setCurrentPage("dashboard")}
-            style={{
-              background: currentPage === "dashboard" ? "#16a34a" : "#374151",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            📊 ダッシュボード
-          </button>
-          <button
-            onClick={() => setCurrentPage("reward-ui-management")}
-            style={{
-              background: currentPage === "reward-ui-management" ? "#7c3aed" : "#374151",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            📱 リワードUI管理
-          </button>
-          <button
-            onClick={() => setCurrentPage("tip-ui-management")}
-            style={{
-              background: currentPage === "tip-ui-management" ? "#dc2626" : "#374151",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            💸 TipUI管理
-          </button>
-          <button
-            onClick={() => setCurrentPage("vending-management")}
-            style={{
-              background: currentPage === "vending-management" ? "#f59e0b" : "#374151",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            🏪 自販機管理
-          </button>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: "#0ea5e9",
-              color: "#0a0a0a",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            リロード
-          </button>
-          <button
-            onClick={() => {
-              if (emergencyStop) {
-                setEmergencyStop(false);
-                setEmergencyFlag(false);
-              } else {
-                setEmergencyStop(true);
-                setEmergencyFlag(true);
-              }
-            }}
-            style={{
-              background: emergencyStop ? "#16a34a" : "#dc2626",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontWeight: 800,
-              cursor: "pointer",
-              minWidth: 100,
-            }}
-          >
-            {emergencyStop ? "🟢 稼働再開" : "🛑 緊急停止"}
-          </button>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: "#0ea5e9",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 12,
+          }}
+        >
+          🔄 リロード
+        </button>
+        <button
+          onClick={() => {
+            if (emergencyStop) {
+              setEmergencyStop(false);
+              setEmergencyFlag(false);
+            } else {
+              setEmergencyStop(true);
+              setEmergencyFlag(true);
+            }
+          }}
+          style={{
+            background: emergencyStop ? "#16a34a" : "#dc2626",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 12px",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: 12,
+            minWidth: 100,
+          }}
+        >
+          {emergencyStop ? "🟢 稼働再開" : "🛑 緊急停止"}
+        </button>
         </div>
       </div>
 
@@ -2018,32 +1819,7 @@ export default function AdminDashboard() {
               modalTitle="管理者ダッシュボード接続"
               modalTitleIconUrl=""
             />
-            <button
-              onClick={() => setShowAdminModal(true)}
-              style={{
-                background: "#6366f1",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "8px 12px",
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                whiteSpace: "nowrap",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = "#4f46e5";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "#6366f1";
-              }}
-            >
-              🔒 権限
-            </button>
+
           </div>
         </div>
       </div>
@@ -2052,8 +1828,6 @@ export default function AdminDashboard() {
         <RewardUIManagementPage />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
-      ) : currentPage === "vending-management" ? (
-        <VendingManagementPage />
       ) : (
         <>
           {/* 期間タブ（⚡ パフォーマンス情報付き） */}
@@ -2743,236 +2517,7 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* 管理者権限管理ポップアップモーダル */}
-      {showAdminModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowAdminModal(false);
-            }
-          }}
-        >
-          <div
-            style={{
-              background: "#1f2937",
-              borderRadius: 16,
-              padding: 24,
-              width: "min(600px, 90vw)",
-              maxHeight: "80vh",
-              overflow: "auto",
-              border: "1px solid rgba(255,255,255,.1)",
-              boxShadow: "0 20px 40px rgba(0,0,0,.5)",
-            }}
-          >
-            {/* ヘッダー */}
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 20,
-              paddingBottom: 16,
-              borderBottom: "1px solid rgba(255,255,255,.1)"
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: 18,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                color: "#fff"
-              }}>
-                🔒 管理者権限管理
-              </h3>
-              <button
-                onClick={() => setShowAdminModal(false)}
-                style={{
-                  background: "rgba(255,255,255,.1)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 32,
-                  height: 32,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontSize: 16,
-                }}
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* デバッグ情報表示 */}
-            <div style={{ marginBottom: 16, padding: 12, background: "rgba(34, 197, 94, 0.1)", borderRadius: 8, border: "1px solid rgba(34, 197, 94, 0.2)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#22c55e" }}>
-                🔍 権限管理デバッグ情報
-              </div>
-              <div style={{ fontSize: 11, color: "#e5e7eb", lineHeight: 1.4 }}>
-                <div>現在のログインアドレス: <code>{address || "未接続"}</code></div>
-                <div>管理者権限: <span style={{ color: isAdmin ? "#22c55e" : "#ef4444" }}>{isAdmin ? "✅ あり" : "❌ なし"}</span></div>
-                <div>総管理者数: {adminWallets.length}名</div>
-                <div>初期管理者数: {ADMIN_WALLETS.length}名</div>
-                <div>追加管理者数: {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).length}名</div>
-              </div>
-            </div>
-
-            {/* 新規管理者追加 */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
-                新規管理者追加
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  type="text"
-                  placeholder="新しい管理者のウォレットアドレス (0x...)"
-                  value={newAdminAddress}
-                  onChange={(e) => setNewAdminAddress(e.target.value)}
-                  style={{
-                    background: "rgba(0,0,0,.4)",
-                    border: "1px solid rgba(255,255,255,.2)",
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    color: "#fff",
-                    fontSize: 14,
-                    flex: 1,
-                    minWidth: 300,
-                  }}
-                />
-                <button
-                  onClick={addAdminWallet}
-                  style={{
-                    background: "#10b981",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "12px 20px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  ➕ 管理者追加
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("⚠️ 管理者権限のキャッシュをリセットします。\n\n初期管理者のみが残り、追加された管理者は全て削除されます。\n\n実行しますか？")) {
-                      localStorage.removeItem('gifterra-admin-wallets');
-                      setAdminWallets(ADMIN_WALLETS);
-                      alert("✅ 管理者権限のキャッシュをリセットしました");
-                    }
-                  }}
-                  style={{
-                    background: "#f59e0b",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  🔄 リセット
-                </button>
-              </div>
-            </div>
-
-            {/* 現在の管理者リスト */}
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#fff" }}>
-                現在の管理者 ({adminWallets.length}名)
-              </div>
-              <div style={{ display: "grid", gap: 8, maxHeight: 300, overflow: "auto" }}>
-                {/* 初期管理者（削除不可） */}
-                {ADMIN_WALLETS.map((addr) => (
-                  <div key={addr} style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "rgba(34, 197, 94, 0.15)",
-                    border: "1px solid rgba(34, 197, 94, 0.3)",
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    fontSize: 13,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ color: "#22c55e", fontWeight: 600 }}>🔒 初期管理者</span>
-                      <code style={{
-                        background: "rgba(0,0,0,.4)",
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        color: "#e5e7eb"
-                      }}>
-                        {addr}
-                      </code>
-                    </div>
-                    <span style={{ color: "#22c55e", fontSize: 12, opacity: 0.8 }}>削除不可</span>
-                  </div>
-                ))}
-                
-                {/* 追加された管理者（削除可能） */}
-                {adminWallets.filter(addr => !ADMIN_WALLETS.includes(addr)).map((addr) => (
-                  <div key={addr} style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "rgba(59, 130, 246, 0.15)",
-                    border: "1px solid rgba(59, 130, 246, 0.3)",
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    fontSize: 13,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ color: "#3b82f6", fontWeight: 600 }}>👤 追加管理者</span>
-                      <code style={{
-                        background: "rgba(0,0,0,.4)",
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        color: "#e5e7eb"
-                      }}>
-                        {addr}
-                      </code>
-                    </div>
-                    <button
-                      onClick={() => removeAdminWallet(addr)}
-                      style={{
-                        background: "#ef4444",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 6,
-                        padding: "6px 12px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      🗑️ 削除
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
         </>
       )}
 
@@ -2990,409 +2535,5 @@ export default function AdminDashboard() {
 
       {isLoading && <LoadingOverlay period={period} />}
     </main>
-  );
-}
-
-/* ========================================
-   🏪 自販機管理ページ
-======================================== */
-function VendingManagementPage() {
-  const [machines, setMachines] = useState([
-    {
-      id: 1,
-      name: "アート & 3D コレクション",
-      slug: "machine-1",
-      displayImage: "https://via.placeholder.com/837x768/2a2a2a/FFD700?text=ART+%26+3D+COLLECTION",
-      headerImage: "https://via.placeholder.com/400x120/1a1a1a/FFD700?text=EXCLUSIVE+ART+COLLECTION",
-      backgroundImage: "https://via.placeholder.com/1920x1080/1a1a1a/333333?text=BACKGROUND",
-      isActive: true,
-      products: [
-        { slot: 'A', title: "限定3Dモデル", price: 0.01, buttonLabel: "A1", isActive: true, fileType: 'GLB' },
-        { slot: 'B', title: "プレミアムBGM", price: 0.02, buttonLabel: "B2", isActive: true, fileType: 'MP3' },
-        { slot: 'C', title: "デジタルアート", price: 0.05, buttonLabel: "C3", isActive: true, fileType: 'IMAGE' }
-      ]
-    },
-    {
-      id: 2,
-      name: "ゲーム & エンタメ",
-      slug: "machine-2",
-      displayImage: "https://via.placeholder.com/837x768/2a2a2a/9370DB?text=GAME+%26+ENTERTAINMENT",
-      headerImage: "https://via.placeholder.com/400x120/1a1a1a/9370DB?text=GAME+COLLECTION",
-      backgroundImage: "https://via.placeholder.com/1920x1080/1a1a2a/444444?text=GAME+BACKGROUND",
-      isActive: true,
-      products: [
-        { slot: 'A', title: "ゲームアセット", price: 0.03, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
-        { slot: 'B', title: "効果音パック", price: 0.015, buttonLabel: "B2", isActive: true, fileType: 'MP3' },
-        { slot: 'C', title: "キャラクター3D", price: 0.08, buttonLabel: "C3", isActive: true, fileType: 'GLB' }
-      ]
-    },
-    {
-      id: 3,
-      name: "クリエイター限定",
-      slug: "machine-3",
-      displayImage: "https://via.placeholder.com/837x768/2a2a2a/FF8C00?text=CREATOR+EXCLUSIVE",
-      headerImage: "https://via.placeholder.com/400x120/1a1a1a/FF8C00?text=CREATOR+COLLECTION",
-      backgroundImage: "https://via.placeholder.com/1920x1080/2a1a1a/555555?text=CREATOR+BACKGROUND",
-      isActive: true,
-      products: [
-        { slot: 'A', title: "制作ツール", price: 0.06, buttonLabel: "A1", isActive: true, fileType: 'ZIP' },
-        { slot: 'B', title: "テンプレート集", price: 0.04, buttonLabel: "B2", isActive: true, fileType: 'ZIP' },
-        { slot: 'C', title: "限定エディション", price: 0.1, buttonLabel: "C3", isActive: true, fileType: 'GLB' }
-      ]
-    },
-  ]);
-
-  // 画像URL更新
-  const handleImageUpdate = (machineId: number, type: 'header' | 'display' | 'background', newUrl: string) => {
-    setMachines(prev => prev.map(machine => 
-      machine.id === machineId 
-        ? { 
-            ...machine, 
-            [type === 'header' ? 'headerImage' : type === 'background' ? 'backgroundImage' : 'displayImage']: newUrl 
-          }
-        : machine
-    ));
-  };
-
-  // 商品情報更新
-  const handleProductUpdate = (machineId: number, slot: string, field: string, value: any) => {
-    setMachines(prev => prev.map(machine => 
-      machine.id === machineId 
-        ? {
-            ...machine,
-            products: machine.products.map(product =>
-              product.slot === slot ? { ...product, [field]: value } : product
-            )
-          }
-        : machine
-    ));
-  };
-
-  return (
-    <div style={{ padding: 20, maxWidth: 1200, margin: "0 auto" }}>
-      <div style={{ 
-        background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
-        borderRadius: 12,
-        padding: 24,
-        marginBottom: 24,
-        border: "1px solid rgba(255,255,255,0.1)"
-      }}>
-        <h2 style={{ margin: 0, marginBottom: 16, color: "#f9fafb", fontSize: 24, fontWeight: 700 }}>
-          🏪 自販機管理システム
-        </h2>
-        <p style={{ margin: 0, color: "#d1d5db", lineHeight: 1.6 }}>
-          3台の自販機の商品画像、ヘッダー画像、価格設定を管理できます。
-          画像は837×768比率で表示され、余白は黒色で統一されます。
-        </p>
-      </div>
-
-      {machines.map(machine => (
-        <div key={machine.id} style={{
-          background: "#1f2937",
-          borderRadius: 12,
-          padding: 24,
-          marginBottom: 24,
-          border: "1px solid rgba(255,255,255,0.1)"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, color: "#f9fafb", fontSize: 20, fontWeight: 600 }}>
-                自販機 #{machine.id}: {machine.name}
-              </h3>
-              <p style={{ margin: "4px 0", color: "#9ca3af", fontSize: 14 }}>
-                URL: /vending/?ui=vending (Machine #{machine.id})
-              </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ 
-                color: machine.isActive ? "#10b981" : "#ef4444",
-                fontWeight: 600,
-                fontSize: 14
-              }}>
-                {machine.isActive ? "🟢 稼働中" : "🔴 停止中"}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-            {/* 画像管理 */}
-            <div>
-              <h4 style={{ color: "#f9fafb", margin: "0 0 16px 0", fontSize: 16, fontWeight: 600 }}>
-                📷 画像管理
-              </h4>
-              
-              {/* ヘッダー画像 */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
-                  ヘッダー画像 (400×120推奨)
-                </label>
-                <div style={{ 
-                  background: "#111827",
-                  border: "2px dashed rgba(255,255,255,0.2)",
-                  borderRadius: 8,
-                  padding: 16,
-                  textAlign: "center",
-                  marginBottom: 12
-                }}>
-                  {machine.headerImage ? (
-                    <img 
-                      src={machine.headerImage} 
-                      alt="Header preview"
-                      style={{ maxWidth: "100%", height: 60, objectFit: "cover", borderRadius: 4 }}
-                    />
-                  ) : (
-                    <div style={{ color: "#6b7280", fontSize: 14 }}>
-                      ヘッダー画像なし
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="ヘッダー画像URL"
-                  value={machine.headerImage || ''}
-                  onChange={(e) => handleImageUpdate(machine.id, 'header', e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: 6,
-                    background: "#374151",
-                    color: "#f9fafb",
-                    fontSize: 14
-                  }}
-                />
-              </div>
-
-              {/* 商品展示画像 */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
-                  商品展示画像 (837×768比率)
-                </label>
-                <div style={{ 
-                  background: "#111827",
-                  border: "2px dashed rgba(255,255,255,0.2)",
-                  borderRadius: 8,
-                  padding: 16,
-                  textAlign: "center",
-                  marginBottom: 12
-                }}>
-                  <img 
-                    src={machine.displayImage} 
-                    alt="Display preview"
-                    style={{ 
-                      maxWidth: "100%", 
-                      height: 120, 
-                      objectFit: "cover", 
-                      borderRadius: 4,
-                      aspectRatio: "837/768"
-                    }}
-                  />
-                </div>
-                <input
-                  type="text"
-                  placeholder="商品展示画像URL (837×768)"
-                  value={machine.displayImage}
-                  onChange={(e) => handleImageUpdate(machine.id, 'display', e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: 6,
-                    background: "#374151",
-                    color: "#f9fafb",
-                    fontSize: 14
-                  }}
-                />
-              </div>
-
-              {/* 背景画像 */}
-              <div>
-                <label style={{ color: "#d1d5db", fontSize: 14, fontWeight: 500, display: "block", marginBottom: 8 }}>
-                  背景画像 (1920×1080推奨)
-                </label>
-                <div style={{ 
-                  background: "#111827",
-                  border: "2px dashed rgba(255,255,255,0.2)",
-                  borderRadius: 8,
-                  padding: 16,
-                  textAlign: "center",
-                  marginBottom: 12
-                }}>
-                  {machine.backgroundImage ? (
-                    <img 
-                      src={machine.backgroundImage} 
-                      alt="Background preview"
-                      style={{ 
-                        maxWidth: "100%", 
-                        height: 80, 
-                        objectFit: "cover", 
-                        borderRadius: 4
-                      }}
-                    />
-                  ) : (
-                    <div style={{ color: "#6b7280", fontSize: 14 }}>
-                      背景画像なし
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="背景画像URL (1920×1080)"
-                  value={machine.backgroundImage || ''}
-                  onChange={(e) => handleImageUpdate(machine.id, 'background', e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: 6,
-                    background: "#374151",
-                    color: "#f9fafb",
-                    fontSize: 14
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 商品管理 */}
-            <div>
-              <h4 style={{ color: "#f9fafb", margin: "0 0 16px 0", fontSize: 16, fontWeight: 600 }}>
-                🛍️ 商品管理
-              </h4>
-              
-              {machine.products.map(product => (
-                <div key={product.slot} style={{
-                  background: "#111827",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8,
-                  padding: 16,
-                  marginBottom: 12
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <h5 style={{ margin: 0, color: "#f9fafb", fontSize: 16, fontWeight: 600 }}>
-                      スロット {product.slot} ({product.buttonLabel})
-                    </h5>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ 
-                        background: product.fileType === 'GLB' ? '#8b5cf6' : 
-                                   product.fileType === 'MP3' ? '#06b6d4' :
-                                   product.fileType === 'IMAGE' ? '#10b981' : '#f59e0b',
-                        color: 'white',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        fontSize: 12,
-                        fontWeight: 600
-                      }}>
-                        {product.fileType}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-                    <input
-                      type="text"
-                      placeholder="商品名"
-                      value={product.title}
-                      onChange={(e) => handleProductUpdate(machine.id, product.slot, 'title', e.target.value)}
-                      style={{
-                        padding: "6px 10px",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        borderRadius: 4,
-                        background: "#374151",
-                        color: "#f9fafb",
-                        fontSize: 14
-                      }}
-                    />
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input
-                        type="number"
-                        placeholder="価格"
-                        value={product.price}
-                        onChange={(e) => handleProductUpdate(machine.id, product.slot, 'price', parseFloat(e.target.value))}
-                        step="0.001"
-                        min="0"
-                        style={{
-                          width: "80px",
-                          padding: "6px 8px",
-                          border: "1px solid rgba(255,255,255,0.2)",
-                          borderRadius: 4,
-                          background: "#374151",
-                          color: "#f9fafb",
-                          fontSize: 14
-                        }}
-                      />
-                      <span style={{ color: "#9ca3af", fontSize: 14 }}>ETH</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ 
-            marginTop: 20, 
-            padding: 16, 
-            background: "#065f46", 
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
-          }}>
-            <div>
-              <div style={{ color: "#d1fae5", fontWeight: 600, fontSize: 14 }}>
-                💾 設定を保存
-              </div>
-              <div style={{ color: "#a7f3d0", fontSize: 12, marginTop: 2 }}>
-                変更内容をデータベースに保存します
-              </div>
-            </div>
-            <button style={{
-              background: "#10b981",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              padding: "10px 20px",
-              cursor: "pointer",
-              fontSize: 14,
-              fontWeight: 600
-            }}>
-              💾 保存
-            </button>
-          </div>
-        </div>
-      ))}
-
-      {/* プレビューリンク */}
-      <div style={{
-        background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
-        borderRadius: 12,
-        padding: 24,
-        textAlign: "center",
-        color: "white"
-      }}>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: 18, fontWeight: 600 }}>
-          🔍 自販機プレビュー
-        </h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 14, opacity: 0.9 }}>
-          設定した自販機をプレビューで確認できます
-        </p>
-        <a 
-          href="/vending" 
-          target="_blank"
-          style={{
-            background: "rgba(255,255,255,0.2)",
-            color: "white",
-            textDecoration: "none",
-            padding: "10px 20px",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            display: "inline-block",
-            backdropFilter: "blur(10px)"
-          }}
-        >
-          🚀 自販機を開く
-        </a>
-      </div>
-    </div>
   );
 }
