@@ -319,88 +319,135 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [adManagementData, setAdManagementData] = useState<AdData[]>([]);
   
-  // 🎁 GIFT HUB (自販機) 状態管理
-  const [vendingMachines, setVendingMachines] = useState<VendingMachine[]>([
-    {
-      id: "vm_sample_01",
-      name: "デジタルアートストア",
-      slug: "digital-art-store",
-      description: "オリジナルデジタルアート作品を販売する自販機",
-      isPublished: true,
-      theme: {
-        primaryColor: "#3b82f6",
-        backgroundColor: "#1e40af",
-        textColor: "#ffffff",
-        logoUrl: "/sample-logo.png"
-      },
-      createdAt: new Date("2024-01-15"),
-      updatedAt: new Date("2024-02-01"),
-      ownerId: address || "0x0000000000000000000000000000000000000000"
-    },
-    {
-      id: "vm_sample_02", 
-      name: "音楽素材ハブ",
-      slug: "music-materials-hub",
-      description: "BGM・効果音・楽曲素材の販売",
-      isPublished: false,
-      theme: {
-        primaryColor: "#7c3aed",
-        backgroundColor: "#5b21b6", 
-        textColor: "#ffffff"
-      },
-      createdAt: new Date("2024-02-10"),
-      updatedAt: new Date("2024-02-15"),
-      ownerId: address || "0x0000000000000000000000000000000000000000"
+  // 🎁 GIFT HUB (自販機) 状態管理 - localStorage から復元
+  const getInitialVendingMachines = (): VendingMachine[] => {
+    try {
+      const savedMachines = localStorage.getItem('gifterra-admin-machines');
+      if (savedMachines) {
+        const parsed = JSON.parse(savedMachines);
+        // 既存データがあれば復元（日付オブジェクトの復元も含む）
+        return parsed.map((machine: any) => ({
+          ...machine,
+          createdAt: new Date(machine.createdAt),
+          updatedAt: new Date(machine.updatedAt)
+        }));
+      }
+    } catch (error) {
+      console.log('保存されたデータの復元に失敗、デフォルトデータを使用:', error);
     }
-  ]);
+    
+    // 初回または復元失敗時のデフォルトデータ
+    const defaultMachines = [
+      {
+        id: "vm_sample_01",
+        name: "デジタルアートストア",
+        slug: "digital-art-store",
+        description: "オリジナルデジタルアート作品を販売する自販機",
+        isPublished: true,
+        theme: {
+          primaryColor: "#3b82f6",
+          backgroundColor: "#1e40af",
+          textColor: "#ffffff",
+          logoUrl: "/sample-logo.png"
+        },
+        createdAt: new Date("2024-01-15"),
+        updatedAt: new Date("2024-02-01"),
+        ownerId: address || "0x0000000000000000000000000000000000000000"
+      },
+      {
+        id: "vm_sample_02", 
+        name: "音楽素材ハブ",
+        slug: "music-materials-hub",
+        description: "BGM・効果音・楽曲素材の販売",
+        isPublished: false,
+        theme: {
+          primaryColor: "#7c3aed",
+          backgroundColor: "#5b21b6", 
+          textColor: "#ffffff"
+        },
+        createdAt: new Date("2024-02-10"),
+        updatedAt: new Date("2024-02-15"),
+        ownerId: address || "0x0000000000000000000000000000000000000000"
+      }
+    ];
+    
+    // デフォルトデータをlocalStorageに保存
+    localStorage.setItem('gifterra-admin-machines', JSON.stringify(defaultMachines));
+    return defaultMachines;
+  };
+
+  const [vendingMachines, setVendingMachines] = useState<VendingMachine[]>(getInitialVendingMachines());
   
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "prod_001",
-      machineId: "vm_sample_01",
-      name: "未来都市イラスト",
-      description: "サイバーパンク風の未来都市風景",
-      price: 100,
-      imageUrl: "/sample-art1.jpg",
-      downloadUrl: "/downloads/future-city.zip",
-      stock: 50,
-      isActive: true,
-      category: "イラスト",
-      sortOrder: 1,
-      createdAt: new Date("2024-01-20"),
-      updatedAt: new Date("2024-01-25")
-    },
-    {
-      id: "prod_002", 
-      machineId: "vm_sample_01",
-      name: "宇宙ステーション3Dモデル",
-      description: "ゲーム・VR用の高精細3Dモデル",
-      price: 250,
-      imageUrl: "/sample-3d1.jpg", 
-      downloadUrl: "/downloads/space-station.fbx",
-      stock: null, // 無制限
-      isActive: true,
-      category: "3Dモデル",
-      sortOrder: 2,
-      createdAt: new Date("2024-01-22"),
-      updatedAt: new Date("2024-01-30")
-    },
-    {
-      id: "prod_003",
-      machineId: "vm_sample_02", 
-      name: "ロイヤリティフリーBGM集",
-      description: "商用利用可能なBGM30曲セット",
-      price: 500,
-      imageUrl: "/sample-music1.jpg",
-      downloadUrl: "/downloads/bgm-pack-vol1.zip", 
-      stock: 100,
-      isActive: true,
-      category: "音楽",
-      sortOrder: 1,
-      createdAt: new Date("2024-02-12"),
-      updatedAt: new Date("2024-02-14")
+  // 商品データの初期化・復元
+  const getInitialProducts = (): Product[] => {
+    try {
+      const savedProducts = localStorage.getItem('gifterra-admin-products');
+      if (savedProducts) {
+        const parsed = JSON.parse(savedProducts);
+        return parsed.map((product: any) => ({
+          ...product,
+          createdAt: new Date(product.createdAt),
+          updatedAt: new Date(product.updatedAt)
+        }));
+      }
+    } catch (error) {
+      console.log('保存された商品データの復元に失敗、デフォルトデータを使用:', error);
     }
-  ]);
+    
+    // デフォルト商品データ
+    const defaultProducts = [
+      {
+        id: "prod_001",
+        machineId: "vm_sample_01",
+        name: "未来都市イラスト",
+        description: "サイバーパンク風の未来都市風景",
+        price: 100,
+        imageUrl: "/sample-art1.jpg",
+        downloadUrl: "/downloads/future-city.zip",
+        stock: 50,
+        isActive: true,
+        category: "イラスト",
+        sortOrder: 1,
+        createdAt: new Date("2024-01-20"),
+        updatedAt: new Date("2024-01-25")
+      },
+      {
+        id: "prod_002", 
+        machineId: "vm_sample_01",
+        name: "宇宙ステーション3Dモデル",
+        description: "ゲーム・VR用の高精細3Dモデル",
+        price: 250,
+        imageUrl: "/sample-3d1.jpg", 
+        downloadUrl: "/downloads/space-station.fbx",
+        stock: null, // 無制限
+        isActive: true,
+        category: "3Dモデル",
+        sortOrder: 2,
+        createdAt: new Date("2024-01-22"),
+        updatedAt: new Date("2024-01-30")
+      },
+      {
+        id: "prod_003",
+        machineId: "vm_sample_02", 
+        name: "ロイヤリティフリーBGM集",
+        description: "商用利用可能なBGM30曲セット",
+        price: 500,
+        imageUrl: "/sample-music1.jpg",
+        downloadUrl: "/downloads/bgm-pack-vol1.zip", 
+        stock: 100,
+        isActive: true,
+        category: "音楽",
+        sortOrder: 1,
+        createdAt: new Date("2024-02-12"),
+        updatedAt: new Date("2024-02-14")
+      }
+    ];
+    
+    localStorage.setItem('gifterra-admin-products', JSON.stringify(defaultProducts));
+    return defaultProducts;
+  };
+
+  const [products, setProducts] = useState<Product[]>(getInitialProducts());
   
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
   const [isCreatingMachine, setIsCreatingMachine] = useState(false);
@@ -451,23 +498,39 @@ export default function AdminDashboard() {
       updatedAt: new Date(),
       ownerId: address || "0x0000000000000000000000000000000000000000"
     };
-    setVendingMachines(prev => [...prev, newMachine]);
+    setVendingMachines(prev => {
+      const updated = [...prev, newMachine];
+      // 即座にlocalStorageに保存
+      localStorage.setItem('gifterra-admin-machines', JSON.stringify(updated));
+      return updated;
+    });
     return newMachine;
   };
   
   const updateVendingMachine = (id: string, updates: Partial<VendingMachine>) => {
-    setVendingMachines(prev => 
-      prev.map(machine => 
+    setVendingMachines(prev => {
+      const updated = prev.map(machine => 
         machine.id === id 
           ? { ...machine, ...updates, updatedAt: new Date() }
           : machine
-      )
-    );
+      );
+      // 即座にlocalStorageに保存
+      localStorage.setItem('gifterra-admin-machines', JSON.stringify(updated));
+      return updated;
+    });
   };
   
   const deleteVendingMachine = (id: string) => {
-    setVendingMachines(prev => prev.filter(machine => machine.id !== id));
-    setProducts(prev => prev.filter(product => product.machineId !== id));
+    const updatedMachines = vendingMachines.filter(machine => machine.id !== id);
+    const updatedProducts = products.filter(product => product.machineId !== id);
+    
+    setVendingMachines(updatedMachines);
+    setProducts(updatedProducts);
+    
+    // 即座にlocalStorageに保存
+    localStorage.setItem('gifterra-admin-machines', JSON.stringify(updatedMachines));
+    localStorage.setItem('gifterra-admin-products', JSON.stringify(updatedProducts));
+    
     if (selectedMachine === id) {
       setSelectedMachine(null);
     }
@@ -487,6 +550,7 @@ export default function AdminDashboard() {
     
     // 商品もコピー
     const originalProducts = products.filter(p => p.machineId === id);
+    const newProducts: Product[] = [];
     originalProducts.forEach(product => {
       const newProduct: Product = {
         ...product,
@@ -495,8 +559,17 @@ export default function AdminDashboard() {
         createdAt: new Date(),
         updatedAt: new Date()
       };
-      setProducts(prev => [...prev, newProduct]);
+      newProducts.push(newProduct);
     });
+    
+    if (newProducts.length > 0) {
+      setProducts(prev => {
+        const updated = [...prev, ...newProducts];
+        // 即座にlocalStorageに保存
+        localStorage.setItem('gifterra-admin-products', JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
   
   const getFilteredMachines = () => {
@@ -542,22 +615,35 @@ export default function AdminDashboard() {
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    setProducts(prev => [...prev, newProduct]);
+    setProducts(prev => {
+      const updated = [...prev, newProduct];
+      // 即座にlocalStorageに保存
+      localStorage.setItem('gifterra-admin-products', JSON.stringify(updated));
+      return updated;
+    });
     return newProduct;
   };
   
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prev =>
-      prev.map(product =>
+    setProducts(prev => {
+      const updated = prev.map(product =>
         product.id === id
           ? { ...product, ...updates, updatedAt: new Date() }
           : product
-      )
-    );
+      );
+      // 即座にlocalStorageに保存
+      localStorage.setItem('gifterra-admin-products', JSON.stringify(updated));
+      return updated;
+    });
   };
   
   const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(product => product.id !== id));
+    setProducts(prev => {
+      const updated = prev.filter(product => product.id !== id);
+      // 即座にlocalStorageに保存
+      localStorage.setItem('gifterra-admin-products', JSON.stringify(updated));
+      return updated;
+    });
   };
   
   const duplicateProduct = (id: string) => {
