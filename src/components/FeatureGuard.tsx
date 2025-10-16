@@ -2,7 +2,7 @@
 // 🛡️ 機能制限コンポーネント（将来のマルチテナント実装準備）
 
 import React from 'react';
-import { hasFeatureAccess, getFeatureRestriction, getFeatureDescription } from '../utils/permissions';
+import { getFeatureRestriction, getFeatureDescription } from '../utils/permissions';
 
 interface FeatureGuardProps {
   feature: string;

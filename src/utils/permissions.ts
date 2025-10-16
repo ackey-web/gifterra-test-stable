@@ -1,7 +1,8 @@
 // src/utils/permissions.ts
 // 🔐 権限管理・機能制限ユーティリティ（将来のマルチテナント実装準備）
 
-import { User, UserRole, FeatureFlag, Tenant, DEFAULT_TENANT, DEFAULT_PLAN } from '../types/tenant';
+import type { User, Tenant } from '../types/tenant';
+import { UserRole, DEFAULT_TENANT, DEFAULT_PLAN } from '../types/tenant';
 
 /**
  * 現在のユーザー情報を取得
@@ -84,14 +85,14 @@ export const getFeatureRestriction = (
 export const checkPlanLimit = (
   limitType: keyof Tenant['settings'] | 'vending_machines' | 'monthly_transactions',
   currentUsage: number,
-  tenant?: Tenant
+  _tenant?: Tenant
 ): {
   withinLimit: boolean;
   limit: number;
   remaining: number;
 } => {
   // 現在は制限なし
-  const currentTenant = tenant || getCurrentTenant();
+  // const currentTenant = _tenant || getCurrentTenant(); // 将来の実装で使用予定
   
   // 将来の実装：実際のプラン制限をチェック
   const limits = DEFAULT_PLAN.limits;

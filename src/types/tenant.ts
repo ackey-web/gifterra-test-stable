@@ -5,11 +5,13 @@
  * ユーザーロール定義
  * 現在は SUPER_ADMIN のみ使用、将来的にテナント管理者を追加予定
  */
-export enum UserRole {
-  SUPER_ADMIN = 'super_admin',      // 運営側管理者（現在の admin UI ユーザー）
-  TENANT_ADMIN = 'tenant_admin',    // 導入者管理者（将来実装）
-  TENANT_USER = 'tenant_user'       // 導入者の一般ユーザー（将来実装）
-}
+export const UserRole = {
+  SUPER_ADMIN: 'super_admin',      // 運営側管理者（現在の admin UI ユーザー）
+  TENANT_ADMIN: 'tenant_admin',    // 導入者管理者（将来実装）
+  TENANT_USER: 'tenant_user'       // 導入者の一般ユーザー（将来実装）
+} as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * 機能フラグ
