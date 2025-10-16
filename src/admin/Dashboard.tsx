@@ -71,17 +71,6 @@ type Product = {
   updatedAt: Date;
 };
 
-type Sale = {
-  id: string;
-  machineId: string;
-  productId: string;
-  buyerAddress: string;
-  price: number;
-  txHash: string;
-  timestamp: Date;
-  status: 'completed' | 'pending' | 'failed';
-};
-
 type VendingStats = {
   totalSales: number;
   totalRevenue: number;
@@ -2300,7 +2289,7 @@ export default function AdminDashboard() {
                         justifyContent: "space-between",
                         gap: 2
                       }}>
-                        {stats.dailyStats.map((day, index) => (
+                        {stats.dailyStats.map((day) => (
                           <div key={day.date} style={{ 
                             display: "flex", 
                             flexDirection: "column", 
