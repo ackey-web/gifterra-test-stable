@@ -179,7 +179,7 @@ export default function VendingApp() {
 
           
           // 管理画面のデータ形式を自販機UI用に変換
-          return {
+          const convertedMachine = {
             id: parseInt(adminMachine.id.replace('vm_', '')) || 1,
             name: adminMachine.name,
             slug: adminMachine.slug,
@@ -214,6 +214,16 @@ export default function VendingApp() {
               }
             ]
           };
+          
+          // 画像情報をデバッグ出力
+          console.info("🖼️ Image debug info:", {
+            machineImageUrl: adminMachine.theme.machineImageUrl,
+            backgroundImageUrl: adminMachine.theme.backgroundImageUrl,
+            displayImage: convertedMachine.displayImage,
+            backgroundImage: convertedMachine.backgroundImage
+          });
+          
+          return convertedMachine;
         }
       }
     } catch (error) {
@@ -410,6 +420,13 @@ export default function VendingApp() {
             src={machine.displayImage} 
             alt={machine.name}
             className="main-display-image"
+            onLoad={() => console.info("✅ Machine image loaded:", machine.displayImage)}
+            onError={(e) => {
+              console.error("❌ Machine image failed to load:", machine.displayImage);
+              // フォールバック画像を設定
+              const img = e.target as HTMLImageElement;
+              img.src = `https://via.placeholder.com/837x768/2a2a2a/FFD700?text=${encodeURIComponent(machine.name || 'NO_IMAGE')}`;
+            }}
           />
         </div>
       </div>
