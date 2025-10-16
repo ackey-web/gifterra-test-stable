@@ -288,16 +288,12 @@ export default function VendingApp() {
       // ETHをweiに変換
       const priceInWei = ethers.utils.parseEther(product.price.toString());
       
-
-      
       // トランザクション送信
-      const tx = await sendTip({ 
+      await sendTip({ 
         overrides: {
           value: priceInWei,
         }
       });
-
-
       
       // 購入成功エフェクト
       tipSuccessConfetti();

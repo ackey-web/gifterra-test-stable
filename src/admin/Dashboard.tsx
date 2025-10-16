@@ -781,9 +781,6 @@ export default function AdminDashboard() {
           fb = BigInt(Math.max(0, latest - lookback));
         }
         
-        const blockRange = latest - Number(fb);
-
-        
         if (!cancelled) setFromBlock(fb);
       } catch (e: any) {
         console.error("❌ Block range calculation failed:", e);
@@ -814,13 +811,8 @@ export default function AdminDashboard() {
         });
 
         // ⚡ パフォーマンス最適化: 期間に応じた適切なブロック範囲
-        const currentBlock = await getLatestBlockNumber();
-        const actualFromBlock = Number(fromBlock);
         const finalFromBlockHex = "0x" + fromBlock.toString(16);
-        const blockRangeSize = currentBlock - actualFromBlock;
         
-
-
         const logRequest = {
           address: CONTRACT_ADDRESS,
           fromBlock: finalFromBlockHex,
