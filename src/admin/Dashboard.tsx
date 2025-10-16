@@ -37,7 +37,12 @@ type AdData = {
   href: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-ui-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-ui-management" | "tenant-management";
+
+// 🚀 将来のマルチテナント実装準備
+// - tenant-management: テナント管理（スーパーアドミン専用）
+// - plan-management: プラン管理（スーパーアドミン専用）
+// - user-management: ユーザー管理（テナント管理者用）
 
 const fmt18 = (v: bigint) => {
   try {
@@ -249,6 +254,10 @@ function LoadingOverlay({ period }: { period?: Period }) {
 
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
+  // 🚀 マルチテナント実装準備: 現在のユーザー・テナント情報
+  // const currentUser = getCurrentUser();
+  // const currentTenant = getCurrentTenant();
+  // const isMultiTenantMode = process.env.REACT_APP_MULTI_TENANT === 'true';
   const address = useAddress();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
   
@@ -1668,6 +1677,55 @@ export default function AdminDashboard() {
     );
   };
 
+  // ---- テナント管理ページ（将来実装）----
+  const TenantManagementPage = () => {
+    return (
+      <div style={{
+        padding: 24,
+      }}>
+        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
+          🏢 テナント管理（スーパーアドミン専用）
+        </h2>
+        
+        <div style={{ 
+          padding: 40, 
+          background: "rgba(124, 45, 18, 0.1)", 
+          border: "1px solid rgba(124, 45, 18, 0.3)",
+          borderRadius: 12, 
+          textAlign: "center"
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🚀</div>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 18, color: "#dc2626" }}>
+            マルチテナント機能（開発予定）
+          </h3>
+          <p style={{ margin: "0 0 16px 0", fontSize: 14, opacity: 0.8, lineHeight: 1.6 }}>
+            将来実装予定の機能：<br />
+            • 導入者（テナント）の管理<br />
+            • プラン・機能制限の設定<br />
+            • 課金・請求管理<br />
+            • 利用統計・分析
+          </p>
+          <div style={{ 
+            background: "rgba(255,255,255,0.04)", 
+            padding: 16, 
+            borderRadius: 8, 
+            marginTop: 20,
+            fontSize: 12,
+            opacity: 0.7
+          }}>
+            <strong>📝 実装準備状況：</strong><br />
+            ✅ 基本型定義完了<br />
+            ✅ 権限管理基盤完了<br />
+            ✅ 機能制限コンポーネント完了<br />
+            🚧 UI実装（未着手）<br />
+            🚧 データベース設計（未着手）<br />
+            🚧 認証システム（未着手）
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   /* ---------- 画面 ---------- */
 
   return (
@@ -1771,6 +1829,25 @@ export default function AdminDashboard() {
         >
           🎁 GIFT HUB管理
         </button>
+        
+        {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
+        {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
+          <button
+            onClick={() => setCurrentPage("tenant-management")}
+            style={{
+              background: currentPage === "tenant-management" ? "#7c2d12" : "#374151",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "8px 16px",
+              fontWeight: 700,
+              cursor: "pointer",
+              fontSize: 14,
+            }}
+          >
+            🏢 テナント管理
+          </button>
+        )} */}
       </nav>
 
       {/* システム制御ボタン */}
@@ -1906,6 +1983,8 @@ export default function AdminDashboard() {
         <TipUIManagementPage />
       ) : currentPage === "vending-ui-management" ? (
         <VendingUIManagementPage />
+      ) : currentPage === "tenant-management" ? (
+        <TenantManagementPage />
       ) : (
         <>
           {/* 期間タブ（⚡ パフォーマンス情報付き） */}
