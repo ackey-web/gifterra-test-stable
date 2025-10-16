@@ -333,7 +333,7 @@ export default function AdminDashboard() {
         }));
       }
     } catch (error) {
-      console.log('保存されたデータの復元に失敗、デフォルトデータを使用:', error);
+      // 復元失敗時はデフォルトデータを使用
     }
     
     // 初回または復元失敗時のデフォルトデータ
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
         }));
       }
     } catch (error) {
-      console.log('保存された商品データの復元に失敗、デフォルトデータを使用:', error);
+      // 復元失敗時はデフォルトデータを使用
     }
     
     // デフォルト商品データ
@@ -782,18 +782,7 @@ export default function AdminDashboard() {
         }
         
         const blockRange = latest - Number(fb);
-        console.log("⚡ Optimized block range calculated:", {
-          period,
-          latestBlock: latest,
-          lookbackBlocks: period === "all" ? MAX_BLOCK_RANGE : OPTIMIZED_LOOKBACK[period],
-          fromBlock: fb.toString(),
-          blockRange,
-          estimatedDataLoad: period === "all" ? "Heavy (Protected)" : 
-                           period === "month" ? "Medium" : "Light",
-          estimatedLoadTime: blockRange < 50000 ? "Fast (<2s)" : 
-                           blockRange < 200000 ? "Medium (2-10s)" : "Heavy (>10s)",
-          optimizedForSpeed: true
-        });
+
         
         if (!cancelled) setFromBlock(fb);
       } catch (e: any) {
@@ -830,18 +819,7 @@ export default function AdminDashboard() {
         const finalFromBlockHex = "0x" + fromBlock.toString(16);
         const blockRangeSize = currentBlock - actualFromBlock;
         
-        console.log("⚡ Optimized log fetch:", {
-          message: "期間別最適化されたTipイベント検索",
-          period,
-          fromBlock: fromBlock.toString(),
-          currentBlock,
-          blockRangeSize,
-          estimatedLoadTime: blockRangeSize < 50000 ? "Fast (<2s)" : 
-                           blockRangeSize < 200000 ? "Medium (2-10s)" : "Heavy (>10s)",
-          performanceLevel: blockRangeSize < 50000 ? "Excellent" : 
-                          blockRangeSize < 200000 ? "Good" : "Acceptable",
-          rpcStrategy: "Public RPC優先 + Alchemy補完"
-        });
+
 
         const logRequest = {
           address: CONTRACT_ADDRESS,
@@ -852,10 +830,7 @@ export default function AdminDashboard() {
         
                 const logs: any[] = await rpc("eth_getLogs", [logRequest]);
         
-        console.log("📊 Raw logs received:", {
-          count: logs.length,
-          logs: logs.slice(0, 3) // 最初の3件のみ表示
-        });
+
 
         const items: TipItem[] = logs.map((log) => {
           const topic1: string = log.topics?.[1] || "0x";
@@ -870,12 +845,7 @@ export default function AdminDashboard() {
           a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0
         );
         
-        console.log("✅ Processed tip items:", {
-          count: items.length,
-          totalAmount: items.reduce((a, b) => a + b.amount, 0n).toString(),
-          uniqueUsers: new Set(items.map(i => i.from)).size,
-          sample: items.slice(0, 2)
-        });
+
         
         if (!cancelled) {
           setRawTips(items);
@@ -3526,11 +3496,7 @@ export default function AdminDashboard() {
               };
             }
             
-            console.log('保存前のデータ:', {
-              name: formData.get('name') as string,
-              description: formData.get('description') as string,
-              theme: updatedTheme
-            });
+
             
             onUpdate(machineId, {
               name: formData.get('name') as string,
@@ -3634,13 +3600,15 @@ export default function AdminDashboard() {
                   <input
                     type="file"
                     accept="image/*"
+                    name="machineImageFile"
                     style={{
-                      padding: "4px",
+                      padding: "8px",
                       background: "rgba(255,255,255,0.04)",
                       border: "1px solid rgba(255,255,255,0.2)",
                       borderRadius: 4,
                       color: "#fff",
-                      fontSize: 12
+                      fontSize: 12,
+                      cursor: "pointer"
                     }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -3654,34 +3622,20 @@ export default function AdminDashboard() {
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           const dataUrl = event.target?.result as string;
-                          // URL入力フィールドを更新
+                          // 隠しフィールドに設定
                           const form = e.target.closest('form');
-                          const urlInput = form?.querySelector('input[name="machineImageUrl"]') as HTMLInputElement;
-                          if (urlInput) {
-                            urlInput.value = dataUrl;
+                          let hiddenInput = form?.querySelector('input[name="machineImageUrl"]') as HTMLInputElement;
+                          if (!hiddenInput) {
+                            hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'machineImageUrl';
+                            form?.appendChild(hiddenInput);
                           }
+                          hiddenInput.value = dataUrl;
                         };
                         reader.readAsDataURL(file);
                       }
                     }}
-                  />
-                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
-                    または
-                  </div>
-                  <input
-                    name="machineImageUrl"
-                    type="url"
-                    defaultValue={machine.theme.machineImageUrl || ''}
-                    style={{
-                      width: "100%",
-                      padding: "6px 8px",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      borderRadius: 4,
-                      color: "#fff",
-                      fontSize: 12
-                    }}
-                    placeholder="https://example.com/machine-design.png"
                   />
                 </div>
               </div>
@@ -3726,13 +3680,15 @@ export default function AdminDashboard() {
                   <input
                     type="file"
                     accept="image/*"
+                    name="backgroundImageFile"
                     style={{
-                      padding: "4px",
+                      padding: "8px",
                       background: "rgba(255,255,255,0.04)",
                       border: "1px solid rgba(255,255,255,0.2)",
                       borderRadius: 4,
                       color: "#fff",
-                      fontSize: 12
+                      fontSize: 12,
+                      cursor: "pointer"
                     }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -3746,34 +3702,20 @@ export default function AdminDashboard() {
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           const dataUrl = event.target?.result as string;
-                          // URL入力フィールドを更新
+                          // 隠しフィールドに設定
                           const form = e.target.closest('form');
-                          const urlInput = form?.querySelector('input[name="backgroundImageUrl"]') as HTMLInputElement;
-                          if (urlInput) {
-                            urlInput.value = dataUrl;
+                          let hiddenInput = form?.querySelector('input[name="backgroundImageUrl"]') as HTMLInputElement;
+                          if (!hiddenInput) {
+                            hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'backgroundImageUrl';
+                            form?.appendChild(hiddenInput);
                           }
+                          hiddenInput.value = dataUrl;
                         };
                         reader.readAsDataURL(file);
                       }
                     }}
-                  />
-                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
-                    または
-                  </div>
-                  <input
-                    name="backgroundImageUrl"
-                    type="url"
-                    defaultValue={machine.theme.backgroundImageUrl || ''}
-                    style={{
-                      width: "100%",
-                      padding: "6px 8px",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      borderRadius: 4,
-                      color: "#fff",
-                      fontSize: 12
-                    }}
-                    placeholder="https://example.com/background.jpg"
                   />
                 </div>
               </div>

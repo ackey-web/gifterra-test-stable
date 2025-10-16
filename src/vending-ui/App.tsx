@@ -176,9 +176,7 @@ export default function VendingApp() {
         const machines = JSON.parse(adminData);
         const adminMachine = machines.find((m: any) => m.slug === machineSlug);
         if (adminMachine) {
-          console.log('管理画面データ:', adminMachine);
-          console.log('背景画像URL:', adminMachine.theme.backgroundImageUrl);
-          console.log('自販機画像URL:', adminMachine.theme.machineImageUrl);
+
           
           // 管理画面のデータ形式を自販機UI用に変換
           return {
@@ -219,7 +217,7 @@ export default function VendingApp() {
         }
       }
     } catch (error) {
-      console.log('管理画面データの取得に失敗、モックデータを使用:', error);
+
     }
     return null;
   };
@@ -290,7 +288,7 @@ export default function VendingApp() {
       // ETHをweiに変換
       const priceInWei = ethers.utils.parseEther(product.price.toString());
       
-      console.log(`🛒 購入処理開始: ${product.title} (${product.price} ETH)`);
+
       
       // トランザクション送信
       const tx = await sendTip({ 
@@ -299,7 +297,7 @@ export default function VendingApp() {
         }
       });
 
-      console.log("📝 トランザクション送信完了:", tx.receipt?.transactionHash);
+
       
       // 購入成功エフェクト
       tipSuccessConfetti();
@@ -366,7 +364,7 @@ export default function VendingApp() {
           }
         }
       } catch (error) {
-        console.log('テーマカラー取得エラー:', error);
+
       }
     }
     return {
