@@ -187,14 +187,20 @@ export default function VendingApp() {
           const tokenContract = new ethers.Contract(tNHTAddress, tokenABI, provider);
           const balance = await tokenContract.balanceOf(address);
           const decimals = await tokenContract.decimals();
-          setBalance(ethers.utils.formatUnits(balance, decimals));
+          const formattedBalance = ethers.utils.formatUnits(balance, decimals);
+          // 小数点以下切り捨て
+          const integerBalance = Math.floor(parseFloat(formattedBalance));
+          setBalance(integerBalance.toString());
         } catch (error) {
           console.error("tNHT残高取得エラー:", error);
           // フォールバック: POL残高を表示
           try {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const balance = await provider.getBalance(address);
-            setBalance(ethers.utils.formatEther(balance));
+            const formattedBalance = ethers.utils.formatEther(balance);
+            // 小数点以下切り捨て
+            const integerBalance = Math.floor(parseFloat(formattedBalance));
+            setBalance(integerBalance.toString());
           } catch (fallbackError) {
             console.error("POL残高取得エラー:", fallbackError);
           }
@@ -331,7 +337,7 @@ export default function VendingApp() {
         {address && (
           <div className="balance-display">
             <span className="balance-label">残高</span>
-            <span className="balance-amount">{parseFloat(balance).toFixed(4)} tNHT</span>
+            <span className="balance-amount">{balance} tNHT</span>
           </div>
         )}
         
