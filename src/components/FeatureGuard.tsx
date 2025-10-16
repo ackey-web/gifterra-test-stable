@@ -87,7 +87,7 @@ const FeatureLockedMessage: React.FC<FeatureLockedMessageProps> = ({
         <button
           onClick={() => {
             // TODO: 将来的にプランアップグレードモーダルを表示
-
+            console.log('Plan upgrade requested for feature:', feature);
             alert('プランアップグレード機能は将来実装予定です');
           }}
           style={{
