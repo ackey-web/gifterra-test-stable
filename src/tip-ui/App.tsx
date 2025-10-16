@@ -339,7 +339,13 @@ export default function TipApp() {
       // AI分析システムと統一された熱量計算を使用
       const tipAmount = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
       
-
+      // デバッグログ追加
+      console.log(`🔥 Heat Analysis Debug:`, {
+        address: address?.slice(0, 6) + '...',
+        tipAmount,
+        totalTips: totalTips.toString(),
+        currentLevel
+      });
       
       // AI分析ロジックと統一した計算方法
       // Tipスコア（0-400）: tipAmount / 10で正規化
@@ -365,7 +371,16 @@ export default function TipApp() {
       else if (finalScore >= 600) level = "💎高額";
       else if (finalScore >= 400) level = "🎉アクティブ";
       
-
+      console.log(`🔥 Heat Result (AI統一版):`, {
+        amountScore: Math.round(amountScore),
+        frequencyScore: Math.round(frequencyScore),
+        sentimentScore: Math.round(sentimentScore),
+        baseScore,
+        decayFactor,
+        finalScore,
+        level,
+        thresholds: { 熱狂: '800+', 高額: '600+', アクティブ: '400+', ライト: '<400' }
+      });
       
       setUserHeatData({
         heatScore: finalScore,
@@ -456,7 +471,7 @@ export default function TipApp() {
             
             if (switchError.code === 4902) {
               // ネットワークが存在しない場合は追加
-
+              console.log("ネットワーク追加要求");
               await eth.request({
                 method: "wallet_addEthereumChain",
                 params: [{

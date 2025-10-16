@@ -33,7 +33,7 @@ function shouldReduceMotion(): boolean {
  */
 export async function burstConfetti(): Promise<void> {
   if (shouldReduceMotion()) {
-
+    console.log('Confetti skipped due to prefers-reduced-motion');
     return;
   }
 
@@ -75,7 +75,7 @@ export async function burstConfetti(): Promise<void> {
  */
 export async function tipSuccessConfetti(): Promise<void> {
   if (shouldReduceMotion()) {
-
+    console.log('Tip confetti skipped due to prefers-reduced-motion');
     return;
   }
 
@@ -121,7 +121,7 @@ export async function tipSuccessConfetti(): Promise<void> {
  */
 export async function rewardSuccessConfetti(): Promise<void> {
   if (shouldReduceMotion()) {
-
+    console.log('Reward confetti skipped due to prefers-reduced-motion');
     return;
   }
 
@@ -178,7 +178,7 @@ export async function rewardSuccessConfetti(): Promise<void> {
  */
 export async function rankUpConfetti(rankLevel: number): Promise<void> {
   if (shouldReduceMotion()) {
-
+    console.log('Rank up confetti skipped due to prefers-reduced-motion');
     return;
   }
 

@@ -173,7 +173,7 @@ export default function App() {
         },
       };
       
-
+      console.log('🪙 トークン追加試行:', { isMobileDevice, tokenParams });
       
       const wasAdded = await eth.request({
         method: "wallet_watchAsset",
@@ -383,7 +383,7 @@ export default function App() {
     // ethersが失敗した場合のThirdWebフォールバック
     for (let i = 0; i < maxTry; i++) {
       try {
-
+        console.log(`ThirdWeb attempt ${i + 1}/${maxTry}`);
         
         // ThirdWeb経由でのトランザクション送信
         const res: any = await (contract as any).call("claimDailyReward", []);
@@ -461,7 +461,7 @@ export default function App() {
         
         if (i < maxTry - 1 && isRetriable) {
           const waitTime = 1000 * (i + 1); // 1s, 2s, 3s
-
+          console.log(`Retrying in ${waitTime}ms...`);
           await sleep(waitTime);
           continue;
         }
