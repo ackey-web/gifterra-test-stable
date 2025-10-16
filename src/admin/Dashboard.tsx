@@ -21,6 +21,7 @@ import {
 import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
+import VendingDashboard from "./vending/VendingDashboard";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -39,7 +40,7 @@ type AdData = {
 
 
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "tenant-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "tenant-management";
 
 // 🚀 将来のマルチテナント実装準備
 // - tenant-management: テナント管理（スーパーアドミン専用）
@@ -1739,9 +1740,23 @@ export default function AdminDashboard() {
             fontSize: 14,
           }}
         >
-          � TipUI管理
+          💰 TipUI管理
         </button>
-        
+        <button
+          onClick={() => setCurrentPage("vending-management")}
+          style={{
+            background: currentPage === "vending-management" ? "#059669" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          🏪 自販機管理
+        </button>        
         {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
         {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
           <button
@@ -1893,6 +1908,8 @@ export default function AdminDashboard() {
         <RewardUIManagementPage />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
+      ) : currentPage === "vending-management" ? (
+        <VendingDashboard />
       ) : currentPage === "tenant-management" ? (
         <TenantManagementPage />
       ) : (
