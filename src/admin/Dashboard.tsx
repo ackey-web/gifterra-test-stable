@@ -2128,6 +2128,8 @@ export default function AdminDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          // 管理画面のデータをlocalStorageに保存
+                          localStorage.setItem('gifterra-admin-machines', JSON.stringify(vendingMachines));
                           window.open(`/vending?machine=${machine.slug}`, '_blank');
                         }}
                         style={{
@@ -3698,7 +3700,11 @@ export default function AdminDashboard() {
                 }}>
                   <button
                     type="button"
-                    onClick={() => window.open(`/vending?machine=${machine.slug}`, '_blank')}
+                    onClick={() => {
+                      // 現在の管理画面データをlocalStorageに保存
+                      localStorage.setItem('gifterra-admin-machines', JSON.stringify(vendingMachines));
+                      window.open(`/vending?machine=${machine.slug}`, '_blank');
+                    }}
                     style={{
                       background: machine.theme.primaryColor,
                       color: "#fff",
