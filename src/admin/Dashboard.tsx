@@ -37,6 +37,69 @@ type AdData = {
   href: string;
 };
 
+// 🎁 GIFT HUB (自販機) データ構造
+type VendingMachine = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  isPublished: boolean;
+  theme: {
+    primaryColor: string;
+    backgroundColor: string;
+    textColor: string;
+    logoUrl?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  ownerId: string;
+};
+
+type Product = {
+  id: string;
+  machineId: string;
+  name: string;
+  description: string;
+  price: number; // tNHT単位
+  imageUrl: string;
+  downloadUrl: string;
+  stock: number | null; // null = 無制限
+  isActive: boolean;
+  category: string;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Sale = {
+  id: string;
+  machineId: string;
+  productId: string;
+  buyerAddress: string;
+  price: number;
+  txHash: string;
+  timestamp: Date;
+  status: 'completed' | 'pending' | 'failed';
+};
+
+type VendingStats = {
+  totalSales: number;
+  totalRevenue: number;
+  totalProducts: number;
+  uniqueBuyers: number;
+  dailyStats: Array<{
+    date: string;
+    sales: number;
+    revenue: number;
+  }>;
+  topProducts: Array<{
+    productId: string;
+    name: string;
+    sales: number;
+    revenue: number;
+  }>;
+};
+
 type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-ui-management" | "tenant-management";
 
 // 🚀 将来のマルチテナント実装準備
@@ -265,6 +328,95 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
   const [adManagementData, setAdManagementData] = useState<AdData[]>([]);
   
+  // 🎁 GIFT HUB (自販機) 状態管理
+  const [vendingMachines, setVendingMachines] = useState<VendingMachine[]>([
+    {
+      id: "vm_sample_01",
+      name: "デジタルアートストア",
+      slug: "digital-art-store",
+      description: "オリジナルデジタルアート作品を販売する自販機",
+      isPublished: true,
+      theme: {
+        primaryColor: "#3b82f6",
+        backgroundColor: "#1e40af",
+        textColor: "#ffffff",
+        logoUrl: "/sample-logo.png"
+      },
+      createdAt: new Date("2024-01-15"),
+      updatedAt: new Date("2024-02-01"),
+      ownerId: address || "0x0000000000000000000000000000000000000000"
+    },
+    {
+      id: "vm_sample_02", 
+      name: "音楽素材ハブ",
+      slug: "music-materials-hub",
+      description: "BGM・効果音・楽曲素材の販売",
+      isPublished: false,
+      theme: {
+        primaryColor: "#7c3aed",
+        backgroundColor: "#5b21b6", 
+        textColor: "#ffffff"
+      },
+      createdAt: new Date("2024-02-10"),
+      updatedAt: new Date("2024-02-15"),
+      ownerId: address || "0x0000000000000000000000000000000000000000"
+    }
+  ]);
+  
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: "prod_001",
+      machineId: "vm_sample_01",
+      name: "未来都市イラスト",
+      description: "サイバーパンク風の未来都市風景",
+      price: 100,
+      imageUrl: "/sample-art1.jpg",
+      downloadUrl: "/downloads/future-city.zip",
+      stock: 50,
+      isActive: true,
+      category: "イラスト",
+      sortOrder: 1,
+      createdAt: new Date("2024-01-20"),
+      updatedAt: new Date("2024-01-25")
+    },
+    {
+      id: "prod_002", 
+      machineId: "vm_sample_01",
+      name: "宇宙ステーション3Dモデル",
+      description: "ゲーム・VR用の高精細3Dモデル",
+      price: 250,
+      imageUrl: "/sample-3d1.jpg", 
+      downloadUrl: "/downloads/space-station.fbx",
+      stock: null, // 無制限
+      isActive: true,
+      category: "3Dモデル",
+      sortOrder: 2,
+      createdAt: new Date("2024-01-22"),
+      updatedAt: new Date("2024-01-30")
+    },
+    {
+      id: "prod_003",
+      machineId: "vm_sample_02", 
+      name: "ロイヤリティフリーBGM集",
+      description: "商用利用可能なBGM30曲セット",
+      price: 500,
+      imageUrl: "/sample-music1.jpg",
+      downloadUrl: "/downloads/bgm-pack-vol1.zip", 
+      stock: 100,
+      isActive: true,
+      category: "音楽",
+      sortOrder: 1,
+      createdAt: new Date("2024-02-12"),
+      updatedAt: new Date("2024-02-14")
+    }
+  ]);
+  
+  const [selectedMachine, setSelectedMachine] = useState<string | null>(null);
+  const [isCreatingMachine, setIsCreatingMachine] = useState(false);
+  const [machineFilter, setMachineFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [isManagingProducts, setIsManagingProducts] = useState<string | null>(null);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  
 
 
 
@@ -297,6 +449,191 @@ export default function AdminDashboard() {
   useEffect(() => {
     setEmergencyStop(readEmergencyFlag());
   }, []);
+  
+  // 🎁 GIFT HUB ヘルパー関数
+  const createVendingMachine = (machineData: Omit<VendingMachine, 'id' | 'createdAt' | 'updatedAt' | 'ownerId'>) => {
+    const newMachine: VendingMachine = {
+      ...machineData,
+      id: `vm_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ownerId: address || "0x0000000000000000000000000000000000000000"
+    };
+    setVendingMachines(prev => [...prev, newMachine]);
+    return newMachine;
+  };
+  
+  const updateVendingMachine = (id: string, updates: Partial<VendingMachine>) => {
+    setVendingMachines(prev => 
+      prev.map(machine => 
+        machine.id === id 
+          ? { ...machine, ...updates, updatedAt: new Date() }
+          : machine
+      )
+    );
+  };
+  
+  const deleteVendingMachine = (id: string) => {
+    setVendingMachines(prev => prev.filter(machine => machine.id !== id));
+    setProducts(prev => prev.filter(product => product.machineId !== id));
+    if (selectedMachine === id) {
+      setSelectedMachine(null);
+    }
+  };
+  
+  const duplicateVendingMachine = (id: string) => {
+    const original = vendingMachines.find(m => m.id === id);
+    if (!original) return;
+    
+    const duplicated = createVendingMachine({
+      name: `${original.name} (コピー)`,
+      slug: `${original.slug}-copy`,
+      description: original.description,
+      isPublished: false,
+      theme: { ...original.theme }
+    });
+    
+    // 商品もコピー
+    const originalProducts = products.filter(p => p.machineId === id);
+    originalProducts.forEach(product => {
+      const newProduct: Product = {
+        ...product,
+        id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        machineId: duplicated.id,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      setProducts(prev => [...prev, newProduct]);
+    });
+  };
+  
+  const getFilteredMachines = () => {
+    switch (machineFilter) {
+      case 'published':
+        return vendingMachines.filter(m => m.isPublished);
+      case 'draft':
+        return vendingMachines.filter(m => !m.isPublished);
+      default:
+        return vendingMachines;
+    }
+  };
+  
+  const getMachineProducts = (machineId: string) => {
+    return products.filter(p => p.machineId === machineId);
+  };
+  
+  const getMachineStats = (machineId: string): VendingStats => {
+    // TODO: 実際の売上データから計算（現在はサンプル）
+    return {
+      totalSales: 23,
+      totalRevenue: 1850,
+      totalProducts: getMachineProducts(machineId).length,
+      uniqueBuyers: 15,
+      dailyStats: [
+        { date: '2024-02-01', sales: 5, revenue: 450 },
+        { date: '2024-02-02', sales: 8, revenue: 620 },
+        { date: '2024-02-03', sales: 3, revenue: 280 },
+        { date: '2024-02-04', sales: 7, revenue: 500 }
+      ],
+      topProducts: [
+        { productId: 'prod_001', name: '未来都市イラスト', sales: 12, revenue: 1200 },
+        { productId: 'prod_002', name: '宇宙ステーション3Dモデル', sales: 8, revenue: 2000 }
+      ]
+    };
+  };
+  
+  // 商品管理関数
+  const createProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newProduct: Product = {
+      ...productData,
+      id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setProducts(prev => [...prev, newProduct]);
+    return newProduct;
+  };
+  
+  const updateProduct = (id: string, updates: Partial<Product>) => {
+    setProducts(prev =>
+      prev.map(product =>
+        product.id === id
+          ? { ...product, ...updates, updatedAt: new Date() }
+          : product
+      )
+    );
+  };
+  
+  const deleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(product => product.id !== id));
+  };
+  
+  const duplicateProduct = (id: string) => {
+    const original = products.find(p => p.id === id);
+    if (!original) return;
+    
+    createProduct({
+      ...original,
+      name: `${original.name} (コピー)`,
+      isActive: false
+    });
+  };
+  
+  // 売上データエクスポート関数
+  const exportMachineDataCSV = (machineId: string) => {
+    const machine = vendingMachines.find(m => m.id === machineId);
+    const stats = getMachineStats(machineId);
+    
+    if (!machine) return;
+    
+    const headers = ["日付", "売上数", "売上金額(tNHT)"];
+    const rows = stats.dailyStats.map(day => [
+      day.date,
+      day.sales.toString(),
+      day.revenue.toString()
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${machine.name}_売上データ_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+  
+  const exportMachineDataJSON = (machineId: string) => {
+    const machine = vendingMachines.find(m => m.id === machineId);
+    const stats = getMachineStats(machineId);
+    const machineProducts = products.filter(p => p.machineId === machineId);
+    
+    if (!machine) return;
+    
+    const data = {
+      machine: {
+        id: machine.id,
+        name: machine.name,
+        slug: machine.slug,
+        isPublished: machine.isPublished
+      },
+      stats,
+      products: machineProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        category: p.category,
+        isActive: p.isActive,
+        stock: p.stock
+      })),
+      exportedAt: new Date().toISOString()
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${machine.name}_データ_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
 
   // 広告データの読み込み
   const loadAdData = () => {
@@ -1598,36 +1935,52 @@ export default function AdminDashboard() {
 
   // ---- 自販機UI管理ページ ----
   const VendingUIManagementPage = () => {
+    const filteredMachines = getFilteredMachines();
+    
     return (
-      <div style={{
-        padding: 24,
-      }}>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          🎁 GIFT HUB (自販機UI) 管理
-        </h2>
-        
-        <div style={{
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))"
+      <div style={{ padding: 24, maxWidth: "min(1400px, 96vw)", margin: "0 auto" }}>
+        {/* ヘッダー部分 */}
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 16
         }}>
-          {/* 自販機プレビューリンク */}
-          <div style={{
-            background: "rgba(245, 158, 11, 0.1)",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            borderRadius: 12,
-            padding: 20,
-          }}>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: 18, color: "#f59e0b" }}>
-              🎰 自販機プレビュー
-            </h3>
-            <p style={{ margin: "0 0 16px 0", fontSize: 14, opacity: 0.8 }}>
-              実際の自販機UIをプレビューできます
+          <div>
+            <h2 style={{ margin: "0 0 8px 0", fontSize: 24, fontWeight: 800 }}>
+              🎁 GIFT HUB 管理
+            </h2>
+            <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>
+              自販機の作成・編集・公開管理を行います
             </p>
-            <button
-              onClick={() => window.open('/vending', '_blank')}
+          </div>
+          
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {/* フィルター */}
+            <select
+              value={machineFilter}
+              onChange={(e) => setMachineFilter(e.target.value as any)}
               style={{
-                background: "#f59e0b",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                padding: "6px 12px",
+                color: "#fff",
+                fontSize: 12
+              }}
+            >
+              <option value="all">すべて ({vendingMachines.length})</option>
+              <option value="published">公開中 ({vendingMachines.filter(m => m.isPublished).length})</option>
+              <option value="draft">下書き ({vendingMachines.filter(m => !m.isPublished).length})</option>
+            </select>
+            
+            {/* 新規作成ボタン */}
+            <button
+              onClick={() => setIsCreatingMachine(true)}
+              style={{
+                background: "#16a34a",
                 color: "#fff",
                 border: "none",
                 borderRadius: 8,
@@ -1635,43 +1988,1388 @@ export default function AdminDashboard() {
                 fontWeight: 600,
                 cursor: "pointer",
                 fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 6
               }}
             >
-              🔗 プレビューを開く
+              ➕ 新規作成
             </button>
           </div>
+        </div>
 
-          {/* 設定管理（準備中） */}
+        {/* 統計サマリー */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 16,
+          marginBottom: 24
+        }}>
           <div style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(34, 197, 94, 0.1)",
+            border: "1px solid rgba(34, 197, 94, 0.3)",
             borderRadius: 12,
-            padding: 20,
-            textAlign: "center",
-            opacity: 0.7
+            padding: 16,
+            textAlign: "center"
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🚧</div>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>商品管理</h3>
-            <p style={{ margin: 0, fontSize: 12 }}>
-              商品の追加・編集機能は準備中です
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#22c55e" }}>
+              {vendingMachines.length}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>総自販機数</div>
+          </div>
+          
+          <div style={{
+            background: "rgba(59, 130, 246, 0.1)",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            borderRadius: 12,
+            padding: 16,
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#3b82f6" }}>
+              {vendingMachines.filter(m => m.isPublished).length}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>公開中</div>
+          </div>
+          
+          <div style={{
+            background: "rgba(168, 85, 247, 0.1)",
+            border: "1px solid rgba(168, 85, 247, 0.3)",
+            borderRadius: 12,
+            padding: 16,
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#a855f7" }}>
+              {products.length}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>総商品数</div>
+          </div>
+          
+          <div style={{
+            background: "rgba(245, 158, 11, 0.1)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: 12,
+            padding: 16,
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#f59e0b" }}>
+              ¥{products.reduce((sum, p) => sum + p.price, 0).toLocaleString()}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>総商品価値</div>
+          </div>
+        </div>
+
+        {/* 自販機一覧 */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+          gap: 20
+        }}>
+          {filteredMachines.map(machine => {
+            const machineProducts = getMachineProducts(machine.id);
+            const stats = getMachineStats(machine.id);
+            
+            return (
+              <div
+                key={machine.id}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: `2px solid ${machine.isPublished ? 'rgba(34, 197, 94, 0.3)' : 'rgba(156, 163, 175, 0.3)'}`,
+                  borderRadius: 12,
+                  padding: 20,
+                  transition: "all 0.2s ease",
+                  cursor: "pointer"
+                }}
+                onClick={() => setSelectedMachine(selectedMachine === machine.id ? null : machine.id)}
+              >
+                {/* 自販機ヘッダー */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <h3 style={{ 
+                        margin: 0, 
+                        fontSize: 18, 
+                        fontWeight: 700,
+                        color: machine.theme.primaryColor 
+                      }}>
+                        {machine.name}
+                      </h3>
+                      {machine.isPublished ? (
+                        <span style={{
+                          background: "rgba(34, 197, 94, 0.2)",
+                          color: "#22c55e",
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          fontSize: 10,
+                          fontWeight: 600
+                        }}>
+                          🟢 公開中
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: "rgba(156, 163, 175, 0.2)",
+                          color: "#9ca3af",
+                          padding: "2px 8px",
+                          borderRadius: 12,
+                          fontSize: 10,
+                          fontWeight: 600
+                        }}>
+                          ⚪ 下書き
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ 
+                      margin: "0 0 8px 0", 
+                      fontSize: 12, 
+                      opacity: 0.8,
+                      lineHeight: 1.4
+                    }}>
+                      {machine.description}
+                    </p>
+                    <div style={{ fontSize: 11, opacity: 0.6 }}>
+                      スラッグ: /{machine.slug}
+                    </div>
+                  </div>
+                  
+                  {/* 操作ボタン */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ position: "relative", display: "inline-block" }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`/vending?machine=${machine.slug}`, '_blank');
+                        }}
+                        style={{
+                          background: machine.theme.primaryColor,
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "4px 8px",
+                          fontSize: 10,
+                          cursor: "pointer",
+                          fontWeight: 600,
+                          width: "100%"
+                        }}
+                      >
+                        🔗 プレビュー
+                      </button>
+                      {machine.isPublished && (
+                        <div style={{
+                          position: "absolute",
+                          top: -2,
+                          right: -2,
+                          width: 8,
+                          height: 8,
+                          background: "#22c55e",
+                          borderRadius: "50%",
+                          border: "1px solid #1f2937"
+                        }} />
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        duplicateVendingMachine(machine.id);
+                      }}
+                      style={{
+                        background: "rgba(168, 85, 247, 0.8)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        fontWeight: 600
+                      }}
+                    >
+                      📋 複製
+                    </button>
+                  </div>
+                </div>
+
+                {/* 統計情報 */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: 12,
+                  marginBottom: 16,
+                  padding: 12,
+                  background: "rgba(0,0,0,0.2)",
+                  borderRadius: 8
+                }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>
+                      {machineProducts.length}
+                    </div>
+                    <div style={{ fontSize: 10, opacity: 0.7 }}>商品数</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f59e0b" }}>
+                      {stats.totalSales}
+                    </div>
+                    <div style={{ fontSize: 10, opacity: 0.7 }}>販売数</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#22c55e" }}>
+                      {stats.totalRevenue}
+                    </div>
+                    <div style={{ fontSize: 10, opacity: 0.7 }}>売上 (tNHT)</div>
+                  </div>
+                </div>
+
+                {/* 展開詳細（選択時のみ表示） */}
+                {selectedMachine === machine.id && (
+                  <div style={{
+                    borderTop: "1px solid rgba(255,255,255,0.1)",
+                    paddingTop: 16,
+                    marginTop: 16
+                  }}>
+                    {/* 商品一覧 */}
+                    <h4 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 600 }}>
+                      📦 商品一覧 ({machineProducts.length})
+                    </h4>
+                    
+                    {machineProducts.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {machineProducts.slice(0, 3).map(product => (
+                          <div key={product.id} style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 12px",
+                            background: "rgba(255,255,255,0.04)",
+                            borderRadius: 6,
+                            fontSize: 12
+                          }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600 }}>{product.name}</div>
+                              <div style={{ opacity: 0.6, fontSize: 10 }}>
+                                {product.stock ? `在庫: ${product.stock}` : '無制限'}
+                              </div>
+                            </div>
+                            <div style={{ 
+                              fontWeight: 700, 
+                              color: "#f59e0b" 
+                            }}>
+                              {product.price} tNHT
+                            </div>
+                          </div>
+                        ))}
+                        {machineProducts.length > 3 && (
+                          <div style={{ 
+                            textAlign: "center", 
+                            fontSize: 11, 
+                            opacity: 0.6,
+                            padding: 4
+                          }}>
+                            +{machineProducts.length - 3} 件の商品
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{
+                        textAlign: "center",
+                        padding: 16,
+                        opacity: 0.6,
+                        fontSize: 12
+                      }}>
+                        まだ商品が登録されていません
+                      </div>
+                    )}
+
+                    {/* 詳細統計セクション */}
+                    <div style={{
+                      marginTop: 16,
+                      padding: 16,
+                      background: "rgba(0,0,0,0.2)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.1)"
+                    }}>
+                      <h5 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 600 }}>
+                        📊 詳細統計
+                      </h5>
+                      
+                      {/* ミニ売上グラフ */}
+                      <div style={{
+                        height: 60,
+                        background: "rgba(255,255,255,0.04)",
+                        borderRadius: 6,
+                        padding: 8,
+                        marginBottom: 12,
+                        display: "flex",
+                        alignItems: "end",
+                        justifyContent: "space-between",
+                        gap: 2
+                      }}>
+                        {stats.dailyStats.map((day, index) => (
+                          <div key={day.date} style={{ 
+                            display: "flex", 
+                            flexDirection: "column", 
+                            alignItems: "center",
+                            flex: 1
+                          }}>
+                            <div
+                              style={{
+                                width: "100%",
+                                maxWidth: 12,
+                                height: Math.max(2, (day.revenue / Math.max(...stats.dailyStats.map(d => d.revenue))) * 40),
+                                background: `linear-gradient(to top, ${machine.theme.primaryColor}, ${machine.theme.primaryColor}aa)`,
+                                borderRadius: "1px 1px 0 0"
+                              }}
+                            />
+                            <div style={{ 
+                              fontSize: 7, 
+                              opacity: 0.6, 
+                              marginTop: 2
+                            }}>
+                              {new Date(day.date).getDate()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* 統計サマリー */}
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 8,
+                        marginBottom: 12
+                      }}>
+                        <div style={{
+                          background: "rgba(34, 197, 94, 0.1)",
+                          padding: 8,
+                          borderRadius: 4,
+                          textAlign: "center"
+                        }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#22c55e" }}>
+                            {stats.uniqueBuyers}
+                          </div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>購入者数</div>
+                        </div>
+                        <div style={{
+                          background: "rgba(245, 158, 11, 0.1)",
+                          padding: 8,
+                          borderRadius: 4,
+                          textAlign: "center"
+                        }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b" }}>
+                            {Math.round(stats.totalRevenue / stats.totalSales || 0)}
+                          </div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>平均単価</div>
+                        </div>
+                      </div>
+                      
+                      {/* トップ商品 */}
+                      <div style={{ marginBottom: 12 }}>
+                        <h6 style={{ margin: "0 0 6px 0", fontSize: 11, opacity: 0.8 }}>
+                          🏆 人気商品 TOP2
+                        </h6>
+                        {stats.topProducts.slice(0, 2).map((product, index) => {
+                          const productInfo = products.find(p => p.id === product.productId);
+                          return (
+                            <div key={product.productId} style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "3px 6px",
+                              background: "rgba(255,255,255,0.04)",
+                              borderRadius: 3,
+                              marginBottom: 3,
+                              fontSize: 10
+                            }}>
+                              <span style={{ flex: 1, opacity: 0.9 }}>
+                                {index + 1}. {productInfo?.name || product.name}
+                              </span>
+                              <span style={{ 
+                                color: "#f59e0b",
+                                fontWeight: 600,
+                                fontSize: 9
+                              }}>
+                                {product.sales}販売
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* エクスポートボタン */}
+                      <div style={{
+                        display: "flex",
+                        gap: 6,
+                        paddingTop: 8,
+                        borderTop: "1px solid rgba(255,255,255,0.1)"
+                      }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            exportMachineDataCSV(machine.id);
+                          }}
+                          style={{
+                            background: "#10b981",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "3px 6px",
+                            fontSize: 9,
+                            cursor: "pointer",
+                            flex: 1
+                          }}
+                        >
+                          📊 CSV
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            exportMachineDataJSON(machine.id);
+                          }}
+                          style={{
+                            background: "#6366f1",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "3px 6px",
+                            fontSize: 9,
+                            cursor: "pointer",
+                            flex: 1
+                          }}
+                        >
+                          📋 JSON
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 操作ボタン */}
+                    <div style={{
+                      display: "flex",
+                      gap: 8,
+                      marginTop: 16,
+                      flexWrap: "wrap"
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsManagingProducts(machine.id);
+                        }}
+                        style={{
+                          background: "#7c3aed",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          flex: 1
+                        }}
+                      >
+                        📦 商品管理
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // TODO: 編集モーダルを開く
+                          alert(`${machine.name} の編集機能は実装中です`);
+                        }}
+                        style={{
+                          background: "#3b82f6",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          flex: 1
+                        }}
+                      >
+                        ✏️ 編集
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateVendingMachine(machine.id, { 
+                            isPublished: !machine.isPublished 
+                          });
+                        }}
+                        style={{
+                          background: machine.isPublished ? "#dc2626" : "#16a34a",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          flex: 1
+                        }}
+                      >
+                        {machine.isPublished ? "🔒 非公開" : "🌍 公開"}
+                      </button>
+                      
+                      {machine.isPublished && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const publicUrl = `${window.location.origin}/vending/${machine.slug}`;
+                            navigator.clipboard.writeText(publicUrl);
+                            alert('公開URLをクリップボードにコピーしました！\n\n' + publicUrl);
+                          }}
+                          style={{
+                            background: "#22c55e",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            fontSize: 11,
+                            cursor: "pointer",
+                            flex: 1
+                          }}
+                        >
+                          📋 公開URL
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`「${machine.name}」を削除しますか？\n※この操作は取り消せません`)) {
+                            deleteVendingMachine(machine.id);
+                          }
+                        }}
+                        style={{
+                          background: "#dc2626",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "6px 12px",
+                          fontSize: 11,
+                          cursor: "pointer"
+                        }}
+                      >
+                        🗑️ 削除
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 空状態 */}
+        {filteredMachines.length === 0 && (
+          <div style={{
+            textAlign: "center",
+            padding: 60,
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: 12,
+            border: "2px dashed rgba(255,255,255,0.2)"
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎁</div>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 18 }}>
+              {machineFilter === 'all' 
+                ? '自販機がありません' 
+                : `${machineFilter === 'published' ? '公開中の' : '下書きの'}自販機がありません`
+              }
+            </h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: 14, opacity: 0.7 }}>
+              最初の自販機を作成して、デジタル商品の販売を始めましょう
             </p>
+            <button
+              onClick={() => setIsCreatingMachine(true)}
+              style={{
+                background: "#16a34a",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "12px 24px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: 14
+              }}
+            >
+              ➕ 最初の自販機を作成
+            </button>
+          </div>
+        )}
+
+        {/* 新規作成モーダル（簡易版） */}
+        {isCreatingMachine && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.8)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20
+          }}>
+            <div style={{
+              background: "#1f2937",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 500,
+              width: "100%",
+              border: "1px solid rgba(255,255,255,0.2)"
+            }}>
+              <h3 style={{ margin: "0 0 20px 0", fontSize: 18 }}>
+                🎁 新しい自販機を作成
+              </h3>
+              
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target as HTMLFormElement);
+                const selectedTheme = formData.get('theme') as string;
+                const theme = selectedTheme ? JSON.parse(selectedTheme) : {
+                  primaryColor: "#3b82f6",
+                  backgroundColor: "#1e40af", 
+                  textColor: "#ffffff"
+                };
+                
+                createVendingMachine({
+                  name: formData.get('name') as string,
+                  slug: (formData.get('name') as string).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                  description: formData.get('description') as string,
+                  isPublished: false,
+                  theme
+                });
+                setIsCreatingMachine(false);
+              }}>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                    自販機名
+                  </label>
+                  <input
+                    name="name"
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 6,
+                      color: "#fff",
+                      fontSize: 14
+                    }}
+                    placeholder="例: デジタルアートストア"
+                  />
+                </div>
+                
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                    説明
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 6,
+                      color: "#fff",
+                      fontSize: 14,
+                      resize: "vertical"
+                    }}
+                    placeholder="自販機の説明を入力..."
+                  />
+                </div>
+                
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 14 }}>
+                    🎨 テーマカラー
+                  </label>
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "repeat(4, 1fr)", 
+                    gap: 8 
+                  }}>
+                    {[
+                      { name: "ブルー", primary: "#3b82f6", bg: "#1e40af" },
+                      { name: "パープル", primary: "#7c3aed", bg: "#5b21b6" },
+                      { name: "グリーン", primary: "#10b981", bg: "#047857" },
+                      { name: "オレンジ", primary: "#f59e0b", bg: "#d97706" }
+                    ].map(theme => (
+                      <label key={theme.name} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        padding: 8,
+                        background: "rgba(255,255,255,0.04)",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                        border: "1px solid rgba(255,255,255,0.1)"
+                      }}>
+                        <input
+                          type="radio"
+                          name="theme"
+                          value={JSON.stringify({
+                            primaryColor: theme.primary,
+                            backgroundColor: theme.bg,
+                            textColor: "#ffffff"
+                          })}
+                          defaultChecked={theme.name === "ブルー"}
+                          style={{ marginBottom: 4 }}
+                        />
+                        <div style={{
+                          width: 20,
+                          height: 20,
+                          background: `linear-gradient(45deg, ${theme.primary}, ${theme.bg})`,
+                          borderRadius: 4,
+                          marginBottom: 4
+                        }} />
+                        <span style={{ fontSize: 11 }}>{theme.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingMachine(false)}
+                    style={{
+                      background: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 16px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      background: "#16a34a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      fontWeight: 600
+                    }}
+                  >
+                    作成
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 商品管理モーダル */}
+        {isManagingProducts && (
+          <ProductManagementModal 
+            machineId={isManagingProducts}
+            onClose={() => setIsManagingProducts(null)}
+          />
+        )}
+
+        {/* 新商品作成モーダル */}
+        {isCreatingProduct && isManagingProducts && (
+          <ProductCreateModal
+            machineId={isManagingProducts}
+            onClose={() => setIsCreatingProduct(false)}
+            onCreate={createProduct}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // ---- 商品管理モーダル ----
+  const ProductManagementModal = ({ machineId, onClose }: { machineId: string, onClose: () => void }) => {
+    const machine = vendingMachines.find(m => m.id === machineId);
+    const machineProducts = getMachineProducts(machineId);
+    
+    if (!machine) return null;
+    
+    return (
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.8)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20
+      }}>
+        <div style={{
+          background: "#1f2937",
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 800,
+          width: "100%",
+          maxHeight: "90vh",
+          overflow: "auto",
+          border: "1px solid rgba(255,255,255,0.2)"
+        }}>
+          {/* ヘッダー */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            marginBottom: 20
+          }}>
+            <div>
+              <h3 style={{ margin: "0 0 4px 0", fontSize: 18 }}>
+                📦 商品管理: {machine.name}
+              </h3>
+              <p style={{ margin: 0, fontSize: 12, opacity: 0.7 }}>
+                {machineProducts.length} 件の商品
+              </p>
+            </div>
+            
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setIsCreatingProduct(true)}
+                style={{
+                  background: "#16a34a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                ➕ 新商品追加
+              </button>
+              <button
+                onClick={onClose}
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  cursor: "pointer"
+                }}
+              >
+                ✕ 閉じる
+              </button>
+            </div>
           </div>
 
-          {/* 売上管理（準備中） */}
-          <div style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 12,
-            padding: 20,
-            textAlign: "center",
-            opacity: 0.7
+          {/* 商品一覧 */}
+          {machineProducts.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {machineProducts.map(product => (
+                <div key={product.id} style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  padding: 16,
+                  display: "flex",
+                  gap: 16,
+                  alignItems: "center"
+                }}>
+                  {/* 商品画像プレースホルダー */}
+                  <div style={{
+                    width: 60,
+                    height: 60,
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 24,
+                    flexShrink: 0
+                  }}>
+                    🎁
+                  </div>
+                  
+                  {/* 商品情報 */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                        {product.name}
+                      </h4>
+                      {product.isActive ? (
+                        <span style={{
+                          background: "rgba(34, 197, 94, 0.2)",
+                          color: "#22c55e",
+                          padding: "2px 6px",
+                          borderRadius: 8,
+                          fontSize: 9,
+                          fontWeight: 600
+                        }}>
+                          有効
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: "rgba(156, 163, 175, 0.2)",
+                          color: "#9ca3af",
+                          padding: "2px 6px",
+                          borderRadius: 8,
+                          fontSize: 9,
+                          fontWeight: 600
+                        }}>
+                          無効
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ 
+                      margin: "0 0 8px 0", 
+                      fontSize: 12, 
+                      opacity: 0.7,
+                      lineHeight: 1.4
+                    }}>
+                      {product.description}
+                    </p>
+                    <div style={{ 
+                      display: "flex", 
+                      gap: 16, 
+                      fontSize: 11, 
+                      opacity: 0.8 
+                    }}>
+                      <span>💰 {product.price} tNHT</span>
+                      <span>📦 {product.stock ? `在庫: ${product.stock}` : '無制限'}</span>
+                      <span>📁 {product.category}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 操作ボタン */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+                    <button
+                      onClick={() => {
+                        // TODO: 商品編集モーダル
+                        alert(`${product.name} の編集機能は実装中です`);
+                      }}
+                      style={{
+                        background: "#3b82f6",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        minWidth: 60
+                      }}
+                    >
+                      ✏️ 編集
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        updateProduct(product.id, { isActive: !product.isActive });
+                      }}
+                      style={{
+                        background: product.isActive ? "#dc2626" : "#16a34a",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        minWidth: 60
+                      }}
+                    >
+                      {product.isActive ? "🔒 無効" : "✅ 有効"}
+                    </button>
+                    
+                    <button
+                      onClick={() => duplicateProduct(product.id)}
+                      style={{
+                        background: "#7c3aed",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        minWidth: 60
+                      }}
+                    >
+                      📋 複製
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        if (confirm(`「${product.name}」を削除しますか？`)) {
+                          deleteProduct(product.id);
+                        }
+                      }}
+                      style={{
+                        background: "#dc2626",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        minWidth: 60
+                      }}
+                    >
+                      🗑️ 削除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              textAlign: "center",
+              padding: 40,
+              background: "rgba(255,255,255,0.02)",
+              borderRadius: 8,
+              border: "2px dashed rgba(255,255,255,0.1)"
+            }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: 16 }}>
+                商品がありません
+              </h4>
+              <p style={{ margin: "0 0 20px 0", fontSize: 12, opacity: 0.7 }}>
+                最初の商品を追加して販売を開始しましょう
+              </p>
+              <button
+                onClick={() => setIsCreatingProduct(true)}
+                style={{
+                  background: "#16a34a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 12
+                }}
+              >
+                ➕ 最初の商品を追加
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ---- 新商品作成モーダル ----
+  const ProductCreateModal = ({ 
+    machineId, 
+    onClose, 
+    onCreate 
+  }: { 
+    machineId: string, 
+    onClose: () => void,
+    onCreate: (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Product
+  }) => {
+    return (
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.9)",
+        zIndex: 1001,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20
+      }}>
+        <div style={{
+          background: "#1f2937",
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 600,
+          width: "100%",
+          maxHeight: "90vh",
+          overflow: "auto",
+          border: "1px solid rgba(255,255,255,0.2)"
+        }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: 18 }}>
+            📦 新商品を追加
+          </h3>
+          
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            onCreate({
+              machineId,
+              name: formData.get('name') as string,
+              description: formData.get('description') as string,
+              price: parseInt(formData.get('price') as string),
+              imageUrl: formData.get('imageUrl') as string || '/placeholder.jpg',
+              downloadUrl: formData.get('downloadUrl') as string || '/placeholder.zip',
+              stock: formData.get('stockType') === 'limited' 
+                ? parseInt(formData.get('stock') as string) 
+                : null,
+              isActive: true,
+              category: formData.get('category') as string,
+              sortOrder: products.filter(p => p.machineId === machineId).length + 1
+            });
+            onClose();
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 16 }}>売上統計</h3>
-            <p style={{ margin: 0, fontSize: 12 }}>
-              売上データの表示機能は準備中です
-            </p>
-          </div>
+            <div style={{ display: "grid", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  商品名 *
+                </label>
+                <input
+                  name="name"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    color: "#fff",
+                    fontSize: 14
+                  }}
+                  placeholder="例: デジタルアート作品"
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  商品説明
+                </label>
+                <textarea
+                  name="description"
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    color: "#fff",
+                    fontSize: 14,
+                    resize: "vertical"
+                  }}
+                  placeholder="商品の詳細説明..."
+                />
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                    価格 (tNHT) *
+                  </label>
+                  <input
+                    name="price"
+                    type="number"
+                    min="1"
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 6,
+                      color: "#fff",
+                      fontSize: 14
+                    }}
+                    placeholder="100"
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                    カテゴリ
+                  </label>
+                  <select
+                    name="category"
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 6,
+                      color: "#fff",
+                      fontSize: 14
+                    }}
+                  >
+                    <option value="その他">その他</option>
+                    <option value="イラスト">イラスト</option>
+                    <option value="3Dモデル">3Dモデル</option>
+                    <option value="音楽">音楽</option>
+                    <option value="動画">動画</option>
+                    <option value="ゲーム">ゲーム</option>
+                    <option value="ソフトウェア">ソフトウェア</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  在庫設定
+                </label>
+                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                    <input type="radio" name="stockType" value="unlimited" defaultChecked />
+                    無制限
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                    <input type="radio" name="stockType" value="limited" />
+                    制限あり
+                  </label>
+                  <input
+                    name="stock"
+                    type="number"
+                    min="1"
+                    style={{
+                      padding: "4px 8px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12,
+                      width: 80
+                    }}
+                    placeholder="数量"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  商品画像
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: 8,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  borderRadius: 6,
+                  border: "1px dashed rgba(255,255,255,0.2)"
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    🖼️ 商品画像をアップロードまたはURLを入力
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{
+                      padding: "4px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    onChange={(e) => {
+                      // TODO: ファイルアップロード処理
+                      if (e.target.files?.[0]) {
+                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      }
+                    }}
+                  />
+                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
+                    または
+                  </div>
+                  <input
+                    name="imageUrl"
+                    type="url"
+                    style={{
+                      width: "100%",
+                      padding: "6px 8px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  ダウンロードファイル
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: 8,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  borderRadius: 6,
+                  border: "1px dashed rgba(255,255,255,0.2)"
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    📁 販売する商品ファイルをアップロードまたはURLを入力
+                  </div>
+                  <input
+                    type="file"
+                    style={{
+                      padding: "4px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    onChange={(e) => {
+                      // TODO: ファイルアップロード処理
+                      if (e.target.files?.[0]) {
+                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      }
+                    }}
+                  />
+                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
+                    または
+                  </div>
+                  <input
+                    name="downloadUrl"
+                    type="url"
+                    style={{
+                      width: "100%",
+                      padding: "6px 8px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    placeholder="https://example.com/download.zip"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ 
+              display: "flex", 
+              gap: 12, 
+              justifyContent: "flex-end",
+              marginTop: 24
+            }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  cursor: "pointer"
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#16a34a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                商品を追加
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
