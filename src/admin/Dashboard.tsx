@@ -49,6 +49,8 @@ type VendingMachine = {
     backgroundColor: string;
     textColor: string;
     logoUrl?: string;
+    machineImageUrl?: string; // 自販機デザイン画像
+    backgroundImageUrl?: string; // 背景画像
   };
   createdAt: Date;
   updatedAt: Date;
@@ -405,6 +407,7 @@ export default function AdminDashboard() {
   const [machineFilter, setMachineFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [isManagingProducts, setIsManagingProducts] = useState<string | null>(null);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  const [isEditingMachine, setIsEditingMachine] = useState<string | null>(null);
   
 
 
@@ -2455,8 +2458,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // TODO: 編集モーダルを開く
-                          alert(`${machine.name} の編集機能は実装中です`);
+                          setIsEditingMachine(machine.id);
                         }}
                         style={{
                           background: "#3b82f6",
@@ -2762,6 +2764,15 @@ export default function AdminDashboard() {
             machineId={isManagingProducts}
             onClose={() => setIsCreatingProduct(false)}
             onCreate={createProduct}
+          />
+        )}
+
+        {/* 自販機編集モーダル */}
+        {isEditingMachine && (
+          <MachineEditModal
+            machineId={isEditingMachine}
+            onClose={() => setIsEditingMachine(null)}
+            onUpdate={updateVendingMachine}
           />
         )}
       </div>
@@ -3356,6 +3367,391 @@ export default function AdminDashboard() {
                 }}
               >
                 商品を追加
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // ---- 自販機編集モーダル ----
+  const MachineEditModal = ({ 
+    machineId, 
+    onClose, 
+    onUpdate 
+  }: { 
+    machineId: string, 
+    onClose: () => void,
+    onUpdate: (id: string, updates: Partial<VendingMachine>) => void
+  }) => {
+    const machine = vendingMachines.find(m => m.id === machineId);
+    
+    if (!machine) return null;
+    
+    return (
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.9)",
+        zIndex: 1001,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20
+      }}>
+        <div style={{
+          background: "#1f2937",
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 700,
+          width: "100%",
+          maxHeight: "90vh",
+          overflow: "auto",
+          border: "1px solid rgba(255,255,255,0.2)"
+        }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: 18 }}>
+            ✏️ 自販機編集: {machine.name}
+          </h3>
+          
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            const selectedTheme = formData.get('theme') as string;
+            const theme = selectedTheme ? JSON.parse(selectedTheme) : machine.theme;
+            
+            // 画像URL設定を更新
+            const updatedTheme = {
+              ...theme,
+              machineImageUrl: formData.get('machineImageUrl') as string || theme.machineImageUrl,
+              backgroundImageUrl: formData.get('backgroundImageUrl') as string || theme.backgroundImageUrl
+            };
+            
+            onUpdate(machineId, {
+              name: formData.get('name') as string,
+              description: formData.get('description') as string,
+              slug: (formData.get('name') as string).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+              theme: updatedTheme
+            });
+            onClose();
+          }}>
+            <div style={{ display: "grid", gap: 16 }}>
+              {/* 基本情報 */}
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  自販機名 *
+                </label>
+                <input
+                  name="name"
+                  required
+                  defaultValue={machine.name}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    color: "#fff",
+                    fontSize: 14
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  説明
+                </label>
+                <textarea
+                  name="description"
+                  rows={3}
+                  defaultValue={machine.description}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    color: "#fff",
+                    fontSize: 14,
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              {/* 自販機デザイン画像 */}
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  🎰 自販機デザイン画像
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: 8,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  borderRadius: 6,
+                  border: "1px dashed rgba(255,255,255,0.2)"
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    🖼️ 自販機UI上に表示される自販機本体の画像
+                  </div>
+                  {machine.theme.machineImageUrl && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: 8,
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: 4
+                    }}>
+                      <img 
+                        src={machine.theme.machineImageUrl} 
+                        alt="現在の自販機画像"
+                        style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <span style={{ fontSize: 11, opacity: 0.8 }}>現在の画像</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{
+                      padding: "4px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      }
+                    }}
+                  />
+                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
+                    または
+                  </div>
+                  <input
+                    name="machineImageUrl"
+                    type="url"
+                    defaultValue={machine.theme.machineImageUrl || ''}
+                    style={{
+                      width: "100%",
+                      padding: "6px 8px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    placeholder="https://example.com/machine-design.png"
+                  />
+                </div>
+              </div>
+
+              {/* 背景画像 */}
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 14 }}>
+                  🌅 背景画像
+                </label>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: 8,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.02)",
+                  borderRadius: 6,
+                  border: "1px dashed rgba(255,255,255,0.2)"
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    🖼️ 自販機UI全体の背景に表示される画像
+                  </div>
+                  {machine.theme.backgroundImageUrl && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: 8,
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: 4
+                    }}>
+                      <img 
+                        src={machine.theme.backgroundImageUrl} 
+                        alt="現在の背景画像"
+                        style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 4 }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <span style={{ fontSize: 11, opacity: 0.8 }}>現在の背景画像</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{
+                      padding: "4px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        alert('ファイルアップロード機能は実装中です\n現在はURL入力をご利用ください');
+                      }
+                    }}
+                  />
+                  <div style={{ fontSize: 11, opacity: 0.5, textAlign: "center" }}>
+                    または
+                  </div>
+                  <input
+                    name="backgroundImageUrl"
+                    type="url"
+                    defaultValue={machine.theme.backgroundImageUrl || ''}
+                    style={{
+                      width: "100%",
+                      padding: "6px 8px",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 12
+                    }}
+                    placeholder="https://example.com/background.jpg"
+                  />
+                </div>
+              </div>
+              
+              {/* テーマカラー */}
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontSize: 14 }}>
+                  🎨 テーマカラー
+                </label>
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(4, 1fr)", 
+                  gap: 8 
+                }}>
+                  {[
+                    { name: "ブルー", primary: "#3b82f6", bg: "#1e40af" },
+                    { name: "パープル", primary: "#7c3aed", bg: "#5b21b6" },
+                    { name: "グリーン", primary: "#10b981", bg: "#047857" },
+                    { name: "オレンジ", primary: "#f59e0b", bg: "#d97706" }
+                  ].map(theme => (
+                    <label key={theme.name} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      padding: 8,
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                      border: machine.theme.primaryColor === theme.primary 
+                        ? "2px solid rgba(255,255,255,0.4)" 
+                        : "1px solid rgba(255,255,255,0.1)"
+                    }}>
+                      <input
+                        type="radio"
+                        name="theme"
+                        value={JSON.stringify({
+                          primaryColor: theme.primary,
+                          backgroundColor: theme.bg,
+                          textColor: "#ffffff"
+                        })}
+                        defaultChecked={machine.theme.primaryColor === theme.primary}
+                        style={{ marginBottom: 4 }}
+                      />
+                      <div style={{
+                        width: 20,
+                        height: 20,
+                        background: `linear-gradient(45deg, ${theme.primary}, ${theme.bg})`,
+                        borderRadius: 4,
+                        marginBottom: 4
+                      }} />
+                      <span style={{ fontSize: 11 }}>{theme.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* プレビューセクション */}
+              <div style={{
+                marginTop: 16,
+                padding: 16,
+                background: "rgba(255,255,255,0.04)",
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.1)"
+              }}>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: 14 }}>
+                  👀 プレビュー
+                </h4>
+                <div style={{
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "center"
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => window.open(`/vending?machine=${machine.slug}`, '_blank')}
+                    style={{
+                      background: machine.theme.primaryColor,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 16px",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      fontWeight: 600
+                    }}
+                  >
+                    🔗 現在の自販機をプレビュー
+                  </button>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>
+                    ※変更は保存後に反映されます
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ 
+              display: "flex", 
+              gap: 12, 
+              justifyContent: "flex-end",
+              marginTop: 24
+            }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  cursor: "pointer"
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#3b82f6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                ✏️ 変更を保存
               </button>
             </div>
           </form>
