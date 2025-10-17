@@ -1,4 +1,4 @@
-// src/metaverse-ui/App.tsx
+// src/vending-ui/App.tsx
 import { useEffect, useState } from "react";
 import {
   ConnectWallet,
@@ -13,14 +13,15 @@ import DownloadManager from "./DownloadManager";
 import SpaceIdentifier from "./SpaceIdentifier";
 
 /* ========================================
-   🏪 メタバース自販機専用アプリ
-   
-   🎯 用途: 3D空間の自販機からアクセスする専用UI
-   🔗 URL: /content?space={spaceId}&machine={machineId}
-   ⚡ 機能: 既存チップシステム + デジタルコンテンツ配布
+   🏪 自販機フロントUIアプリ
+
+   🎯 用途: 管理画面で作成した自販機のフロントUI
+   🔗 URL: /content?machine={machineId}
+   ⚡ 機能: チップシステム + デジタルコンテンツ配布
+   📦 対応: NFT/SBT/GLB/FBX/VRM等のデジタルアセット
 ======================================== */
 
-export default function MetaverseApp() {
+export default function VendingApp() {
   const address = useAddress();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
   
