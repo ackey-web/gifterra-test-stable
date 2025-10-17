@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { VendingMachine, Product } from '../../types/vending';
+import { generateSlug } from '../../utils/slugGenerator';
 
 const STORAGE_KEY = 'vending_machines_data';
 
@@ -21,6 +22,11 @@ const VendingDashboard: React.FC = () => {
   const product2ImageRef = useRef<HTMLInputElement>(null);
   const product3ImageRef = useRef<HTMLInputElement>(null);
 
+  // ファイルアップロード用ref
+  const product1FileRef = useRef<HTMLInputElement>(null);
+  const product2FileRef = useRef<HTMLInputElement>(null);
+  const product3FileRef = useRef<HTMLInputElement>(null);
+
   // localStorageに保存
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
@@ -31,9 +37,11 @@ const VendingDashboard: React.FC = () => {
 
   // 新規自販機追加
   const handleAddMachine = () => {
+    const machineName = '新しい自販機';
     const newMachine: VendingMachine = {
       id: `machine-${Date.now()}`,
-      name: '新しい自販機',
+      slug: generateSlug(machineName),
+      name: machineName,
       location: '未設定',
       description: '',
       products: [],
@@ -132,6 +140,43 @@ const VendingDashboard: React.FC = () => {
     });
   };
 
+  // 配布ファイルアップロード
+  const handleProductFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingMachine) return;
+    const base64 = await convertToBase64(file);
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+    const products = [...editingMachine.products];
+    if (!products[index]) {
+      products[index] = {
+        id: `product-${Date.now()}-${index}`,
+        name: file.name,
+        price: 100,
+        description: '',
+        imageUrl: '',
+        stock: 0,
+        contentType: 'GLB',
+        category: 'digital-asset',
+        fileUrl: base64,
+        fileName: file.name,
+        fileSize: `${fileSizeMB}MB`,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      products[index] = {
+        ...products[index],
+        fileUrl: base64,
+        fileName: file.name,
+        fileSize: `${fileSizeMB}MB`
+      };
+    }
+
+    setEditingMachine({ ...editingMachine, products });
+  };
+
   // 商品画像アップロード
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
@@ -147,7 +192,8 @@ const VendingDashboard: React.FC = () => {
         description: '',
         imageUrl: base64,
         stock: 0,
-        category: 'other',
+        contentType: 'GLB',
+        category: 'digital-asset',
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -172,7 +218,8 @@ const VendingDashboard: React.FC = () => {
         description: '',
         imageUrl: '',
         stock: 0,
-        category: 'other',
+        contentType: 'GLB',
+        category: 'digital-asset',
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -801,6 +848,48 @@ const VendingDashboard: React.FC = () => {
                         </div>
                       </div>
 
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={product?.isUnlimitedStock || false}
+                            onChange={(e) => updateProduct(index, 'isUnlimitedStock', e.target.checked)}
+                            style={{ cursor: "pointer" }}
+                          />
+                          <span>在庫無制限</span>
+                        </label>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: 2, fontSize: 12, opacity: 0.7 }}>
+                          コンテンツタイプ
+                        </label>
+                        <select
+                          value={product?.contentType || 'GLB'}
+                          onChange={(e) => updateProduct(index, 'contentType', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: 6,
+                            background: "rgba(255,255,255,.1)",
+                            border: "1px solid rgba(255,255,255,.2)",
+                            borderRadius: 4,
+                            color: "#fff",
+                            fontSize: 13
+                          }}
+                        >
+                          <option value="NFT">NFT</option>
+                          <option value="SBT">SBT</option>
+                          <option value="GLB">GLB</option>
+                          <option value="FBX">FBX</option>
+                          <option value="VRM">VRM</option>
+                          <option value="MP3">MP3</option>
+                          <option value="MP4">MP4</option>
+                          <option value="PNG">PNG</option>
+                          <option value="PDF">PDF</option>
+                          <option value="ZIP">ZIP</option>
+                        </select>
+                      </div>
+
                       <div>
                         <label style={{ display: "block", marginBottom: 2, fontSize: 12, opacity: 0.7 }}>
                           商品画像
@@ -830,6 +919,41 @@ const VendingDashboard: React.FC = () => {
                         >
                           画像を選択
                         </button>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", marginBottom: 2, fontSize: 12, opacity: 0.7 }}>
+                          配布ファイル (GLB/FBX/VRM/MP3等)
+                        </label>
+                        <input
+                          type="file"
+                          ref={index === 0 ? product1FileRef : index === 1 ? product2FileRef : product3FileRef}
+                          onChange={(e) => handleProductFileUpload(e, index)}
+                          style={{ display: "none" }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (index === 0) product1FileRef.current?.click();
+                            else if (index === 1) product2FileRef.current?.click();
+                            else product3FileRef.current?.click();
+                          }}
+                          style={{
+                            padding: "6px 12px",
+                            background: "#10B981",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            fontSize: 12,
+                            cursor: "pointer"
+                          }}
+                        >
+                          ファイルを選択
+                        </button>
+                        {product?.fileName && (
+                          <div style={{ marginTop: 4, fontSize: 11, opacity: 0.7 }}>
+                            ✓ {product.fileName} ({product.fileSize})
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

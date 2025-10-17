@@ -1,13 +1,29 @@
 // 自販機システムの型定義
 
+export type ProductType = 'NFT' | 'SBT' | 'GLB' | 'FBX' | 'VRM' | 'MP3' | 'MP4' | 'PNG' | 'JPG' | 'PDF' | 'ZIP' | 'GLTF' | 'WAV' | 'OBJ';
+
 export interface Product {
   id: string;
   name: string;
-  price: number;
+  price: number; // = 必要チップ数
   description: string;
-  imageUrl: string;
+  imageUrl: string; // サムネイル画像
   stock: number;
-  category: 'drink' | 'snack' | 'other';
+  isUnlimitedStock?: boolean; // 在庫無制限フラグ
+
+  // デジタルコンテンツ設定
+  contentType: ProductType; // コンテンツ種類
+
+  // NFT/SBTの場合
+  contractAddress?: string; // NFT/SBTコントラクトアドレス
+  tokenId?: string; // トークンID
+
+  // ファイル配布の場合（GLB/FBX/VRM/MP3等）
+  fileUrl?: string; // ダウンロード用URL（Base64 or 外部URL）
+  fileName?: string; // ファイル名（例: avatar.glb）
+  fileSize?: string; // ファイルサイズ（例: 2.4MB）
+
+  category: 'digital-asset' | 'nft' | 'sbt' | 'other';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -15,6 +31,7 @@ export interface Product {
 
 export interface VendingMachine {
   id: string;
+  slug: string; // URL用スラッグ (例: honsha-1f)
   name: string;
   location: string;
   description: string;

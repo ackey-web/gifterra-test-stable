@@ -5,7 +5,7 @@ import "./index.css";
 
 import RewardApp from "./reward-ui/App";
 import TipApp from "./tip-ui/App";
-import MetaverseApp from "./metaverse-ui/App";
+import VendingApp from "./vending-ui/App";
 import AdminDashboard from "./admin/Dashboard";
 import AdminDashboardMobile from "./admin/DashboardMobile";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
@@ -112,7 +112,7 @@ root.render(
       ) : wantsTip ? (
         <TipApp />
       ) : wantsContent ? (
-        <MetaverseApp />
+        <VendingApp />
       ) : (
         <RewardApp />
       )}
