@@ -39,6 +39,17 @@ export interface VendingMachineSettings {
     end: string;   // HH:MM format
   };
   customCss?: string;
+  // デザインカスタマイズ設定
+  design?: {
+    headerImage?: string;        // ヘッダー画像URL（自販機上部）
+    backgroundImage?: string;     // 背景画像URL
+    primaryColor?: string;        // メインカラー
+    secondaryColor?: string;      // サブカラー
+    accentColor?: string;         // アクセントカラー
+    textColor?: string;           // テキストカラー
+    buttonColor?: string;         // ボタンカラー
+    cardBackgroundColor?: string; // カード背景色
+  };
 }
 
 export interface VendingStats {
