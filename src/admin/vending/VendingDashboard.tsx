@@ -153,11 +153,7 @@ interface VendingDashboardProps {
 
 type ViewMode = 'overview' | 'product-management' | 'design' | 'settings' | 'stats';
 
-const VendingDashboard: React.FC<VendingDashboardProps> = ({
-  onNavigateToEditor,
-  onNavigateToPreview,
-  onNavigateToStats
-}) => {
+const VendingDashboard: React.FC<VendingDashboardProps> = () => {
   const [machines, setMachines] = useState<VendingMachine[]>(mockMachines);
   const [selectedMachine, setSelectedMachine] = useState<VendingMachine | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
@@ -497,15 +493,15 @@ const VendingDashboard: React.FC<VendingDashboardProps> = ({
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // const formatDate = (dateString: string) => {
+  //   return new Date(dateString).toLocaleDateString('ja-JP', {
+  //     year: 'numeric',
+  //     month: 'short',
+  //     day: 'numeric',
+  //     hour: '2-digit',
+  //     minute: '2-digit'
+  //   });
+  // };
 
   // 概要ビュー
   const renderOverview = () => (
