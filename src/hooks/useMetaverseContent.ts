@@ -59,6 +59,7 @@ function loadVendingMachinesFromStorage(): VendingMachine[] {
 function convertVendingMachineToContent(machine: VendingMachine): {
   machineInfo: MachineInfo;
   contentSet: ContentSet;
+  vendingMachine: VendingMachine;
 } {
   const machineInfo: MachineInfo = {
     machineId: machine.slug,
@@ -88,7 +89,7 @@ function convertVendingMachineToContent(machine: VendingMachine): {
     contents
   };
 
-  return { machineInfo, contentSet };
+  return { machineInfo, contentSet, vendingMachine: machine };
 }
 
 // 🗄️ 型定義
@@ -326,6 +327,7 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
   const [spaceInfo, setSpaceInfo] = useState<SpaceInfo | null>(null);
   const [machineInfo, setMachineInfo] = useState<MachineInfo | null>(null);
   const [contentSet, setContentSet] = useState<ContentSet | null>(null);
+  const [vendingMachine, setVendingMachine] = useState<VendingMachine | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -348,7 +350,7 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
         if (vendingMachine) {
           // ✅ 管理画面データが見つかった場合
           console.log("✅ Vending machine found from admin:", vendingMachine);
-          const { machineInfo: adminMachineInfo, contentSet: adminContentSet } = convertVendingMachineToContent(vendingMachine);
+          const { machineInfo: adminMachineInfo, contentSet: adminContentSet, vendingMachine: vm } = convertVendingMachineToContent(vendingMachine);
 
           setSpaceInfo({
             spaceId: 'default',
@@ -358,6 +360,7 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
           });
           setMachineInfo(adminMachineInfo);
           setContentSet(adminContentSet);
+          setVendingMachine(vm);
           setIsLoading(false);
           return;
         }
@@ -415,8 +418,9 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
 
   return {
     spaceInfo,
-    machineInfo, 
+    machineInfo,
     contentSet,
+    vendingMachine,
     isLoading,
     error
   };

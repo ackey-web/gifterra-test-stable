@@ -53,6 +53,7 @@ export default function VendingApp() {
     spaceInfo,
     machineInfo,
     contentSet,
+    vendingMachine,
     isLoading: contentLoading,
     error: contentError
   } = useMetaverseContent(spaceId, machineId);
@@ -161,8 +162,21 @@ export default function VendingApp() {
     );
   }
 
+  // デザイン設定を取得
+  const primaryColor = vendingMachine?.settings?.design?.primaryColor || '#3B82F6';
+  const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || '#8B5CF6';
+  const backgroundColor = vendingMachine?.settings?.design?.cardBackgroundColor || '#1F2937';
+  const backgroundImage = vendingMachine?.settings?.design?.backgroundImage;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    <div
+      className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
       {/* 🎯 ヘッダー - 空間・マシン情報 */}
       <div className="relative overflow-hidden bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
@@ -220,10 +234,13 @@ export default function VendingApp() {
               </div>
             ) : contentSet ? (
               <>
-                <ContentDisplay 
+                <ContentDisplay
                   contentSet={contentSet}
                   availableContent={availableContent}
                   userTips={userTips}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                  backgroundColor={backgroundColor}
                 />
                 
                 <DownloadManager 
@@ -244,8 +261,14 @@ export default function VendingApp() {
 
       {/* 🎨 背景エフェクト */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-1/2 -left-1/2 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div
+          className="absolute -top-1/2 -right-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse"
+          style={{ backgroundColor: primaryColor + '20' }}
+        ></div>
+        <div
+          className="absolute -bottom-1/2 -left-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse"
+          style={{ backgroundColor: secondaryColor + '20' }}
+        ></div>
       </div>
     </div>
   );

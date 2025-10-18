@@ -26,6 +26,9 @@ interface ContentDisplayProps {
   contentSet: ContentSet;
   availableContent: DigitalContent[];
   userTips: number;
+  primaryColor?: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
 }
 
 /* ========================================
@@ -35,7 +38,14 @@ interface ContentDisplayProps {
    🔒 制御: チップ数に基づく表示制御
 ======================================== */
 
-const ContentDisplay = ({ contentSet, availableContent, userTips }: ContentDisplayProps) => {
+const ContentDisplay = ({
+  contentSet,
+  availableContent,
+  userTips,
+  primaryColor = '#3B82F6',
+  secondaryColor = '#8B5CF6',
+  backgroundColor = '#1F2937'
+}: ContentDisplayProps) => {
   const [selectedContent, setSelectedContent] = useState<DigitalContent | null>(null);
 
   // 📁 コンテンツタイプ別アイコン
@@ -91,11 +101,16 @@ const ContentDisplay = ({ contentSet, availableContent, userTips }: ContentDispl
             <div
               key={content.contentId}
               className={`
-                relative bg-gradient-to-br ${getContentColor(content.type)} 
+                relative bg-gradient-to-br ${getContentColor(content.type)}
                 backdrop-blur-sm rounded-xl p-6 border cursor-pointer
                 transition-all duration-300 hover:scale-105
                 ${isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-xl hover:shadow-white/10'}
               `}
+              style={{
+                backgroundColor: backgroundColor + '40',
+                borderColor: primaryColor + '60',
+                boxShadow: `0 0 20px ${primaryColor}20`
+              }}
               onClick={() => !isLocked && setSelectedContent(content)}
             >
               {/* 🔒 ロック状態表示 */}
@@ -111,7 +126,14 @@ const ContentDisplay = ({ contentSet, availableContent, userTips }: ContentDispl
               {/* ✅ 利用可能状態表示 */}
               {isAvailable && (
                 <div className="absolute top-2 right-2">
-                  <div className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs border border-green-500/30">
+                  <div
+                    className="px-2 py-1 rounded-full text-xs border"
+                    style={{
+                      backgroundColor: primaryColor + '30',
+                      color: primaryColor,
+                      borderColor: primaryColor + '60'
+                    }}
+                  >
                     ✅ 利用可能
                   </div>
                 </div>
@@ -135,8 +157,10 @@ const ContentDisplay = ({ contentSet, availableContent, userTips }: ContentDispl
                 
                 <div className="mt-3 pt-3 border-t border-white/10">
                   <div className="flex items-center justify-center space-x-2">
-                    <span className="text-yellow-400">💎</span>
-                    <span className="text-white font-bold">{content.requiredTips.toLocaleString()} TIPS</span>
+                    <span style={{ color: secondaryColor }}>💎</span>
+                    <span className="font-bold" style={{ color: secondaryColor }}>
+                      {content.requiredTips.toLocaleString()} TIPS
+                    </span>
                   </div>
                 </div>
               </div>
