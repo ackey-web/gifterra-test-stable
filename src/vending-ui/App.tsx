@@ -62,9 +62,13 @@ export default function VendingApp() {
     spaceInfo,
     machineInfo,
     contentSet,
+    vendingMachine,
     isLoading: contentLoading,
     error: contentError
   });
+
+  // localStorageの内容を確認
+  console.log("📦 localStorage data:", localStorage.getItem('vending_machines_data'));
 
   // 💰 既存チップシステム連携
   const { data: totalTipsReceived } = useContractRead(
@@ -193,8 +197,8 @@ export default function VendingApp() {
       )}
 
       <div className="container mx-auto px-4 py-8">
-        {/* 🔗 ウォレット接続 */}
-        {!address ? (
+        {/* 🔗 ウォレット接続ボタン（常に表示） */}
+        {!address && (
           <div className="text-center mb-8">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 max-w-md mx-auto">
               <h2 className="text-2xl font-bold text-white mb-4">
@@ -203,14 +207,17 @@ export default function VendingApp() {
               <p className="text-white/80 mb-6">
                 デジタルコンテンツを取得するためにウォレットを接続してください
               </p>
-              <ConnectWallet 
+              <ConnectWallet
                 theme="dark"
                 btnTitle="ウォレット接続"
                 className="w-full"
               />
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* 💰 チップ情報表示（ウォレット接続時のみ） */}
+        {address && (
           <>
             {/* 💰 チップ情報表示 */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 mb-8">
@@ -230,36 +237,39 @@ export default function VendingApp() {
               </div>
             </div>
 
-            {/* 📦 コンテンツ表示 */}
-            {contentLoading ? (
-              <div className="text-center text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p>コンテンツを読み込んでいます...</p>
-              </div>
-            ) : contentSet ? (
-              <>
-                <ContentDisplay
-                  contentSet={contentSet}
-                  availableContent={availableContent}
-                  userTips={userTips}
-                  primaryColor={primaryColor}
-                  secondaryColor={secondaryColor}
-                  backgroundColor={backgroundColor}
-                />
-                
-                <DownloadManager 
-                  availableContent={availableContent}
-                  userAddress={address}
-                  spaceId={spaceId}
-                  machineId={machineId}
-                />
-              </>
-            ) : (
-              <div className="text-center text-white">
-                <p>コンテンツセットが設定されていません</p>
-              </div>
+          </>
+        )}
+
+        {/* 📦 コンテンツ表示（常に表示） */}
+        {contentLoading ? (
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>コンテンツを読み込んでいます...</p>
+          </div>
+        ) : contentSet ? (
+          <>
+            <ContentDisplay
+              contentSet={contentSet}
+              availableContent={availableContent}
+              userTips={userTips}
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+              backgroundColor={backgroundColor}
+            />
+
+            {address && (
+              <DownloadManager
+                availableContent={availableContent}
+                userAddress={address}
+                spaceId={spaceId}
+                machineId={machineId}
+              />
             )}
           </>
+        ) : (
+          <div className="text-center text-white">
+            <p>コンテンツセットが設定されていません</p>
+          </div>
         )}
       </div>
 
