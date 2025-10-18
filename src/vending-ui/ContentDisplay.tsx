@@ -93,7 +93,39 @@ const ContentDisplay = ({
 
       {/* 📱 コンテンツグリッド */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {contentSet.contents.map((content) => {
+        {contentSet.contents.length === 0 ? (
+          // 商品が0件の場合のプレースホルダー
+          <>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="relative bg-gradient-to-br backdrop-blur-sm rounded-xl p-6 border opacity-50"
+                style={{
+                  backgroundColor: backgroundColor + '40',
+                  borderColor: primaryColor + '40',
+                  boxShadow: `0 0 20px ${primaryColor}10`
+                }}
+              >
+                <div className="text-center">
+                  <div className="text-4xl mb-3">📦</div>
+                  <h3 className="text-lg font-bold text-white/50 mb-2">準備中</h3>
+                  <p className="text-white/40 text-sm mb-3">
+                    コンテンツは近日公開予定です
+                  </p>
+                  <div className="mt-3 pt-3 border-t border-white/10">
+                    <div className="flex items-center justify-center space-x-2">
+                      <span style={{ color: secondaryColor + '60' }}>💎</span>
+                      <span className="font-bold text-white/40">
+                        --- TIPS
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          contentSet.contents.map((content) => {
           const isAvailable = availableContent.some(c => c.contentId === content.contentId);
           const isLocked = !isAvailable;
 
@@ -166,7 +198,8 @@ const ContentDisplay = ({
               </div>
             </div>
           );
-        })}
+        })
+        )}
       </div>
 
       {/* 🔍 詳細モーダル */}
