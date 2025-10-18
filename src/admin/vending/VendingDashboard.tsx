@@ -8,7 +8,22 @@ const VendingDashboard: React.FC = () => {
   // localStorageと同期するstate
   const [machines, setMachines] = useState<VendingMachine[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+
+    const parsed: VendingMachine[] = JSON.parse(saved);
+
+    // 既存データにslugが無い場合は自動生成
+    const migrated = parsed.map(machine => {
+      if (!machine.slug) {
+        return {
+          ...machine,
+          slug: generateSlug(machine.name)
+        };
+      }
+      return machine;
+    });
+
+    return migrated;
   });
 
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
@@ -607,7 +622,11 @@ const VendingDashboard: React.FC = () => {
                 <input
                   type="text"
                   value={editingMachine.name}
-                  onChange={(e) => setEditingMachine({ ...editingMachine, name: e.target.value })}
+                  onChange={(e) => setEditingMachine({
+                    ...editingMachine,
+                    name: e.target.value,
+                    slug: generateSlug(e.target.value)
+                  })}
                   style={{
                     width: "100%",
                     padding: 8,
@@ -618,6 +637,24 @@ const VendingDashboard: React.FC = () => {
                     fontSize: 14
                   }}
                 />
+              </div>
+
+              {/* Slug表示 */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
+                  URL Slug (自動生成)
+                </label>
+                <div style={{
+                  padding: 8,
+                  background: "rgba(255,255,255,.05)",
+                  border: "1px solid rgba(255,255,255,.1)",
+                  borderRadius: 6,
+                  color: "#10B981",
+                  fontSize: 13,
+                  fontFamily: "monospace"
+                }}>
+                  {editingMachine.slug || '(未生成)'}
+                </div>
               </div>
 
               <div style={{ marginBottom: 12 }}>
