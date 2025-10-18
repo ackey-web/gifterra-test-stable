@@ -1,5 +1,18 @@
 // スラッグ生成ユーティリティ
 
+// 日本語→英語変換マップ（よく使う単語）
+const japaneseToEnglish: Record<string, string> = {
+  '新しい': 'new',
+  '自販機': 'vending',
+  '店': 'store',
+  '東京': 'tokyo',
+  '渋谷': 'shibuya',
+  '新宿': 'shinjuku',
+  '駅': 'station',
+  'メイン': 'main',
+  '入口': 'entrance',
+};
+
 // 日本語→ローマ字変換マップ
 const kanaToRomaji: Record<string, string> = {
   'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
@@ -15,7 +28,14 @@ const kanaToRomaji: Record<string, string> = {
 };
 
 export const generateSlug = (name: string): string => {
-  let slug = name.toLowerCase();
+  let slug = name;
+
+  // 日本語→英語変換を先に実行
+  for (const [japanese, english] of Object.entries(japaneseToEnglish)) {
+    slug = slug.replace(new RegExp(japanese, 'g'), english);
+  }
+
+  slug = slug.toLowerCase();
   for (const [kana, romaji] of Object.entries(kanaToRomaji)) {
     slug = slug.replace(new RegExp(kana, 'g'), romaji);
   }
