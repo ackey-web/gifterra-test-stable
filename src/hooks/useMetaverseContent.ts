@@ -1,5 +1,6 @@
 // src/hooks/useMetaverseContent.ts
 import { useState, useEffect } from "react";
+import type { VendingMachine } from "../types/vending";
 
 // 文字列の類似度を計算（簡易版）
 function calculateSimilarity(str1: string, str2: string): number {
@@ -39,6 +40,55 @@ function findClosestMatch(input: string, candidates: string[]): string | null {
   }
   
   return bestMatch;
+}
+
+// 📦 localStorage から管理画面データを読み込む
+const STORAGE_KEY = 'vending_machines_data';
+
+function loadVendingMachinesFromStorage(): VendingMachine[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.error('Failed to load vending machines:', error);
+    return [];
+  }
+}
+
+// 🔄 VendingMachine を MachineInfo + ContentSet に変換
+function convertVendingMachineToContent(machine: VendingMachine): {
+  machineInfo: MachineInfo;
+  contentSet: ContentSet;
+} {
+  const machineInfo: MachineInfo = {
+    machineId: machine.slug,
+    machineName: machine.name,
+    spaceId: 'default',
+    contentSetId: machine.id
+  };
+
+  const contents: DigitalContent[] = machine.products.map(product => ({
+    contentId: product.id,
+    name: product.name,
+    type: product.contentType as any,
+    description: product.description,
+    fileSize: product.fileSize,
+    requiredTips: product.price,
+    metadata: {
+      author: 'Admin',
+      createdAt: product.createdAt,
+      tags: [product.category]
+    }
+  }));
+
+  const contentSet: ContentSet = {
+    contentSetId: machine.id,
+    name: machine.name,
+    description: machine.description,
+    contents
+  };
+
+  return { machineInfo, contentSet };
 }
 
 // 🗄️ 型定義
@@ -289,12 +339,35 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
       console.log("🏪 Available Machines:", Object.keys(MOCK_MACHINES));
 
       try {
-        // 🏰 空間情報取得
+        // 📦 管理画面から作成した自販機を読み込み
+        const vendingMachines = loadVendingMachinesFromStorage();
+
+        // slug で検索
+        const vendingMachine = vendingMachines.find(m => m.slug === machineId);
+
+        if (vendingMachine) {
+          // ✅ 管理画面データが見つかった場合
+          console.log("✅ Vending machine found from admin:", vendingMachine);
+          const { machineInfo: adminMachineInfo, contentSet: adminContentSet } = convertVendingMachineToContent(vendingMachine);
+
+          setSpaceInfo({
+            spaceId: 'default',
+            spaceName: 'Admin Created Space',
+            description: vendingMachine.location,
+            isActive: vendingMachine.isActive
+          });
+          setMachineInfo(adminMachineInfo);
+          setContentSet(adminContentSet);
+          setIsLoading(false);
+          return;
+        }
+
+        // 🏰 モックデータから取得（後方互換性）
         const space = MOCK_SPACES[spaceId];
         if (!space) {
           console.error(`❌ Space not found: ${spaceId}`);
           const suggestion = findClosestMatch(spaceId, Object.keys(MOCK_SPACES));
-          const errorMsg = suggestion 
+          const errorMsg = suggestion
             ? `Space not found: ${spaceId}. Did you mean "${suggestion}"?`
             : `Space not found: ${spaceId}`;
           throw new Error(errorMsg);
@@ -307,7 +380,7 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
         if (!machine) {
           console.error(`❌ Machine not found: ${machineId}`);
           const suggestion = findClosestMatch(machineId, Object.keys(MOCK_MACHINES));
-          const errorMsg = suggestion 
+          const errorMsg = suggestion
             ? `Machine not found: ${machineId}. Did you mean "${suggestion}"?`
             : `Machine not found: ${machineId}`;
           throw new Error(errorMsg);

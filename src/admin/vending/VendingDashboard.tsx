@@ -518,6 +518,32 @@ const VendingDashboard: React.FC = () => {
                   <div style={{ fontSize: 16, fontWeight: 700 }}>{selectedMachine.products.length}種</div>
                 </div>
               </div>
+
+              {/* フロントUIリンク */}
+              <div style={{
+                marginTop: 16,
+                padding: 12,
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                borderRadius: 6
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#10B981" }}>
+                  🔗 フロントUI
+                </div>
+                <a
+                  href={`/content?machine=${selectedMachine.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: 11,
+                    color: "#10B981",
+                    textDecoration: "none",
+                    wordBreak: "break-all"
+                  }}
+                >
+                  {window.location.origin}/content?machine={selectedMachine.slug}
+                </a>
+              </div>
             </div>
           )}
         </div>
