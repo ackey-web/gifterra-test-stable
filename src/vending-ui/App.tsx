@@ -10,7 +10,6 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
 import ContentDisplay from "./ContentDisplay";
 import DownloadManager from "./DownloadManager";
-import SpaceIdentifier from "./SpaceIdentifier";
 
 /* ========================================
    🏪 自販機フロントUIアプリ
@@ -177,16 +176,21 @@ export default function VendingApp() {
         backgroundPosition: 'center'
       }}
     >
-      {/* 🎯 ヘッダー - 空間・マシン情報 */}
-      <div className="relative overflow-hidden bg-black/20 backdrop-blur-sm border-b border-white/10">
-        <div className="container mx-auto px-4 py-6">
-          <SpaceIdentifier 
-            spaceInfo={spaceInfo}
-            machineInfo={machineInfo}
-            isLoading={contentLoading}
-          />
+      {/* 🎯 ヘッダー - 自販機名表示 */}
+      {vendingMachine && (
+        <div className="relative overflow-hidden bg-black/20 backdrop-blur-sm border-b border-white/10">
+          <div className="container mx-auto px-4 py-6">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-white mb-2">
+                🏪 {vendingMachine.settings.displayName || vendingMachine.name}
+              </h1>
+              {vendingMachine.settings.welcomeMessage && (
+                <p className="text-white/70">{vendingMachine.settings.welcomeMessage}</p>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         {/* 🔗 ウォレット接続 */}
