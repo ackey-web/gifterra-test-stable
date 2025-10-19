@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { VendingMachine, Product } from '../../types/vending';
 import { generateSlug } from '../../utils/slugGenerator';
+import { uploadImage } from '../../lib/supabase';
 
 const STORAGE_KEY = 'vending_machines_data';
 
@@ -147,12 +148,20 @@ const VendingDashboard: React.FC = () => {
   const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingMachine) return;
-    const base64 = await convertToBase64(file);
+
+    // Supabaseに画像をアップロード
+    const imageUrl = await uploadImage(file, 'vending-images');
+
+    if (!imageUrl) {
+      alert('画像のアップロードに失敗しました。');
+      return;
+    }
+
     setEditingMachine({
       ...editingMachine,
       settings: {
         ...editingMachine.settings,
-        design: { ...editingMachine.settings.design, headerImage: base64 }
+        design: { ...editingMachine.settings.design, headerImage: imageUrl }
       }
     });
   };
@@ -161,12 +170,20 @@ const VendingDashboard: React.FC = () => {
   const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingMachine) return;
-    const base64 = await convertToBase64(file);
+
+    // Supabaseに画像をアップロード
+    const imageUrl = await uploadImage(file, 'vending-images');
+
+    if (!imageUrl) {
+      alert('画像のアップロードに失敗しました。');
+      return;
+    }
+
     setEditingMachine({
       ...editingMachine,
       settings: {
         ...editingMachine.settings,
-        design: { ...editingMachine.settings.design, backgroundImage: base64 }
+        design: { ...editingMachine.settings.design, backgroundImage: imageUrl }
       }
     });
   };
@@ -175,7 +192,15 @@ const VendingDashboard: React.FC = () => {
   const handleProductFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file || !editingMachine) return;
-    const base64 = await convertToBase64(file);
+
+    // Supabaseにファイルをアップロード
+    const fileUrl = await uploadImage(file, 'product-files');
+
+    if (!fileUrl) {
+      alert('ファイルのアップロードに失敗しました。');
+      return;
+    }
+
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
 
     const products = [...editingMachine.products];
@@ -189,7 +214,7 @@ const VendingDashboard: React.FC = () => {
         stock: 0,
         contentType: 'GLB',
         category: 'digital-asset',
-        fileUrl: base64,
+        fileUrl: fileUrl,
         fileName: file.name,
         fileSize: `${fileSizeMB}MB`,
         isActive: true,
@@ -199,7 +224,7 @@ const VendingDashboard: React.FC = () => {
     } else {
       products[index] = {
         ...products[index],
-        fileUrl: base64,
+        fileUrl: fileUrl,
         fileName: file.name,
         fileSize: `${fileSizeMB}MB`
       };
@@ -212,7 +237,14 @@ const VendingDashboard: React.FC = () => {
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file || !editingMachine) return;
-    const base64 = await convertToBase64(file);
+
+    // Supabaseに画像をアップロード
+    const imageUrl = await uploadImage(file, 'product-images');
+
+    if (!imageUrl) {
+      alert('画像のアップロードに失敗しました。');
+      return;
+    }
 
     const products = [...editingMachine.products];
     if (!products[index]) {
@@ -221,7 +253,7 @@ const VendingDashboard: React.FC = () => {
         name: `商品${index + 1}`,
         price: 100,
         description: '',
-        imageUrl: base64,
+        imageUrl: imageUrl,
         stock: 0,
         contentType: 'GLB',
         category: 'digital-asset',
@@ -230,7 +262,7 @@ const VendingDashboard: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
     } else {
-      products[index] = { ...products[index], imageUrl: base64 };
+      products[index] = { ...products[index], imageUrl: imageUrl };
     }
 
     setEditingMachine({ ...editingMachine, products });
