@@ -1,7 +1,9 @@
 // src/vending-ui/App.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
+import { formatUnits } from "viem";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
+import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
 
 export default function VendingApp() {
@@ -20,11 +22,48 @@ export default function VendingApp() {
   const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [tnhtBalance, setTnhtBalance] = useState("0.0000");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // tNHT残高を取得
+  useEffect(() => {
+    if (!address) {
+      setTnhtBalance("0.0000");
+      return;
+    }
+
+    const fetchBalance = async () => {
+      try {
+        const balance = await publicClient.readContract({
+          address: TOKEN.ADDRESS,
+          abi: ERC20_MIN_ABI,
+          functionName: "balanceOf",
+          args: [address as `0x${string}`],
+        });
+        const formatted = formatUnits(balance, TOKEN.DECIMALS);
+        setTnhtBalance(Number(formatted).toFixed(4));
+      } catch (err) {
+        setTnhtBalance("0.0000");
+      }
+    };
+
+    fetchBalance();
+  }, [address]);
 
   const handleProductSelect = (productId: string) => {
     if (!selectedProducts.includes(productId)) {
       setSelectedProducts((prev) => [...prev, productId]);
     }
+  };
+
+  const handleProductHover = (product: any) => {
+    if (product?.imageUrl) {
+      setPreviewImage(product.imageUrl);
+    }
+  };
+
+  const handleProductLeave = () => {
+    setPreviewImage(null);
   };
 
   if (error) {
@@ -46,8 +85,16 @@ export default function VendingApp() {
     >
       {/* ===== ディスプレイ窓 ===== */}
       <div className="relative z-10 px-5 pt-6">
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-black/80">
-          <p className="text-sm text-white/50">商品プレビュー</p>
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-black/80 overflow-hidden">
+          {previewImage ? (
+            <img
+              src={previewImage}
+              alt="商品プレビュー"
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <p className="text-sm text-white/50">商品プレビュー</p>
+          )}
         </div>
       </div>
 
@@ -78,13 +125,22 @@ export default function VendingApp() {
                 key={product.contentId}
                 type="button"
                 onClick={() => handleProductSelect(product.contentId)}
-                className="group rounded-xl p-3 text-center transition-transform hover:scale-[1.02] active:scale-[0.99]"
+                onMouseEnter={() => handleProductHover(product)}
+                onMouseLeave={handleProductLeave}
+                className="group relative overflow-hidden rounded-xl p-3 text-center transition-all hover:-translate-y-[2px] active:translate-y-0 shadow-[0_8px_22px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_32px_rgba(139,92,246,0.4)]"
                 style={{
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                 }}
               >
-                <div className="text-sm font-bold text-white">{label}</div>
-                <div className="mt-1 text-xs text-white/80">{price}</div>
+                {/* ホバー時の発光レイヤー */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                  style={{
+                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.2), transparent 70%)`,
+                  }}
+                />
+                <div className="relative text-sm font-bold text-white">{label}</div>
+                <div className="relative mt-1 text-xs text-white/80">{price}</div>
               </button>
             );
           })}
@@ -103,7 +159,7 @@ export default function VendingApp() {
             }}
           >
             <div className="text-xs opacity-80">残高</div>
-            <div className="text-lg font-bold">0.0000 tNHT</div>
+            <div className="text-lg font-bold">{tnhtBalance} tNHT</div>
           </div>
 
           {/* ウォレット */}
