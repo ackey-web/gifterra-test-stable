@@ -124,7 +124,8 @@ export default function VendingApp() {
           ).map((product: any, index: number) => {
             const isPlaceholder = !product?.contentId;
             const label = String.fromCharCode(65 + index);
-            const price = isPlaceholder ? "準備中" : `${product.requiredTips} tNHT`;
+            const tokenSymbol = vendingMachine?.settings?.tokenSymbol || 'tNHT';
+            const price = isPlaceholder ? "準備中" : `${product.requiredTips} ${tokenSymbol}`;
 
             return isPlaceholder ? (
               <div
@@ -187,22 +188,23 @@ export default function VendingApp() {
       {/* ===== 操作パネル（ロゴ・残高・ウォレット） ===== */}
       <div className="relative z-10 px-5 pb-5">
         <div
-          className="rounded-2xl p-4 relative overflow-hidden"
+          className="rounded-2xl p-3 relative overflow-hidden"
           style={{
-            background: "linear-gradient(145deg, #0f1419, #1a1f2e)",
+            background: "linear-gradient(145deg, #1a1f2e, #0f1419)",
             boxShadow: `
-              inset 0 3px 8px rgba(0,0,0,0.6),
-              inset 0 1px 0 rgba(0,0,0,0.8),
-              0 1px 0 rgba(255,255,255,0.03)
+              0 4px 12px rgba(0,0,0,0.5),
+              0 1px 3px rgba(0,0,0,0.3),
+              inset 0 1px 0 rgba(255,255,255,0.08),
+              inset 0 -1px 2px rgba(0,0,0,0.3)
             `,
-            border: "1px solid rgba(0,0,0,0.5)",
+            border: "1px solid rgba(255,255,255,0.08)",
           }}
         >
-          {/* 内側の陰影 */}
+          {/* 金属反射（アウトセット用） */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(circle at 50% 0%, rgba(0,0,0,0.4), transparent 50%)",
+              background: "linear-gradient(165deg, rgba(255,255,255,0.05) 0%, transparent 40%, rgba(0,0,0,0.2) 100%)",
             }}
           />
 
@@ -219,7 +221,7 @@ export default function VendingApp() {
 
             {/* 残高パネル（中央・金属質感・ネオングリーン） */}
             <div
-              className="flex flex-col justify-center flex-1 rounded-xl px-4 py-3 relative overflow-hidden"
+              className="flex flex-col justify-center flex-1 rounded-xl px-4 py-2 relative overflow-hidden"
               style={{
                 background: "linear-gradient(145deg, #1a3d2f, #0f2419)",
                 boxShadow: `
@@ -248,8 +250,8 @@ export default function VendingApp() {
               {/* 残高テキスト */}
               <div className="relative text-center">
                 <div className="text-xs font-bold text-emerald-300/80 mb-0.5">残高</div>
-                <div className="text-2xl font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
-                  {tnhtBalance} tNHT
+                <div className="text-lg font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
+                  {tnhtBalance} {vendingMachine?.settings?.tokenSymbol || 'tNHT'}
                 </div>
               </div>
             </div>

@@ -56,6 +56,7 @@ export interface VendingMachineSettings {
     end: string;   // HH:MM format
   };
   customCss?: string;
+  tokenSymbol?: 'tNHT' | 'JPYC'; // 使用するトークンの種類
   // デザインカスタマイズ設定
   design?: {
     headerImage?: string;        // ヘッダー画像URL（自販機上部）
