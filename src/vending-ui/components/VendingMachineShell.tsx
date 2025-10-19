@@ -106,18 +106,30 @@ export default function VendingMachineShell({
 
             {/* 内側の背景 */}
             <div className="relative">
-              {/* ヘッダー（金属インセット） */}
+              {/* ヘッダー（金属インセット） - スクロールテキスト */}
               <div
-                className="px-5 py-4"
+                className="py-4 overflow-hidden"
                 style={{
                   background: "linear-gradient(180deg, #0a0e14, #12171f)",
                   borderBottom: "1px solid rgba(255,255,255,0.05)",
                   boxShadow: "inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.03)",
                 }}
               >
-                <h1 className="text-center font-bold tracking-wide text-white/90">
-                  {headerTitle}
-                </h1>
+                <div className="whitespace-nowrap">
+                  <div
+                    className="inline-block"
+                    style={{
+                      animation: "scrollText 10s linear infinite",
+                      paddingRight: "100%",
+                    }}
+                  >
+                    <span className="text-base font-bold text-white/90 tracking-wider">
+                      {headerTitle}
+                      <span className="mx-8 text-white/50">●</span>
+                      {headerTitle}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* ディスプレイ/ボタン/取り出し口など（親から注入） */}
