@@ -61,21 +61,49 @@ export default function VendingMachineShell({
           <div className="absolute -left-2 top-1/4 h-1/2 w-1 rounded-full bg-white/10 blur-md" />
           <div className="absolute -right-2 top-1/4 h-1/2 w-1 rounded-full bg-white/10 blur-md" />
 
-          {/* パネル（筐体の面） */}
-          <div className="relative overflow-hidden rounded-[24px] border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.6)]">
-            {/* パネルのグラデ層 */}
+          {/* パネル（金属筐体の面） */}
+          <div
+            className="relative overflow-hidden rounded-[24px]"
+            style={{
+              background: "linear-gradient(145deg, #1a1f2e, #0f1419)",
+              boxShadow: `
+                0 25px 60px rgba(0,0,0,0.7),
+                inset 0 1px 0 rgba(255,255,255,0.08),
+                inset 0 -1px 3px rgba(0,0,0,0.5),
+                inset -2px 0 4px rgba(0,0,0,0.3),
+                inset 2px 0 4px rgba(255,255,255,0.03)
+              `,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            {/* 金属反射レイヤー */}
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 pointer-events-none"
               style={{
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 60%, rgba(0,0,0,0.2) 100%)",
+                background: `
+                  linear-gradient(165deg,
+                    transparent 0%,
+                    rgba(255,255,255,0.03) 20%,
+                    transparent 40%,
+                    rgba(255,255,255,0.02) 60%,
+                    transparent 80%
+                  )
+                `,
               }}
             />
+
             {/* 内側の背景 */}
-            <div className="relative bg-slate-900/70 backdrop-blur-xl">
-              {/* ヘッダー */}
-              <div className="border-b border-white/10 bg-black/30 px-5 py-4">
-                <h1 className="text-center font-bold tracking-wide">
+            <div className="relative">
+              {/* ヘッダー（金属インセット） */}
+              <div
+                className="px-5 py-4"
+                style={{
+                  background: "linear-gradient(180deg, #0a0e14, #12171f)",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  boxShadow: "inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.03)",
+                }}
+              >
+                <h1 className="text-center font-bold tracking-wide text-white/90">
                   {headerTitle}
                 </h1>
               </div>
