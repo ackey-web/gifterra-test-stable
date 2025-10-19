@@ -680,7 +680,7 @@ const VendingDashboard: React.FC = () => {
 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                  表示名
+                  ヘッダーテキスト（スクロール表示）
                 </label>
                 <input
                   type="text"
@@ -689,6 +689,7 @@ const VendingDashboard: React.FC = () => {
                     ...editingMachine,
                     settings: { ...editingMachine.settings, displayName: e.target.value }
                   })}
+                  placeholder="例: 🎁 Welcome to Gifterra! デジタルギフトをお楽しみください"
                   style={{
                     width: "100%",
                     padding: 8,
