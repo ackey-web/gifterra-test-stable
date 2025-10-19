@@ -964,17 +964,32 @@ const VendingDashboard: React.FC = () => {
                             type="number"
                             value={product?.stock || 0}
                             onChange={(e) => updateProduct(index, 'stock', Number(e.target.value))}
+                            disabled={product?.isUnlimitedStock || false}
                             style={{
                               width: "100%",
                               padding: 6,
-                              background: "rgba(255,255,255,.1)",
+                              background: product?.isUnlimitedStock ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.1)",
                               border: "1px solid rgba(255,255,255,.2)",
                               borderRadius: 4,
-                              color: "#fff",
-                              fontSize: 13
+                              color: product?.isUnlimitedStock ? "rgba(255,255,255,.3)" : "#fff",
+                              fontSize: 13,
+                              cursor: product?.isUnlimitedStock ? "not-allowed" : "text"
                             }}
                           />
                         </div>
+                      </div>
+
+                      {/* 在庫無制限チェックボックス */}
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={product?.isUnlimitedStock || false}
+                            onChange={(e) => updateProduct(index, 'isUnlimitedStock', e.target.checked)}
+                            style={{ cursor: "pointer" }}
+                          />
+                          <span style={{ fontSize: 13, opacity: 0.8 }}>在庫無制限（∞）</span>
+                        </label>
                       </div>
 
                       <div style={{ marginTop: 8 }}>
