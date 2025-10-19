@@ -22,6 +22,7 @@ import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
 import VendingDashboard from "./vending/VendingDashboard";
+import { uploadImage } from "../lib/supabase";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -1305,15 +1306,16 @@ export default function AdminDashboard() {
                   accept="image/*"
                   style={{ display: "none" }}
                   id={`ad-image-upload-${index}`}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        const base64 = event.target?.result as string;
-                        updateAd(index, 'src', base64);
-                      };
-                      reader.readAsDataURL(file);
+                      // Supabaseに画像をアップロード
+                      const imageUrl = await uploadImage(file, 'ad-images');
+                      if (imageUrl) {
+                        updateAd(index, 'src', imageUrl);
+                      } else {
+                        alert('画像のアップロードに失敗しました。');
+                      }
                     }
                   }}
                 />
