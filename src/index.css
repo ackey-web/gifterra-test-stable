@@ -60,3 +60,33 @@ body {
     min-height: -webkit-fill-available;
   }
 }
+
+/* ====== Glow アニメーション（筐体の外周グロー用） ====== */
+/* Tailwind の任意値クラス `animate-[glowPulse_7s_ease-in-out_infinite]`
+   などで呼び出します。translate を含めているのでセンタリングは保持されます。 */
+@keyframes glowPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.96);
+    filter: blur(120px);
+    opacity: .55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    filter: blur(180px);
+    opacity: .9;
+  }
+}
+
+/* 2層目の補助オーラ用（X方向だけセンタリングしてスケール） */
+@keyframes glowPulse2 {
+  0%, 100% {
+    transform: translateX(-50%) scale(0.94);
+    filter: blur(110px);
+    opacity: .45;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+    filter: blur(160px);
+    opacity: .7;
+  }
+}
