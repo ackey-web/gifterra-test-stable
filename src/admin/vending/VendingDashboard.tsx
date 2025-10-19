@@ -73,6 +73,7 @@ const VendingDashboard: React.FC = () => {
         thankYouMessage: 'ありがとうございました！',
         maxSelectionsPerUser: 3,
         operatingHours: { start: '09:00', end: '18:00' },
+        tokenSymbol: 'tNHT',
         design: {
           primaryColor: '#3B82F6',
           secondaryColor: '#8B5CF6',
@@ -501,7 +502,7 @@ const VendingDashboard: React.FC = () => {
                         )}
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 13, fontWeight: 600 }}>{product.name}</div>
-                          <div style={{ fontSize: 12, opacity: 0.7 }}>¥{product.price}</div>
+                          <div style={{ fontSize: 12, opacity: 0.7 }}>{product.price} {selectedMachine.settings.tokenSymbol || 'tNHT'}</div>
                         </div>
                       </div>
                     ))}
@@ -518,7 +519,7 @@ const VendingDashboard: React.FC = () => {
               }}>
                 <div style={{ padding: 12, background: "rgba(255,255,255,.04)", borderRadius: 6 }}>
                   <div style={{ opacity: 0.6, marginBottom: 4 }}>総売上</div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>¥{selectedMachine.totalSales.toLocaleString()}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>{selectedMachine.totalSales.toLocaleString()} {selectedMachine.settings.tokenSymbol || 'tNHT'}</div>
                 </div>
                 <div style={{ padding: 12, background: "rgba(255,255,255,.04)", borderRadius: 6 }}>
                   <div style={{ opacity: 0.6, marginBottom: 4 }}>配布数</div>
@@ -698,6 +699,31 @@ const VendingDashboard: React.FC = () => {
                     fontSize: 14
                   }}
                 />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
+                  使用トークン
+                </label>
+                <select
+                  value={editingMachine.settings.tokenSymbol || 'tNHT'}
+                  onChange={(e) => setEditingMachine({
+                    ...editingMachine,
+                    settings: { ...editingMachine.settings, tokenSymbol: e.target.value as 'tNHT' | 'JPYC' }
+                  })}
+                  style={{
+                    width: "100%",
+                    padding: 8,
+                    background: "rgba(255,255,255,.1)",
+                    border: "1px solid rgba(255,255,255,.2)",
+                    borderRadius: 6,
+                    color: "#fff",
+                    fontSize: 14
+                  }}
+                >
+                  <option value="tNHT">tNHT (テストネット)</option>
+                  <option value="JPYC">JPYC (日本円ステーブルコイン)</option>
+                </select>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
