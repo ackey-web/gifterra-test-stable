@@ -905,6 +905,8 @@ const VendingDashboard: React.FC = () => {
                             type="number"
                             value={product?.price || 100}
                             onChange={(e) => updateProduct(index, 'price', Number(e.target.value))}
+                            min="0"
+                            max="99999"
                             style={{
                               width: "100%",
                               padding: 6,
