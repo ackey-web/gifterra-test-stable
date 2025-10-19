@@ -9,7 +9,7 @@ import VendingMachineShell from "./components/VendingMachineShell";
 export default function VendingApp() {
   const address = useAddress();
 
-  // URL パラメータから自販機IDを取得
+  // URL パラメータからGIFT HUB IDを取得
   const urlParams = new URLSearchParams(window.location.search);
   const machineId = urlParams.get("machine") || "main";
   const spaceId = "default";
@@ -84,7 +84,7 @@ export default function VendingApp() {
     <VendingMachineShell
       primaryColor={primaryColor}
       secondaryColor={secondaryColor}
-      headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "デジタル自販機"}
+      headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "GIFT HUB"}
     >
       {/* ===== ディスプレイ窓（正方形・1100x1200対応） ===== */}
       <div className="relative z-10 px-5 pt-6">
@@ -221,7 +221,7 @@ export default function VendingApp() {
 
             {/* 残高パネル（中央・金属質感・ネオングリーン） */}
             <div
-              className="flex flex-col justify-center flex-1 rounded-xl px-4 py-2 relative overflow-hidden"
+              className="flex items-center justify-center flex-1 rounded-xl px-4 relative overflow-hidden"
               style={{
                 background: "linear-gradient(145deg, #1a3d2f, #0f2419)",
                 boxShadow: `
@@ -248,9 +248,9 @@ export default function VendingApp() {
                 }}
               />
               {/* 残高テキスト */}
-              <div className="relative text-center">
-                <div className="text-xs font-bold text-emerald-300/80 mb-0.5">残高</div>
-                <div className="text-lg font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
+              <div className="relative flex items-center gap-2">
+                <div className="text-xs font-bold text-emerald-300/80">残高</div>
+                <div className="text-base font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
                   {tnhtBalance} {vendingMachine?.settings?.tokenSymbol || 'tNHT'}
                 </div>
               </div>

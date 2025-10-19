@@ -50,9 +50,9 @@ const VendingDashboard: React.FC = () => {
   // 選択中の自販機
   const selectedMachine = machines.find(m => m.id === selectedMachineId);
 
-  // 新規自販機追加
+  // 新規GIFT HUB追加
   const handleAddMachine = () => {
-    const machineName = '新しい自販機';
+    const machineName = '新しいGIFT HUB';
     const newMachine: VendingMachine = {
       id: `machine-${Date.now()}`,
       slug: generateSlug(machineName),
@@ -68,7 +68,7 @@ const VendingDashboard: React.FC = () => {
       updatedAt: new Date().toISOString(),
       settings: {
         theme: 'default',
-        displayName: '新しい自販機',
+        displayName: '新しいGIFT HUB',
         welcomeMessage: 'いらっしゃいませ！',
         thankYouMessage: 'ありがとうございました！',
         maxSelectionsPerUser: 3,
@@ -111,9 +111,9 @@ const VendingDashboard: React.FC = () => {
     setEditingMachine(null);
   };
 
-  // 自販機削除
+  // GIFT HUB削除
   const handleDeleteMachine = (id: string) => {
-    if (!confirm('この自販機を削除してもよろしいですか？')) return;
+    if (!confirm('このGIFT HUBを削除してもよろしいですか？')) return;
     setMachines(machines.filter(m => m.id !== id));
     if (selectedMachineId === id) setSelectedMachineId(null);
   };
@@ -262,7 +262,7 @@ const VendingDashboard: React.FC = () => {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>
-          自販機管理
+          GIFT HUB管理
         </h2>
         <button
           onClick={handleAddMachine}
@@ -281,7 +281,7 @@ const VendingDashboard: React.FC = () => {
           }}
         >
           <span style={{ fontSize: 18 }}>+</span>
-          新しい自販機を追加
+          新しいGIFT HUBを追加
         </button>
       </div>
 
@@ -296,7 +296,7 @@ const VendingDashboard: React.FC = () => {
           minHeight: 500
         }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
-            自販機一覧
+            GIFT HUB一覧
           </h3>
 
           {machines.length === 0 ? (
@@ -305,8 +305,8 @@ const VendingDashboard: React.FC = () => {
               textAlign: "center",
               opacity: 0.6
             }}>
-              <p style={{ margin: 0, fontSize: 16 }}>自販機がまだ登録されていません</p>
-              <p style={{ margin: "8px 0 0 0", fontSize: 13 }}>「+ 新しい自販機を追加」から作成してください</p>
+              <p style={{ margin: 0, fontSize: 16 }}>GIFT HUBがまだ登録されていません</p>
+              <p style={{ margin: "8px 0 0 0", fontSize: 13 }}>「+ 新しいGIFT HUBを追加」から作成してください</p>
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -419,7 +419,7 @@ const VendingDashboard: React.FC = () => {
               opacity: 0.5,
               fontSize: 14
             }}>
-              <p style={{ margin: 0 }}>自販機を選択してください</p>
+              <p style={{ margin: 0 }}>GIFT HUBを選択してください</p>
             </div>
           ) : (
             <div>
@@ -590,7 +590,7 @@ const VendingDashboard: React.FC = () => {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-                自販機編集: {editingMachine.name}
+                GIFT HUB編集: {editingMachine.name}
               </h3>
               <button
                 onClick={() => {
@@ -618,7 +618,7 @@ const VendingDashboard: React.FC = () => {
 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                  自販機名 *
+                  GIFT HUB名 *
                 </label>
                 <input
                   type="text"
@@ -746,7 +746,7 @@ const VendingDashboard: React.FC = () => {
 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                  ヘッダー画像（自販機上部）
+                  ヘッダー画像（GIFT HUB上部）
                 </label>
                 <input
                   type="file"

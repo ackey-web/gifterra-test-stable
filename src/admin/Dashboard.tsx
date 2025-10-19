@@ -1755,7 +1755,7 @@ export default function AdminDashboard() {
             fontSize: 14,
           }}
         >
-          🏪 自販機管理
+          🏪 GIFT HUB管理
         </button>        
         {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
         {/* {currentUser?.role === UserRole.SUPER_ADMIN && (

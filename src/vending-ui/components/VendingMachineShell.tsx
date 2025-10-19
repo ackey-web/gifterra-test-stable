@@ -9,7 +9,7 @@ interface VendingMachineShellProps {
 }
 
 /**
- * 自販機の筐体フレーム（中身＝children を差し替え）
+ * GIFT HUBの筐体フレーム（中身＝children を差し替え）
  * - 外周グローは index.css の @keyframes glowPulse / glowPulse2 を使用
  * - 背景グローは pointer-events-none で操作を邪魔しない
  */
