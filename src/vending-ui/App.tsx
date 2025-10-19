@@ -121,13 +121,14 @@ export default function VendingApp() {
             return isPlaceholder ? (
               <div
                 key={`placeholder-${index}`}
-                className="rounded-xl p-3 text-center opacity-50"
+                className="rounded-2xl p-4 text-center opacity-40"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
+                  boxShadow: `0 8px 20px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.1)`,
                 }}
               >
-                <div className="text-sm font-bold text-white">{label}</div>
-                <div className="mt-1 text-xs text-white/80">{price}</div>
+                <div className="text-lg font-bold text-white tracking-wide">{label}</div>
+                <div className="mt-1 text-sm text-white/70 font-semibold">{price}</div>
               </div>
             ) : (
               <button
@@ -136,20 +137,28 @@ export default function VendingApp() {
                 onClick={() => handleProductSelect(product.contentId)}
                 onMouseEnter={() => handleProductHover(product)}
                 onMouseLeave={handleProductLeave}
-                className="group relative overflow-hidden rounded-xl p-3 text-center transition-all hover:-translate-y-[2px] active:translate-y-0 shadow-[0_8px_22px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_32px_rgba(139,92,246,0.4)]"
+                className="group relative overflow-hidden rounded-2xl p-4 text-center transition-all hover:-translate-y-[3px] active:translate-y-0"
                 style={{
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
+                  boxShadow: `0 10px 30px rgba(139,92,246,0.4), 0 0 20px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.2)`,
                 }}
               >
+                {/* グローエフェクト */}
+                <div
+                  className="absolute -inset-[1px] rounded-2xl opacity-60 blur-sm pointer-events-none"
+                  style={{
+                    background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})`,
+                  }}
+                />
                 {/* ホバー時の発光レイヤー */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                   style={{
-                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.2), transparent 70%)`,
+                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.3), transparent 70%)`,
                   }}
                 />
-                <div className="relative text-sm font-bold text-white">{label}</div>
-                <div className="relative mt-1 text-xs text-white/80">{price}</div>
+                <div className="relative text-lg font-bold text-white tracking-wide">{label}</div>
+                <div className="relative mt-1 text-sm text-white/90 font-semibold">{price}</div>
               </button>
             );
           })}
@@ -158,29 +167,50 @@ export default function VendingApp() {
 
       {/* ===== ステータス行（残高・ウォレット） ===== */}
       <div className="relative z-10 px-5 pb-5">
-        <div className="flex gap-3">
-          {/* 残高 */}
-          <div
-            className="flex-1 rounded-xl border-2 px-4 py-3"
+        <div className="flex items-stretch gap-3">
+          {/* 残高パネル（ネオングリーン） */}
+          <div className="flex items-center gap-3 flex-1 rounded-2xl border-2 px-4 py-3 relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, #10B981, #059669)",
-              borderColor: "#10B98180",
+              background: "linear-gradient(135deg, #00ff88, #00cc6a)",
+              borderColor: "#00ff8880",
+              boxShadow: "0 0 30px rgba(0,255,136,0.4), 0 8px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)",
             }}
           >
-            <div className="text-xs opacity-80">残高</div>
-            <div className="text-lg font-bold">{tnhtBalance} tNHT</div>
+            {/* グローエフェクト */}
+            <div
+              className="absolute inset-0 opacity-50 blur-md pointer-events-none"
+              style={{
+                background: "radial-gradient(circle at 30% 30%, rgba(0,255,136,0.6), transparent 70%)",
+              }}
+            />
+            {/* ロゴ */}
+            <img
+              src="/gifterra-logo.png"
+              alt="Gifterra"
+              className="relative w-10 h-10 object-contain"
+            />
+            {/* 残高テキスト */}
+            <div className="relative flex-1">
+              <div className="text-xs font-bold text-emerald-900/80">残高</div>
+              <div className="text-xl font-extrabold text-white tracking-wide drop-shadow-lg">
+                {tnhtBalance} tNHT
+              </div>
+            </div>
           </div>
 
-          {/* ウォレット */}
+          {/* ウォレット接続ボタン */}
           <div className="flex-1">
             <ConnectWallet
               theme="dark"
               btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "接続"}
-              className="w-full"
+              className="w-full h-full"
               style={{
                 background: "linear-gradient(135deg, #F59E0B, #D97706)",
                 borderColor: "#F59E0B80",
                 border: "2px solid #F59E0B80",
+                borderRadius: "1rem",
+                boxShadow: "0 0 25px rgba(245,158,11,0.4), 0 8px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+                minHeight: "68px",
               }}
             />
           </div>

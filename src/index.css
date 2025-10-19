@@ -90,3 +90,27 @@ body {
     opacity: .7;
   }
 }
+
+/* 筐体外周のフラッシュアニメーション（自販機風） */
+@keyframes neonFlash {
+  0%, 100% {
+    opacity: 0.7;
+    filter: saturate(1.2) brightness(1);
+  }
+  5% {
+    opacity: 1;
+    filter: saturate(1.5) brightness(1.3);
+  }
+  10% {
+    opacity: 0.7;
+    filter: saturate(1.2) brightness(1);
+  }
+  15% {
+    opacity: 1;
+    filter: saturate(1.5) brightness(1.3);
+  }
+  20%, 95% {
+    opacity: 0.7;
+    filter: saturate(1.2) brightness(1);
+  }
+}

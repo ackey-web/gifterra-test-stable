@@ -41,12 +41,11 @@ export default function VendingMachineShell({
       <div className="relative z-10 flex min-h-[100svh] items-center justify-center p-4">
         {/* 外枠（ベゼル光） */}
         <div className="relative w-[420px] max-w-[92vw]">
-          {/* ネオン輪郭 */}
+          {/* ネオン輪郭（フラッシュアニメーション） */}
           <div
-            className="absolute -inset-[3px] rounded-[28px] blur-lg opacity-70"
+            className="absolute -inset-[3px] rounded-[28px] blur-lg animate-[neonFlash_4s_ease-in-out_infinite]"
             style={{
               background: `conic-gradient(from 90deg at 50% 50%, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
-              filter: "saturate(1.2)",
             }}
           />
 
