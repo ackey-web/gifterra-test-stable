@@ -1,32 +1,60 @@
 /* src/index.css */
+/* Tailwind 本体（config なしで最短起動） */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ====== Base ====== */
 :root { color-scheme: dark; }
 html, body, #root { height: 100%; }
 body {
   margin: 0;
-  background: #0b1620;
-  color: #fff;              /* ← これ！全体の文字色を白に */
+  background: #0b1620;        /* 全体の背景 */
+  color: #fff;                /* 全体の文字色を白に */
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
                "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
 }
 
-/* モバイル対応 */
+/* ====== 便利コンポーネント（Tailwindの上に薄く） ====== */
+@layer components {
+  /* ガラス風の面（自販機のパネルなどに使える） */
+  .glass {
+    background: linear-gradient(135deg, rgba(30,41,59,.65), rgba(2,6,23,.65));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    border-radius: 1.25rem;
+  }
+  /* うっすら光る縁取り */
+  .neon-border {
+    position: relative;
+    border: 2px solid rgba(139,92,246,.25);
+    border-radius: 1.25rem;
+  }
+  .neon-border::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    filter: blur(18px);
+    background: radial-gradient(600px circle at 50% 50%, rgba(139,92,246,.25), transparent 60%);
+    pointer-events: none;
+  }
+}
+
+/* ====== モバイル最適化 ====== */
 @media (max-width: 600px) {
   body {
     padding: 10px;
     box-sizing: border-box;
   }
-  
-  /* モバイルでのタップ反応を改善 */
+  /* タップ反応を改善 */
   button, input, select {
     -webkit-tap-highlight-color: rgba(0,0,0,0.1);
     touch-action: manipulation;
   }
-  
-  /* モバイルSafariでのビューポート調整 */
+  /* iOS Safari の 100vh 問題対策 */
   #root {
     min-height: 100vh;
     min-height: -webkit-fill-available;
