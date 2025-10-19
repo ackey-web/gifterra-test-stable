@@ -75,6 +75,7 @@ function convertVendingMachineToContent(machine: VendingMachine): {
     description: product.description,
     fileSize: product.fileSize,
     requiredTips: product.price,
+    imageUrl: product.imageUrl,
     metadata: {
       author: 'Admin',
       createdAt: product.createdAt,
@@ -115,6 +116,7 @@ interface DigitalContent {
   description?: string;
   fileSize?: string;
   requiredTips: number;
+  imageUrl?: string;
   metadata?: {
     author?: string;
     createdAt?: string;

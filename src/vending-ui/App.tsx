@@ -19,7 +19,7 @@ export default function VendingApp() {
 
   // デザイン色（フォールバック）
   const primaryColor = vendingMachine?.settings?.design?.primaryColor || "#8B5CF6";
-  const buttonColor = vendingMachine?.settings?.design?.buttonColor || "#2563EB";
+  const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [tnhtBalance, setTnhtBalance] = useState("0");
@@ -85,6 +85,7 @@ export default function VendingApp() {
   return (
     <VendingMachineShell
       primaryColor={primaryColor}
+      secondaryColor={secondaryColor}
       headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "GIFT HUB"}
       backgroundImage={backgroundImage}
     >
@@ -155,9 +156,9 @@ export default function VendingApp() {
                 onMouseLeave={handleProductLeave}
                 className="group relative overflow-hidden rounded-xl py-2.5 px-3 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
                 style={{
-                  background: `linear-gradient(145deg, ${buttonColor}dd, ${buttonColor}cc)`,
+                  background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
                   boxShadow: `
-                    0 0 20px ${buttonColor}60,
+                    0 0 20px ${primaryColor}60,
                     0 6px 16px rgba(0,0,0,0.4),
                     inset 0 1px 0 rgba(255,255,255,0.2),
                     inset 0 -2px 4px rgba(0,0,0,0.3)
