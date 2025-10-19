@@ -1214,7 +1214,7 @@ export default function AdminDashboard() {
           <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>�️ 広告画像管理</h3>
           <ul style={{ margin: 0, paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
             <li>最大3つの広告スロットを設定できます</li>
-            <li>画像URL: 表示する広告画像のパスまたはURL</li>
+            <li>広告画像: ローカルフォルダから画像を選択してアップロード</li>
             <li>リンクURL: クリック時に開くWebサイトのURL</li>
             <li>設定はブラウザのlocalStorageに保存されます</li>
           </ul>
@@ -1298,23 +1298,41 @@ export default function AdminDashboard() {
               
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
-                  画像URL:
+                  広告画像:
                 </label>
                 <input
-                  type="text"
-                  value={ad.src}
-                  onChange={(e) => updateAd(index, 'src', e.target.value)}
-                  placeholder="/ads/ad1.png または https://example.com/image.png"
-                  style={{
-                    width: "100%",
-                    padding: 8,
-                    background: "rgba(255,255,255,.1)",
-                    border: "1px solid rgba(255,255,255,.2)",
-                    borderRadius: 4,
-                    color: "#fff",
-                    fontSize: 14
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  id={`ad-image-upload-${index}`}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const base64 = event.target?.result as string;
+                        updateAd(index, 'src', base64);
+                      };
+                      reader.readAsDataURL(file);
+                    }
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById(`ad-image-upload-${index}`)?.click()}
+                  style={{
+                    padding: "10px 16px",
+                    background: "#059669",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    width: "100%"
+                  }}
+                >
+                  📁 ローカルから画像を選択
+                </button>
               </div>
               
               <div>
@@ -1725,7 +1743,7 @@ export default function AdminDashboard() {
             fontSize: 14,
           }}
         >
-          � リワードUI管理
+          REWARD管理
         </button>
         <button
           onClick={() => setCurrentPage("tip-ui-management")}
@@ -1740,7 +1758,7 @@ export default function AdminDashboard() {
             fontSize: 14,
           }}
         >
-          💰 TipUI管理
+          TIP管理
         </button>
         <button
           onClick={() => setCurrentPage("vending-management")}
