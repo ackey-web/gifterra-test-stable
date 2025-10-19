@@ -134,16 +134,6 @@ const VendingDashboard: React.FC = () => {
     if (selectedMachineId === id) setSelectedMachineId(null);
   };
 
-  // 画像をBase64に変換
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   // ヘッダー画像アップロード
   const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
