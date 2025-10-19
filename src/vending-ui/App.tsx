@@ -163,25 +163,18 @@ export default function VendingApp() {
           </div>
 
           {/* ウォレット */}
-          {address ? (
-            <div
-              className="flex-1 rounded-xl border-2 px-4 py-3"
+          <div className="flex-1">
+            <ConnectWallet
+              theme="dark"
+              btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "接続"}
+              className="w-full"
               style={{
                 background: "linear-gradient(135deg, #F59E0B, #D97706)",
                 borderColor: "#F59E0B80",
+                border: "2px solid #F59E0B80",
               }}
-              title={address}
-            >
-              <div className="text-xs opacity-80">🦊</div>
-              <div className="truncate text-sm font-bold">
-                {address.slice(0, 6)}...{address.slice(-4)}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <ConnectWallet theme="dark" btnTitle="接続" className="w-full" />
-            </div>
-          )}
+            />
+          </div>
         </div>
       </div>
 
