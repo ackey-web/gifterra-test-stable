@@ -86,20 +86,28 @@ export default function VendingApp() {
       secondaryColor={secondaryColor}
       headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "デジタル自販機"}
     >
-      {/* ===== ディスプレイ窓 ===== */}
+      {/* ===== ディスプレイ窓（正方形・1100x1200対応） ===== */}
       <div className="relative z-10 px-5 pt-6">
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-black/80 overflow-hidden">
+        <div
+          className="flex items-center justify-center rounded-2xl overflow-hidden"
+          style={{
+            aspectRatio: "1 / 1",
+            background: "linear-gradient(145deg, #0a0e14, #12171f)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "inset 0 4px 12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,0,0,0.9)",
+          }}
+        >
           {previewImage ? (
             <img
               src={previewImage}
               alt="商品プレビュー"
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-full object-contain"
             />
           ) : headerImage ? (
             <img
               src={headerImage}
               alt="ヘッダー画像"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <p className="text-sm text-white/50">商品プレビュー</p>
@@ -121,19 +129,19 @@ export default function VendingApp() {
             return isPlaceholder ? (
               <div
                 key={`placeholder-${index}`}
-                className="rounded-2xl p-4 text-center"
+                className="rounded-xl py-2.5 px-3 text-center"
                 style={{
                   background: "linear-gradient(145deg, #2a2f3e, #1f2330)",
                   boxShadow: `
-                    0 6px 16px rgba(0,0,0,0.4),
+                    0 4px 12px rgba(0,0,0,0.4),
                     inset 0 1px 0 rgba(255,255,255,0.05),
                     inset 0 -1px 2px rgba(0,0,0,0.4)
                   `,
                   border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <div className="text-base font-bold text-white/40 tracking-wide">{label}</div>
-                <div className="mt-1 text-xs text-white/30 font-semibold">{price}</div>
+                <div className="text-sm font-bold text-white/40 tracking-wide">{label}</div>
+                <div className="mt-0.5 text-xs text-white/30 font-semibold">{price}</div>
               </div>
             ) : (
               <button
@@ -142,12 +150,12 @@ export default function VendingApp() {
                 onClick={() => handleProductSelect(product.contentId)}
                 onMouseEnter={() => handleProductHover(product)}
                 onMouseLeave={handleProductLeave}
-                className="group relative overflow-hidden rounded-2xl p-4 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
+                className="group relative overflow-hidden rounded-xl py-2.5 px-3 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
                 style={{
                   background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
                   boxShadow: `
-                    0 0 25px ${primaryColor}60,
-                    0 8px 20px rgba(0,0,0,0.4),
+                    0 0 20px ${primaryColor}60,
+                    0 6px 16px rgba(0,0,0,0.4),
                     inset 0 1px 0 rgba(255,255,255,0.2),
                     inset 0 -2px 4px rgba(0,0,0,0.3)
                   `,
@@ -168,82 +176,103 @@ export default function VendingApp() {
                     background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)`,
                   }}
                 />
-                <div className="relative text-lg font-black text-white tracking-wider drop-shadow-lg">{label}</div>
-                <div className="relative mt-1 text-sm text-white font-bold drop-shadow">{price}</div>
+                <div className="relative text-base font-black text-white tracking-wider drop-shadow-lg">{label}</div>
+                <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ===== ステータス行（残高・ウォレット） ===== */}
+      {/* ===== 操作パネル（ロゴ・残高・ウォレット） ===== */}
       <div className="relative z-10 px-5 pb-5">
-        {/* ロゴ（残高パネルの外側に配置） */}
-        <div className="mb-3 flex items-center justify-start">
-          <img
-            src="/gifterra-logo.png"
-            alt="Gifterra"
-            className="w-12 h-12 object-contain opacity-90"
-          />
-        </div>
-
-        <div className="flex items-stretch gap-3">
-          {/* 残高パネル（金属質感・ネオングリーン） */}
+        <div
+          className="rounded-2xl p-4 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, #0f1419, #1a1f2e)",
+            boxShadow: `
+              inset 0 3px 8px rgba(0,0,0,0.6),
+              inset 0 1px 0 rgba(0,0,0,0.8),
+              0 1px 0 rgba(255,255,255,0.03)
+            `,
+            border: "1px solid rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* 内側の陰影 */}
           <div
-            className="flex flex-col justify-center flex-1 rounded-2xl px-5 py-4 relative overflow-hidden"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              background: "linear-gradient(145deg, #1a3d2f, #0f2419)",
-              boxShadow: `
-                0 0 35px rgba(16,185,129,0.4),
-                0 8px 20px rgba(0,0,0,0.5),
-                inset 0 1px 0 rgba(16,185,129,0.3),
-                inset 0 -2px 4px rgba(0,0,0,0.5)
-              `,
-              border: "1px solid rgba(16,185,129,0.4)",
+              background: "radial-gradient(circle at 50% 0%, rgba(0,0,0,0.4), transparent 50%)",
             }}
-          >
-            {/* 金属反射 */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: "linear-gradient(165deg, transparent 0%, rgba(16,185,129,0.15) 30%, transparent 60%)",
-              }}
-            />
-            {/* グローエフェクト */}
-            <div
-              className="absolute inset-0 opacity-50 pointer-events-none"
-              style={{
-                background: "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.3), transparent 60%)",
-              }}
-            />
-            {/* 残高テキスト */}
-            <div className="relative">
-              <div className="text-xs font-bold text-emerald-300/80 mb-1">残高</div>
-              <div className="text-3xl font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
-                {tnhtBalance} tNHT
-              </div>
-            </div>
-          </div>
+          />
 
-          {/* ウォレット接続ボタン（金属質感） */}
-          <div className="flex-1">
-            <ConnectWallet
-              theme="dark"
-              btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "接続"}
-              className="w-full h-full"
+          {/* ロゴ・残高・ウォレットの横並び */}
+          <div className="relative flex items-stretch gap-3">
+            {/* ロゴ（左端） */}
+            <div className="flex items-center justify-center">
+              <img
+                src="/gifterra-logo.png"
+                alt="Gifterra"
+                className="w-12 h-12 object-contain opacity-90"
+              />
+            </div>
+
+            {/* 残高パネル（中央・金属質感・ネオングリーン） */}
+            <div
+              className="flex flex-col justify-center flex-1 rounded-xl px-4 py-3 relative overflow-hidden"
               style={{
-                background: "linear-gradient(145deg, #4a3520, #3a2810)",
-                border: "1px solid rgba(245,158,11,0.4)",
-                borderRadius: "1rem",
+                background: "linear-gradient(145deg, #1a3d2f, #0f2419)",
                 boxShadow: `
-                  0 0 30px rgba(245,158,11,0.4),
+                  0 0 35px rgba(16,185,129,0.4),
                   0 8px 20px rgba(0,0,0,0.5),
-                  inset 0 1px 0 rgba(245,158,11,0.3),
+                  inset 0 1px 0 rgba(16,185,129,0.3),
                   inset 0 -2px 4px rgba(0,0,0,0.5)
                 `,
-                minHeight: "84px",
+                border: "1px solid rgba(16,185,129,0.4)",
               }}
-            />
+            >
+              {/* 金属反射 */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: "linear-gradient(165deg, transparent 0%, rgba(16,185,129,0.15) 30%, transparent 60%)",
+                }}
+              />
+              {/* グローエフェクト */}
+              <div
+                className="absolute inset-0 opacity-50 pointer-events-none"
+                style={{
+                  background: "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.3), transparent 60%)",
+                }}
+              />
+              {/* 残高テキスト */}
+              <div className="relative text-center">
+                <div className="text-xs font-bold text-emerald-300/80 mb-0.5">残高</div>
+                <div className="text-2xl font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
+                  {tnhtBalance} tNHT
+                </div>
+              </div>
+            </div>
+
+            {/* ウォレット接続ボタン（右側・金属質感） */}
+            <div className="flex-1">
+              <ConnectWallet
+                theme="dark"
+                btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "接続"}
+                className="w-full h-full"
+                style={{
+                  background: "linear-gradient(145deg, #4a3520, #3a2810)",
+                  border: "1px solid rgba(245,158,11,0.4)",
+                  borderRadius: "0.75rem",
+                  boxShadow: `
+                    0 0 30px rgba(245,158,11,0.4),
+                    0 8px 20px rgba(0,0,0,0.5),
+                    inset 0 1px 0 rgba(245,158,11,0.3),
+                    inset 0 -2px 4px rgba(0,0,0,0.5)
+                  `,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
