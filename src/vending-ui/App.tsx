@@ -22,7 +22,7 @@ export default function VendingApp() {
   const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [tnhtBalance, setTnhtBalance] = useState("0.0000");
+  const [tnhtBalance, setTnhtBalance] = useState("0");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // ヘッダー画像を取得（管理画面で設定）
@@ -31,7 +31,7 @@ export default function VendingApp() {
   // tNHT残高を取得
   useEffect(() => {
     if (!address) {
-      setTnhtBalance("0.0000");
+      setTnhtBalance("0");
       return;
     }
 
@@ -44,9 +44,9 @@ export default function VendingApp() {
           args: [address as `0x${string}`],
         });
         const formatted = formatUnits(balance, TOKEN.DECIMALS);
-        setTnhtBalance(Number(formatted).toFixed(4));
+        setTnhtBalance(Math.floor(Number(formatted)).toString());
       } catch (err) {
-        setTnhtBalance("0.0000");
+        setTnhtBalance("0");
       }
     };
 
@@ -121,16 +121,19 @@ export default function VendingApp() {
             return isPlaceholder ? (
               <div
                 key={`placeholder-${index}`}
-                className="rounded-2xl p-4 text-center opacity-30"
+                className="rounded-2xl p-4 text-center"
                 style={{
-                  background: `linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1))`,
-                  backdropFilter: "blur(8px)",
-                  border: "1px solid rgba(139,92,246,0.2)",
-                  boxShadow: `0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                  background: "linear-gradient(145deg, #2a2f3e, #1f2330)",
+                  boxShadow: `
+                    0 6px 16px rgba(0,0,0,0.4),
+                    inset 0 1px 0 rgba(255,255,255,0.05),
+                    inset 0 -1px 2px rgba(0,0,0,0.4)
+                  `,
+                  border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <div className="text-base font-bold text-white/60 tracking-wide">{label}</div>
-                <div className="mt-1 text-xs text-white/40 font-semibold">{price}</div>
+                <div className="text-base font-bold text-white/40 tracking-wide">{label}</div>
+                <div className="mt-1 text-xs text-white/30 font-semibold">{price}</div>
               </div>
             ) : (
               <button
@@ -139,23 +142,34 @@ export default function VendingApp() {
                 onClick={() => handleProductSelect(product.contentId)}
                 onMouseEnter={() => handleProductHover(product)}
                 onMouseLeave={handleProductLeave}
-                className="group relative overflow-hidden rounded-2xl p-4 text-center transition-all hover:-translate-y-[2px] active:translate-y-0"
+                className="group relative overflow-hidden rounded-2xl p-4 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
                 style={{
-                  background: `linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.25))`,
-                  backdropFilter: "blur(10px)",
-                  border: "2px solid rgba(139,92,246,0.4)",
-                  boxShadow: `0 0 30px rgba(139,92,246,0.4), 0 6px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)`,
+                  background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
+                  boxShadow: `
+                    0 0 25px ${primaryColor}60,
+                    0 8px 20px rgba(0,0,0,0.4),
+                    inset 0 1px 0 rgba(255,255,255,0.2),
+                    inset 0 -2px 4px rgba(0,0,0,0.3)
+                  `,
+                  border: "1px solid rgba(255,255,255,0.15)",
                 }}
               >
+                {/* 金属反射 */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "linear-gradient(165deg, transparent 0%, rgba(255,255,255,0.1) 30%, transparent 60%)",
+                  }}
+                />
                 {/* ホバー時の発光レイヤー */}
                 <div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                   style={{
-                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.2), transparent 70%)`,
+                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)`,
                   }}
                 />
-                <div className="relative text-base font-bold text-white tracking-wide">{label}</div>
-                <div className="relative mt-1 text-sm text-white/90 font-semibold">{price}</div>
+                <div className="relative text-lg font-black text-white tracking-wider drop-shadow-lg">{label}</div>
+                <div className="relative mt-1 text-sm text-white font-bold drop-shadow">{price}</div>
               </button>
             );
           })}
@@ -174,82 +188,128 @@ export default function VendingApp() {
         </div>
 
         <div className="flex items-stretch gap-3">
-          {/* 残高パネル（ネオングリーン・添付画像風） */}
-          <div className="flex flex-col justify-center flex-1 rounded-2xl border-2 px-5 py-3.5 relative overflow-hidden"
+          {/* 残高パネル（金属質感・ネオングリーン） */}
+          <div
+            className="flex flex-col justify-center flex-1 rounded-2xl px-5 py-4 relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(5,150,105,0.15))",
-              borderColor: "#10B98160",
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 0 40px rgba(16,185,129,0.3), 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+              background: "linear-gradient(145deg, #1a3d2f, #0f2419)",
+              boxShadow: `
+                0 0 35px rgba(16,185,129,0.4),
+                0 8px 20px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(16,185,129,0.3),
+                inset 0 -2px 4px rgba(0,0,0,0.5)
+              `,
+              border: "1px solid rgba(16,185,129,0.4)",
             }}
           >
+            {/* 金属反射 */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(165deg, transparent 0%, rgba(16,185,129,0.15) 30%, transparent 60%)",
+              }}
+            />
             {/* グローエフェクト */}
             <div
-              className="absolute inset-0 opacity-40 pointer-events-none"
+              className="absolute inset-0 opacity-50 pointer-events-none"
               style={{
-                background: "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.4), transparent 60%)",
+                background: "radial-gradient(circle at 20% 20%, rgba(16,185,129,0.3), transparent 60%)",
               }}
             />
             {/* 残高テキスト */}
             <div className="relative">
-              <div className="text-xs font-bold text-emerald-400/90 mb-0.5">残高</div>
-              <div className="text-2xl font-black text-emerald-300 tracking-wide" style={{ textShadow: "0 0 20px rgba(16,185,129,0.6), 0 2px 4px rgba(0,0,0,0.3)" }}>
+              <div className="text-xs font-bold text-emerald-300/80 mb-1">残高</div>
+              <div className="text-3xl font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
                 {tnhtBalance} tNHT
               </div>
             </div>
           </div>
 
-          {/* ウォレット接続ボタン */}
+          {/* ウォレット接続ボタン（金属質感） */}
           <div className="flex-1">
             <ConnectWallet
               theme="dark"
               btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "接続"}
               className="w-full h-full"
               style={{
-                background: "linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.2))",
-                borderColor: "#F59E0B60",
-                border: "2px solid #F59E0B60",
+                background: "linear-gradient(145deg, #4a3520, #3a2810)",
+                border: "1px solid rgba(245,158,11,0.4)",
                 borderRadius: "1rem",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 0 35px rgba(245,158,11,0.35), 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
-                minHeight: "76px",
+                boxShadow: `
+                  0 0 30px rgba(245,158,11,0.4),
+                  0 8px 20px rgba(0,0,0,0.5),
+                  inset 0 1px 0 rgba(245,158,11,0.3),
+                  inset 0 -2px 4px rgba(0,0,0,0.5)
+                `,
+                minHeight: "84px",
               }}
             />
           </div>
         </div>
       </div>
 
-      {/* ===== 取り出し口 ===== */}
+      {/* ===== 取り出し口（金属インセット） ===== */}
       <div className="relative z-10 px-5 pb-6">
-        <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-bold text-yellow-400">商品取出し口</h3>
-            <span
-              className="rounded-full px-3 py-1 text-xs text-white"
-              style={{ background: "linear-gradient(135deg, #EF4444, #DC2626)" }}
-            >
-              {selectedProducts.length}個の商品
-            </span>
-          </div>
+        <div
+          className="rounded-2xl p-5 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, #0f1419, #1a1f2e)",
+            boxShadow: `
+              inset 0 3px 8px rgba(0,0,0,0.6),
+              inset 0 1px 0 rgba(0,0,0,0.8),
+              0 1px 0 rgba(255,255,255,0.03)
+            `,
+            border: "1px solid rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* 内側の陰影 */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "radial-gradient(circle at 50% 0%, rgba(0,0,0,0.4), transparent 50%)",
+            }}
+          />
 
-          <div className="min-h-[100px] rounded-xl border border-white/5 bg-slate-900/50 p-4">
-            {selectedProducts.length > 0 ? (
-              <div className="space-y-2 text-sm text-white/70">
-                {selectedProducts.map((id) => {
-                  const product = contentSet?.contents?.find((p: any) => p.contentId === id);
-                  return (
-                    <div key={id} className="flex items-center justify-between">
-                      <span>✅ {product?.name ?? id}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center text-sm text-white/40">
-                <p className="mb-2">📦 購入した商品がここに表示されます</p>
-                <p>上の商品ボタンから購入してください</p>
-              </div>
-            )}
+          <div className="relative">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-bold text-yellow-300/90" style={{ textShadow: "0 0 10px rgba(253,224,71,0.5)" }}>商品取出し口</h3>
+              <span
+                className="rounded-full px-3 py-1.5 text-xs font-bold text-white"
+                style={{
+                  background: "linear-gradient(145deg, #dc2626, #991b1b)",
+                  boxShadow: "0 2px 8px rgba(220,38,38,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+                }}
+              >
+                {selectedProducts.length}個の商品
+              </span>
+            </div>
+
+            <div
+              className="min-h-[110px] rounded-xl p-4"
+              style={{
+                background: "linear-gradient(145deg, #0a0e14, #12171f)",
+                boxShadow: "inset 0 2px 6px rgba(0,0,0,0.7)",
+                border: "1px solid rgba(255,255,255,0.03)",
+              }}
+            >
+              {selectedProducts.length > 0 ? (
+                <div className="space-y-2 text-sm text-white/80">
+                  {selectedProducts.map((id) => {
+                    const product = contentSet?.contents?.find((p: any) => p.contentId === id);
+                    return (
+                      <div key={id} className="flex items-center justify-between">
+                        <span>✅ {product?.name ?? id}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-sm text-white/30">
+                  <p className="mb-2">📦 購入した商品がここに表示されます</p>
+                  <p>上の商品ボタンから購入してください</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
