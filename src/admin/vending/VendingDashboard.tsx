@@ -86,7 +86,7 @@ const VendingDashboard: React.FC = () => {
     };
 
     setMachines([...machines, newMachine]);
-    setEditingMachine(newMachine);
+    setEditingMachine(JSON.parse(JSON.stringify(newMachine))); // deep copy
     setShowEditModal(true);
   };
 
@@ -771,7 +771,16 @@ const VendingDashboard: React.FC = () => {
                   画像を選択
                 </button>
                 {editingMachine.settings.design?.headerImage && (
-                  <span style={{ marginLeft: 10, fontSize: 12, opacity: 0.7 }}>✓ 画像設定済み</span>
+                  <>
+                    <span style={{ marginLeft: 10, fontSize: 12, opacity: 0.7 }}>✓ 画像設定済み</span>
+                    <div style={{ marginTop: 8, maxWidth: 200 }}>
+                      <img
+                        src={editingMachine.settings.design.headerImage}
+                        alt="ディスプレイ画像プレビュー"
+                        style={{ width: "100%", height: "auto", borderRadius: 4, border: "1px solid rgba(255,255,255,0.2)" }}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -801,7 +810,16 @@ const VendingDashboard: React.FC = () => {
                   画像を選択
                 </button>
                 {editingMachine.settings.design?.backgroundImage && (
-                  <span style={{ marginLeft: 10, fontSize: 12, opacity: 0.7 }}>✓ 画像設定済み</span>
+                  <>
+                    <span style={{ marginLeft: 10, fontSize: 12, opacity: 0.7 }}>✓ 画像設定済み</span>
+                    <div style={{ marginTop: 8, maxWidth: 200 }}>
+                      <img
+                        src={editingMachine.settings.design.backgroundImage}
+                        alt="背景画像プレビュー"
+                        style={{ width: "100%", height: "auto", borderRadius: 4, border: "1px solid rgba(255,255,255,0.2)" }}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -851,7 +869,7 @@ const VendingDashboard: React.FC = () => {
                         <img
                           src={product.imageUrl}
                           alt="商品画像"
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }}
+                          style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 4 }}
                         />
                       )}
                     </div>
@@ -885,10 +903,11 @@ const VendingDashboard: React.FC = () => {
                           </label>
                           <input
                             type="number"
-                            value={product?.price || 100}
-                            onChange={(e) => updateProduct(index, 'price', Number(e.target.value))}
+                            value={product?.price ?? ''}
+                            onChange={(e) => updateProduct(index, 'price', Number(e.target.value) || 0)}
                             min="0"
                             max="99999"
+                            placeholder="100"
                             style={{
                               width: "100%",
                               padding: 6,
