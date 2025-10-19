@@ -25,6 +25,9 @@ export default function VendingApp() {
   const [tnhtBalance, setTnhtBalance] = useState("0.0000");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // ヘッダー画像を取得（管理画面で設定）
+  const headerImage = vendingMachine?.settings?.design?.headerImage;
+
   // tNHT残高を取得
   useEffect(() => {
     if (!address) {
@@ -91,6 +94,12 @@ export default function VendingApp() {
               src={previewImage}
               alt="商品プレビュー"
               className="max-w-full max-h-full object-contain"
+            />
+          ) : headerImage ? (
+            <img
+              src={headerImage}
+              alt="ヘッダー画像"
+              className="w-full h-full object-cover"
             />
           ) : (
             <p className="text-sm text-white/50">商品プレビュー</p>
