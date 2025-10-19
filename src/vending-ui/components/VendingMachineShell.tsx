@@ -5,6 +5,7 @@ interface VendingMachineShellProps {
   primaryColor: string;
   secondaryColor: string;
   headerTitle: string;
+  backgroundImage?: string;
   children: ReactNode;
 }
 
@@ -17,29 +18,40 @@ export default function VendingMachineShell({
   primaryColor,
   secondaryColor,
   headerTitle,
+  backgroundImage,
   children,
 }: VendingMachineShellProps) {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 text-white">
+      {/* === 背景画像 ====================================== */}
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+          }}
+        />
+      )}
+
       {/* === 背景グロー（アニメ + フラッシュ）====================================== */}
       <div className="pointer-events-none absolute inset-0">
-        {/* フラッシュするオーラ（筐体の背後） */}
+        {/* フラッシュするオーラ（筐体の背後） - 固定色（ブルー系） */}
         <div
           className="absolute -top-24 left-1/2 h-[1400px] w-[1400px] -translate-x-1/2 rounded-full blur-[80px] animate-[neonFlash_4s_ease-in-out_infinite]"
           style={{
-            background: `radial-gradient(ellipse at 50% 50%, ${primaryColor}50, transparent 60%)`,
+            background: `radial-gradient(ellipse at 50% 50%, #3B82F650, transparent 60%)`,
           }}
         />
         <div
           className="absolute -top-24 left-1/2 h-[1400px] w-[1400px] -translate-x-1/2 rounded-full blur-[64px] opacity-60 animate-[glowPulse_7s_ease-in-out_infinite]"
           style={{
-            background: `radial-gradient(ellipse at 50% 50%, ${primaryColor}50, transparent 60%)`,
+            background: `radial-gradient(ellipse at 50% 50%, #3B82F650, transparent 60%)`,
           }}
         />
         <div
           className="absolute bottom-[-10%] left-1/2 h-[1200px] w-[1200px] -translate-x-1/2 rounded-full blur-[72px] opacity-30 [mix-blend:screen] animate-[glowPulse2_11s_ease-in-out_infinite]"
           style={{
-            background: `conic-gradient(from 0deg at 50% 50%, ${secondaryColor}40, transparent, ${primaryColor}40, transparent, ${secondaryColor}40)`,
+            background: `conic-gradient(from 0deg at 50% 50%, #8B5CF640, transparent, #3B82F640, transparent, #8B5CF640)`,
           }}
         />
       </div>
@@ -48,11 +60,11 @@ export default function VendingMachineShell({
       <div className="relative z-10 flex min-h-[100svh] items-center justify-center p-4">
         {/* 外枠（ベゼル光） */}
         <div className="relative w-[420px] max-w-[92vw]">
-          {/* ネオン輪郭（静的） */}
+          {/* ネオン輪郭（静的） - 固定色（ブルー系） */}
           <div
             className="absolute -inset-[3px] rounded-[28px] blur-lg opacity-70"
             style={{
-              background: `conic-gradient(from 90deg at 50% 50%, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+              background: `conic-gradient(from 90deg at 50% 50%, #3B82F6, #8B5CF6, #3B82F6)`,
               filter: "saturate(1.2)",
             }}
           />
@@ -61,11 +73,11 @@ export default function VendingMachineShell({
           <div className="absolute -left-2 top-1/4 h-1/2 w-1 rounded-full bg-white/10 blur-md" />
           <div className="absolute -right-2 top-1/4 h-1/2 w-1 rounded-full bg-white/10 blur-md" />
 
-          {/* パネル（金属筐体の面） */}
+          {/* パネル（金属筐体の面） - テーマカラー適用 */}
           <div
             className="relative overflow-hidden rounded-[24px]"
             style={{
-              background: "linear-gradient(145deg, #1a1f2e, #0f1419)",
+              background: `linear-gradient(145deg, ${primaryColor}20, ${primaryColor}10)`,
               boxShadow: `
                 0 25px 60px rgba(0,0,0,0.7),
                 inset 0 1px 0 rgba(255,255,255,0.08),
