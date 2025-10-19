@@ -192,10 +192,35 @@ export const READ_ABI = [
 ] as const;
 
 /* =========================================
+   ✅ イベントABI
+========================================= */
+export const EVENT_ABI = [
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "TipSent",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "DailyRewardClaimed",
+    type: "event",
+  },
+] as const;
+
+/* =========================================
    ✅ フルABI（書き込み関数も含む）
 ========================================= */
 export const CONTRACT_ABI = [
   ...READ_ABI,
+  ...EVENT_ABI,
   {
     inputs: [],
     name: "claimDailyReward",
