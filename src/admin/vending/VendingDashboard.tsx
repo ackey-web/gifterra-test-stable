@@ -44,7 +44,13 @@ const VendingDashboard: React.FC = () => {
 
   // localStorageに保存
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+      console.log('✅ GIFT HUB data saved to localStorage:', machines.length, 'machines');
+    } catch (error) {
+      console.error('❌ Failed to save to localStorage:', error);
+      alert('保存に失敗しました。データが大きすぎる可能性があります。');
+    }
   }, [machines]);
 
   // 選択中の自販機
@@ -100,10 +106,19 @@ const VendingDashboard: React.FC = () => {
   const handleSaveEdit = () => {
     if (!editingMachine) return;
 
+    // 商品データの正規化（空文字列を数値に変換）
+    const normalizedMachine = {
+      ...editingMachine,
+      products: editingMachine.products.map(product => ({
+        ...product,
+        price: typeof product.price === 'string' ? (product.price === '' ? 0 : Number(product.price)) : product.price,
+        stock: typeof product.stock === 'string' ? (product.stock === '' ? 0 : Number(product.stock)) : product.stock
+      })),
+      updatedAt: new Date().toISOString()
+    };
+
     const updated = machines.map(m =>
-      m.id === editingMachine.id
-        ? { ...editingMachine, updatedAt: new Date().toISOString() }
-        : m
+      m.id === editingMachine.id ? normalizedMachine : m
     );
 
     setMachines(updated);
@@ -904,7 +919,7 @@ const VendingDashboard: React.FC = () => {
                           <input
                             type="number"
                             value={product?.price ?? ''}
-                            onChange={(e) => updateProduct(index, 'price', Number(e.target.value) || 0)}
+                            onChange={(e) => updateProduct(index, 'price', e.target.value === '' ? '' : Number(e.target.value))}
                             min="0"
                             max="99999"
                             placeholder="100"
