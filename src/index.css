@@ -91,6 +91,16 @@ body {
   }
 }
 
+/* ヘッダーテキストスクロールアニメーション（右から左へ無限ループ） */
+@keyframes scrollText {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 /* 筐体外周のフラッシュアニメーション（自販機風） */
 @keyframes neonFlash {
   0%, 100% {
