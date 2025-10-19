@@ -21,8 +21,15 @@ export default function VendingMachineShell({
 }: VendingMachineShellProps) {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 text-white">
-      {/* === 背景グロー（アニメ）====================================== */}
+      {/* === 背景グロー（アニメ + フラッシュ）====================================== */}
       <div className="pointer-events-none absolute inset-0">
+        {/* フラッシュするオーラ（筐体の背後） */}
+        <div
+          className="absolute -top-24 left-1/2 h-[1400px] w-[1400px] -translate-x-1/2 rounded-full blur-[80px] animate-[neonFlash_4s_ease-in-out_infinite]"
+          style={{
+            background: `radial-gradient(ellipse at 50% 50%, ${primaryColor}50, transparent 60%)`,
+          }}
+        />
         <div
           className="absolute -top-24 left-1/2 h-[1400px] w-[1400px] -translate-x-1/2 rounded-full blur-[64px] opacity-60 animate-[glowPulse_7s_ease-in-out_infinite]"
           style={{
@@ -41,11 +48,12 @@ export default function VendingMachineShell({
       <div className="relative z-10 flex min-h-[100svh] items-center justify-center p-4">
         {/* 外枠（ベゼル光） */}
         <div className="relative w-[420px] max-w-[92vw]">
-          {/* ネオン輪郭（フラッシュアニメーション） */}
+          {/* ネオン輪郭（静的） */}
           <div
-            className="absolute -inset-[3px] rounded-[28px] blur-lg animate-[neonFlash_4s_ease-in-out_infinite]"
+            className="absolute -inset-[3px] rounded-[28px] blur-lg opacity-70"
             style={{
               background: `conic-gradient(from 90deg at 50% 50%, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+              filter: "saturate(1.2)",
             }}
           />
 
