@@ -89,37 +89,8 @@ export default function VendingApp() {
       headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "GIFT HUB"}
       backgroundImage={backgroundImage}
     >
-      {/* ===== スクロールヘッダーテキスト ===== */}
-      <div className="relative z-10 px-5 pt-4">
-        <div
-          className="relative rounded-lg overflow-hidden"
-          style={{
-            background: "linear-gradient(90deg, #0a0e14, #1a1f2e, #0a0e14)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)",
-            padding: "8px 0",
-          }}
-        >
-          <div className="overflow-hidden whitespace-nowrap">
-            <div
-              className="inline-block"
-              style={{
-                animation: "scrollText 20s linear infinite",
-                paddingRight: "100%",
-              }}
-            >
-              <span className="text-sm font-bold text-white/90 tracking-wider">
-                {vendingMachine?.settings?.displayName || "🎁 Welcome to GIFT HUB"}
-                <span className="mx-8 text-white/50">●</span>
-                {vendingMachine?.settings?.displayName || "🎁 Welcome to GIFT HUB"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ===== ディスプレイ窓（正方形・1100x1200対応） ===== */}
-      <div className="relative z-10 px-5 pt-3">
+      <div className="relative z-10 px-5 pt-6">
         <div
           className="flex items-center justify-center rounded-2xl overflow-hidden"
           style={{

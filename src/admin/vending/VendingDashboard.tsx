@@ -747,7 +747,7 @@ const VendingDashboard: React.FC = () => {
 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                  ヘッダー画像（GIFT HUB上部）
+                  ディスプレイ画像
                 </label>
                 <input
                   type="file"
@@ -805,41 +805,22 @@ const VendingDashboard: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                    メインカラー
-                  </label>
-                  <input
-                    type="color"
-                    value={editingMachine.settings.design?.primaryColor || '#3B82F6'}
-                    onChange={(e) => setEditingMachine({
-                      ...editingMachine,
-                      settings: {
-                        ...editingMachine.settings,
-                        design: { ...editingMachine.settings.design, primaryColor: e.target.value }
-                      }
-                    })}
-                    style={{ width: "100%", height: 40, cursor: "pointer", borderRadius: 6 }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
-                    ボタンカラー
-                  </label>
-                  <input
-                    type="color"
-                    value={editingMachine.settings.design?.buttonColor || '#2563EB'}
-                    onChange={(e) => setEditingMachine({
-                      ...editingMachine,
-                      settings: {
-                        ...editingMachine.settings,
-                        design: { ...editingMachine.settings.design, buttonColor: e.target.value }
-                      }
-                    })}
-                    style={{ width: "100%", height: 40, cursor: "pointer", borderRadius: 6 }}
-                  />
-                </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 13, opacity: 0.8 }}>
+                  メインカラー
+                </label>
+                <input
+                  type="color"
+                  value={editingMachine.settings.design?.primaryColor || '#3B82F6'}
+                  onChange={(e) => setEditingMachine({
+                    ...editingMachine,
+                    settings: {
+                      ...editingMachine.settings,
+                      design: { ...editingMachine.settings.design, primaryColor: e.target.value }
+                    }
+                  })}
+                  style={{ width: "100%", height: 40, cursor: "pointer", borderRadius: 6 }}
+                />
               </div>
             </div>
 
