@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 
 interface VendingMachineShellProps {
   primaryColor: string;
-  secondaryColor: string;
   headerTitle: string;
   backgroundImage?: string;
   children: ReactNode;
@@ -16,7 +15,6 @@ interface VendingMachineShellProps {
  */
 export default function VendingMachineShell({
   primaryColor,
-  secondaryColor,
   headerTitle,
   backgroundImage,
   children,
