@@ -1,6 +1,6 @@
 // src/lib/purchase.ts
-import { parseUnits, formatUnits } from 'viem';
-import { CONTRACT_ADDRESS, TOKEN, ERC20_MIN_ABI, CONTRACT_ABI } from '../contract';
+import { formatUnits } from 'viem';
+import { CONTRACT_ADDRESS, ERC20_MIN_ABI, CONTRACT_ABI } from '../contract';
 
 export interface Product {
   id: string;
@@ -19,7 +19,8 @@ export interface PurchaseResult {
   success: boolean;
   signedUrl?: string;
   expiresAt?: number;
-  remainingStock?: number;
+  isUnlimited?: boolean;
+  remainingStock?: number | null;
   error?: string;
 }
 
@@ -142,18 +143,35 @@ export function formatPrice(priceWei: string, decimals: number = 18): string {
 export function getStockStatus(product: Product): {
   available: boolean;
   label: string;
+  showBadge: boolean;
 } {
   if (product.is_unlimited) {
-    return { available: true, label: '在庫: 無制限' };
+    return {
+      available: true,
+      label: '∞',
+      showBadge: true
+    };
   }
 
   if (product.stock <= 0) {
-    return { available: false, label: 'SOLD OUT' };
+    return {
+      available: false,
+      label: 'SOLD OUT',
+      showBadge: true
+    };
   }
 
   if (product.stock <= 3) {
-    return { available: true, label: `残り ${product.stock} 個` };
+    return {
+      available: true,
+      label: `残り ${product.stock} 個`,
+      showBadge: true
+    };
   }
 
-  return { available: true, label: `在庫: ${product.stock} 個` };
+  return {
+    available: true,
+    label: `在庫: ${product.stock} 個`,
+    showBadge: true
+  };
 }

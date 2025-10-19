@@ -35,7 +35,8 @@ interface PurchaseResponse {
   success: boolean;
   signedUrl?: string;
   expiresAt?: number;
-  remainingStock?: number;
+  isUnlimited?: boolean;
+  remainingStock?: number | null;
   error?: string;
 }
 
@@ -201,13 +202,15 @@ export default async function handler(
       .eq('id', productId)
       .single();
 
-    const remainingStock = updatedProduct?.is_unlimited ? -1 : (updatedProduct?.stock || 0);
+    const isUnlimited = updatedProduct?.is_unlimited || false;
+    const remainingStock = isUnlimited ? null : (updatedProduct?.stock || 0);
 
     // 成功レスポンス
     return res.status(200).json({
       success: true,
       signedUrl: signedUrlData.signedUrl,
       expiresAt: Math.floor(Date.now() / 1000) + 600,
+      isUnlimited,
       remainingStock,
     });
 
