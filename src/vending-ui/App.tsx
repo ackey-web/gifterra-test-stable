@@ -19,7 +19,6 @@ export default function VendingApp() {
 
   // デザイン色（フォールバック）
   const primaryColor = vendingMachine?.settings?.design?.primaryColor || "#8B5CF6";
-  const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
   const buttonColor = vendingMachine?.settings?.design?.buttonColor || "#2563EB";
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -86,7 +85,6 @@ export default function VendingApp() {
   return (
     <VendingMachineShell
       primaryColor={primaryColor}
-      secondaryColor={secondaryColor}
       headerTitle={vendingMachine?.settings?.displayName || vendingMachine?.name || "GIFT HUB"}
       backgroundImage={backgroundImage}
     >
