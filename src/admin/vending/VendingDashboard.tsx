@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { VendingMachine, Product } from '../../types/vending';
 import { generateSlug } from '../../utils/slugGenerator';
 import { uploadImage } from '../../lib/supabase';
+import { ProductForm, type ProductFormData } from '../products/ProductForm';
+import { createProduct, formDataToCreateParams } from '../../lib/supabase/products';
 
 const STORAGE_KEY = 'vending_machines_data';
 
@@ -30,6 +32,10 @@ const VendingDashboard: React.FC = () => {
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMachine, setEditingMachine] = useState<VendingMachine | null>(null);
+
+  // 商品追加モーダル用state
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
 
   // 画像アップロード用ref
   const headerImageRef = useRef<HTMLInputElement>(null);
@@ -132,6 +138,33 @@ const VendingDashboard: React.FC = () => {
     if (!confirm('このGIFT HUBを削除してもよろしいですか？')) return;
     setMachines(machines.filter(m => m.id !== id));
     if (selectedMachineId === id) setSelectedMachineId(null);
+  };
+
+  // 商品作成モーダルを開く
+  const handleOpenProductModal = () => {
+    setShowProductModal(true);
+  };
+
+  // 商品作成を実行
+  const handleCreateProduct = async (formData: ProductFormData) => {
+    setIsCreatingProduct(true);
+    try {
+      const params = formDataToCreateParams(formData, 'default');
+      const result = await createProduct(params);
+
+      if (result.success) {
+        alert('✅ 商品を作成しました');
+        setShowProductModal(false);
+        // 必要に応じてSupabaseから商品一覧を再取得
+      } else {
+        throw new Error(result.error || '商品作成に失敗しました');
+      }
+    } catch (err) {
+      console.error('❌ 商品作成エラー:', err);
+      alert(`❌ 商品作成に失敗しました\n\n${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsCreatingProduct(false);
+    }
   };
 
   // ヘッダー画像アップロード
@@ -301,25 +334,46 @@ const VendingDashboard: React.FC = () => {
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>
           GIFT HUB管理
         </h2>
-        <button
-          onClick={handleAddMachine}
-          style={{
-            padding: "10px 20px",
-            background: "#059669",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8
-          }}
-        >
-          <span style={{ fontSize: 18 }}>+</span>
-          新しいGIFT HUBを追加
-        </button>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            onClick={handleOpenProductModal}
+            style={{
+              padding: "10px 20px",
+              background: "#3B82F6",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8
+            }}
+          >
+            <span style={{ fontSize: 18 }}>📦</span>
+            新規商品追加（Supabase）
+          </button>
+          <button
+            onClick={handleAddMachine}
+            style={{
+              padding: "10px 20px",
+              background: "#059669",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8
+            }}
+          >
+            <span style={{ fontSize: 18 }}>+</span>
+            新しいGIFT HUBを追加
+          </button>
+        </div>
       </div>
 
       {/* メインコンテンツ：左右2カラム */}
@@ -1142,6 +1196,17 @@ const VendingDashboard: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 商品作成モーダル */}
+      {showProductModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <ProductForm
+            onSubmit={handleCreateProduct}
+            onCancel={() => setShowProductModal(false)}
+            isSubmitting={isCreatingProduct}
+          />
         </div>
       )}
     </div>
