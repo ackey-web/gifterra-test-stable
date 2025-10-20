@@ -17,10 +17,7 @@ export interface Product {
 
 export interface PurchaseResult {
   success: boolean;
-  signedUrl?: string;
-  expiresAt?: number;
-  isUnlimited?: boolean;
-  remainingStock?: number | null;
+  token?: string;
   error?: string;
 }
 
@@ -93,20 +90,20 @@ export async function purchaseProduct(
 
     console.log('✅ Tip完了:', tipTx);
 
-    // 4. APIに購入完了を通知
+    // 4. APIに購入初期化を通知
     console.log('📡 API呼び出し中...');
 
     const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
-    const response = await fetch(`${apiUrl}/api/purchase/complete`, {
+    const response = await fetch(`${apiUrl}/api/purchase/init`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         productId: product.id,
-        tenantId: product.tenant_id,
         buyer: userAddress,
         txHash: tipTx,
+        amountWei: priceWei.toString(),
       }),
     });
 
@@ -117,7 +114,7 @@ export async function purchaseProduct(
       return result;
     }
 
-    console.log('✅ 購入完了！', result);
+    console.log('✅ 購入完了！ダウンロードトークン:', result.token);
 
     return result;
 
