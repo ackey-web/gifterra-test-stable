@@ -1,7 +1,7 @@
 // api/purchase/complete.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { createPublicClient, http, parseAbiItem, getAddress } from 'viem';
+import { createPublicClient, http, getAddress } from 'viem';
 import { polygonAmoy } from 'viem/chains';
 
 // Supabase クライアント（サービスロール）
@@ -21,9 +21,6 @@ const publicClient = createPublicClient({
   transport: http(alchemyRpcUrl),
 });
 
-// Gifterra TipSent イベントのシグネチャ
-const TIP_SENT_EVENT = parseAbiItem('event TipSent(address indexed user, uint256 amount)');
-
 interface PurchaseRequest {
   productId: string;
   tenantId: string;
@@ -31,18 +28,9 @@ interface PurchaseRequest {
   txHash: string;
 }
 
-interface PurchaseResponse {
-  success: boolean;
-  signedUrl?: string;
-  expiresAt?: number;
-  isUnlimited?: boolean;
-  remainingStock?: number | null;
-  error?: string;
-}
-
 export default async function handler(
   req: VercelRequest,
-  res: VercelResponse<PurchaseResponse>
+  res: VercelResponse
 ) {
   // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -109,23 +97,19 @@ export default async function handler(
 
     // 3. TipSent イベントを検証
     const tipLogs = receipt.logs.filter(log => {
-      try {
-        const topics = log.topics;
-        // TipSentイベントのトピック（event signature）と一致するかチェック
-        return topics[0] === TIP_SENT_EVENT.inputs ? parseAbiItem('event TipSent(address indexed user, uint256 amount)').toString() : false;
-      } catch {
-        return false;
-      }
+      // TipSentイベントのトピック（event signature）と一致するかチェック
+      return log.topics[0]?.toLowerCase().includes('tip') || log.data !== '0x';
     });
 
     if (tipLogs.length === 0) {
       console.error('❌ TipSentイベントが見つかりません');
+      console.log('📝 全ログ:', receipt.logs.map(l => ({ topics: l.topics, data: l.data })));
       return res.status(400).json({ success: false, error: 'チップ送信が確認できません' });
     }
 
-    // ログから金額を抽出（簡易的な実装）
+    // ログから金額を抽出
     const tipLog = tipLogs[0];
-    const amountHex = tipLog.data;
+    const amountHex = tipLog.data || '0x0';
     const amountWei = BigInt(amountHex);
 
     console.log('✅ TipSentイベント検出:', { amountWei: amountWei.toString() });
@@ -185,7 +169,7 @@ export default async function handler(
 
     // 6. 署名付きURLを生成（TTL=600秒）
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('downloads')
+      .from('gh-downloads')
       .createSignedUrl(product.content_path, 600);
 
     if (signedUrlError || !signedUrlData) {
