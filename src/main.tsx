@@ -8,6 +8,8 @@ import TipApp from "./tip-ui/App";
 import VendingApp from "./vending-ui/App";
 import AdminDashboard from "./admin/Dashboard";
 import AdminDashboardMobile from "./admin/DashboardMobile";
+import { DownloadPage } from "./pages/DownloadPage";
+import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================
@@ -66,6 +68,8 @@ const wantsAdmin = path.includes("/admin") || uiParam === "admin";
 const wantsTip = path.includes("/tip") || uiParam === "tip";
 const wantsContent = path.includes("/content") || uiParam === "content";
 const wantsAdminMobile = path.includes("/admin-mobile");
+const wantsDownload = path.includes("/download") || uiParam === "download";
+const wantsPurchases = path.includes("/my-purchases") || uiParam === "purchases";
 
 // Admin アクセス時のデバイス判定による自動リダイレクト
 if (wantsAdmin && !wantsAdminMobile && getDeviceType() === 'mobile') {
@@ -105,7 +109,11 @@ root.render(
       theme="dark"
       autoSwitch={true}
     >
-      {wantsAdminMobile ? (
+      {wantsDownload ? (
+        <DownloadPage />
+      ) : wantsPurchases ? (
+        <MyPurchasesPage />
+      ) : wantsAdminMobile ? (
         <AdminDashboardMobile />
       ) : wantsAdmin ? (
         <AdminDashboard />
