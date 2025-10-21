@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 import { formatUnits, createWalletClient, custom } from "viem";
-import { baseSepolia } from "viem/chains";
+import { polygonAmoy } from "viem/chains";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
 import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 import { purchaseProduct, type Product } from "../lib/purchase";
@@ -22,9 +22,26 @@ export default function VendingApp() {
 
   // Supabase特典データを取得（vendingMachine.idをtenantIdとして使用）
   const tenantId = vendingMachine?.id || "";
+
+  // デバッグログ：tenantIdと製品取得状況を確認
+  console.log('🔍 [GIFT HUB] Debug Info:', {
+    machineId,
+    vendingMachineId: vendingMachine?.id,
+    vendingMachineName: vendingMachine?.name,
+    tenantId,
+    hasVendingMachine: !!vendingMachine
+  });
+
   const { products: supabaseProducts, isLoading: productsLoading } = useSupabaseProducts({
     tenantId,
     isActive: true
+  });
+
+  // 特典取得後のデバッグログ
+  console.log('📦 [GIFT HUB] Products loaded:', {
+    tenantId,
+    productsCount: supabaseProducts.length,
+    products: supabaseProducts.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
   });
 
   // デザイン色（フォールバック）
@@ -97,7 +114,7 @@ export default function VendingApp() {
     try {
       // Viem walletClient を作成（既存のpurchaseProduct関数が必要とする）
       const walletClient = createWalletClient({
-        chain: baseSepolia,
+        chain: polygonAmoy,
         transport: custom(window.ethereum),
         account: address as `0x${string}`
       });
