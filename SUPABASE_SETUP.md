@@ -110,11 +110,12 @@ Vercelプロジェクトの「Settings」→「Environment Variables」で以下
 
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE=your-service-role-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ALCHEMY_RPC_URL=https://polygon-amoy.g.alchemy.com/v2/YOUR_API_KEY
 ```
 
-⚠️ **重要**: `SUPABASE_SERVICE_ROLE`キーは絶対にフロントエンドに露出させないでください
+⚠️ **重要**: `SUPABASE_SERVICE_ROLE_KEY`は絶対にフロントエンドに露出させないでください
+⚠️ **重要**: サーバーサイド変数には `VITE_` prefix を付けないでください
 
 ## 5. 動作確認
 

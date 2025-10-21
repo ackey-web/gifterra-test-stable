@@ -346,7 +346,7 @@ const VendingDashboard: React.FC = () => {
               fontSize: 14,
               fontWeight: 700,
               cursor: "pointer",
-              display: "flex",
+              display: "none", // STEP3: HUB別Products タブに統合のため非表示（削除は後続PR）
               alignItems: "center",
               gap: 8
             }}
