@@ -4,6 +4,15 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // API リクエストを Vercel 開発サーバー（3001）にプロキシ
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
+    }
+  },
   build: {
     // チャンクサイズ警告の閾値を2MBに設定（大きなWeb3ライブラリを考慮）
     chunkSizeWarningLimit: 2000,

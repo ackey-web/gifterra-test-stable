@@ -22,6 +22,8 @@ import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
 import VendingDashboard from "./vending/VendingDashboard";
+import ProductManager from "./products/ProductManager";
+import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage } from "../lib/supabase";
 
 /* ---------- Types & Helpers ---------- */
@@ -41,7 +43,7 @@ type AdData = {
 
 
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "tenant-management";
+type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "product-management" | "diagnostics" | "tenant-management";
 
 // 🚀 将来のマルチテナント実装準備
 // - tenant-management: テナント管理（スーパーアドミン専用）
@@ -1776,7 +1778,37 @@ export default function AdminDashboard() {
           }}
         >
           🏪 GIFT HUB管理
-        </button>        
+        </button>
+        <button
+          onClick={() => setCurrentPage("product-management")}
+          style={{
+            background: currentPage === "product-management" ? "#0284c7" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          📦 商品管理（Supabase）
+        </button>
+        <button
+          onClick={() => setCurrentPage("diagnostics")}
+          style={{
+            background: currentPage === "diagnostics" ? "#dc2626" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          🔧 診断
+        </button>
         {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
         {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
           <button
@@ -1930,6 +1962,10 @@ export default function AdminDashboard() {
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (
         <VendingDashboard />
+      ) : currentPage === "product-management" ? (
+        <ProductManager />
+      ) : currentPage === "diagnostics" ? (
+        <DiagnosticsPage />
       ) : currentPage === "tenant-management" ? (
         <TenantManagementPage />
       ) : (
