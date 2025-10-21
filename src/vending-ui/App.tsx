@@ -1,8 +1,11 @@
 // src/vending-ui/App.tsx
 import { useState, useEffect } from "react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
-import { formatUnits } from "viem";
+import { formatUnits, createWalletClient, custom } from "viem";
+import { baseSepolia } from "viem/chains";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
+import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
+import { purchaseProduct, type Product } from "../lib/purchase";
 import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
 
@@ -14,16 +17,25 @@ export default function VendingApp() {
   const machineId = urlParams.get("machine") || "main";
   const spaceId = "default";
 
-  // 管理データ
-  const { contentSet, vendingMachine, error } = useMetaverseContent(spaceId, machineId);
+  // 管理データ（vendingMachine設定のみ使用、contentSetは使わずSupabase商品を使用）
+  const { contentSet: _contentSet, vendingMachine, error } = useMetaverseContent(spaceId, machineId);
+
+  // Supabase商品データを取得（vendingMachine.idをtenantIdとして使用）
+  const tenantId = vendingMachine?.id || "";
+  const { products: supabaseProducts, isLoading: productsLoading } = useSupabaseProducts({
+    tenantId,
+    isActive: true
+  });
 
   // デザイン色（フォールバック）
   const primaryColor = vendingMachine?.settings?.design?.primaryColor || "#8B5CF6";
   const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [purchasedProducts, setPurchasedProducts] = useState<Array<{id: string, name: string, downloadUrl: string}>>([]);
   const [tnhtBalance, setTnhtBalance] = useState("0");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // ヘッダー画像を取得（管理画面で設定）
   const headerImage = vendingMachine?.settings?.design?.headerImage;
@@ -53,15 +65,88 @@ export default function VendingApp() {
     fetchBalance();
   }, [address]);
 
-  const handleProductSelect = (productId: string) => {
-    if (!selectedProducts.includes(productId)) {
-      setSelectedProducts((prev) => [...prev, productId]);
+  const handleProductSelect = async (productId: string) => {
+    // ウォレット接続チェック
+    if (!address) {
+      alert("ウォレットを接続してください");
+      return;
+    }
+
+    // 購入中は複数クリック防止
+    if (isPurchasing) {
+      return;
+    }
+
+    // 商品を探す
+    const product = supabaseProducts.find((p) => p.id === productId);
+    if (!product) {
+      alert("商品が見つかりません");
+      return;
+    }
+
+    // MetaMaskチェック
+    if (!window.ethereum) {
+      alert("MetaMaskがインストールされていません");
+      return;
+    }
+
+    // 購入処理開始
+    setIsPurchasing(true);
+    setSelectedProducts((prev) => [...prev, productId]);
+
+    try {
+      // Viem walletClient を作成（既存のpurchaseProduct関数が必要とする）
+      const walletClient = createWalletClient({
+        chain: baseSepolia,
+        transport: custom(window.ethereum)
+      });
+
+      // 既存のpurchaseProduct関数を呼び出し
+      const result = await purchaseProduct(
+        product as Product,
+        address,
+        walletClient,
+        publicClient
+      );
+
+      if (result.success) {
+        if (result.downloadUrl) {
+          // 購入成功 - ダウンロードURLを取得済み商品に追加
+          const downloadUrl = result.downloadUrl; // 型を確定させる
+          setPurchasedProducts((prev) => [
+            ...prev,
+            {
+              id: product.id,
+              name: product.name,
+              downloadUrl
+            }
+          ]);
+
+          alert(`購入完了！「${product.name}」が商品取り出し口に追加されました。`);
+        } else {
+          // ダウンロードURLが生成されなかった
+          alert(`購入は完了しましたが、ダウンロードURLの生成に失敗しました。管理者にお問い合わせください。`);
+          setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+        }
+      } else {
+        // 購入失敗
+        alert(`購入に失敗しました: ${result.error || "不明なエラー"}`);
+        // 選択リストから削除
+        setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+      }
+    } catch (err) {
+      console.error("Purchase error:", err);
+      alert(`購入エラー: ${err instanceof Error ? err.message : String(err)}`);
+      // 選択リストから削除
+      setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
   const handleProductHover = (product: any) => {
-    if (product?.imageUrl) {
-      setPreviewImage(product.imageUrl);
+    if (product?.image_url) {
+      setPreviewImage(product.image_url);
     }
   };
 
@@ -121,18 +206,11 @@ export default function VendingApp() {
       {/* ===== 商品ボタン ===== */}
       <div className="relative z-10 px-5 py-5">
         <div className="grid grid-cols-3 gap-3">
-          {(contentSet?.contents && contentSet.contents.length > 0
-            ? contentSet.contents.slice(0, 3)
-            : [{}, {}, {}] // プレースホルダー
-          ).map((product: any, index: number) => {
-            const isPlaceholder = !product?.contentId;
-            const label = String.fromCharCode(65 + index);
-            const tokenSymbol = vendingMachine?.settings?.tokenSymbol || 'tNHT';
-            const price = isPlaceholder ? "準備中" : `${product.requiredTips} ${tokenSymbol}`;
-
-            return isPlaceholder ? (
+          {productsLoading ? (
+            // ローディング中
+            [{}, {}, {}].map((_, index) => (
               <div
-                key={`placeholder-${index}`}
+                key={`loading-${index}`}
                 className="rounded-xl py-2.5 px-3 text-center"
                 style={{
                   background: "linear-gradient(145deg, #2a2f3e, #1f2330)",
@@ -144,47 +222,91 @@ export default function VendingApp() {
                   border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <div className="text-sm font-bold text-white/40 tracking-wide">{label}</div>
-                <div className="mt-0.5 text-xs text-white/30 font-semibold">{price}</div>
+                <div className="text-sm font-bold text-white/40 tracking-wide">
+                  {String.fromCharCode(65 + index)}
+                </div>
+                <div className="mt-0.5 text-xs text-white/30 font-semibold">読込中...</div>
               </div>
-            ) : (
-              <button
-                key={product.contentId}
-                type="button"
-                onClick={() => handleProductSelect(product.contentId)}
-                onMouseEnter={() => handleProductHover(product)}
-                onMouseLeave={handleProductLeave}
-                className="group relative overflow-hidden rounded-xl py-2.5 px-3 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
-                style={{
-                  background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
-                  boxShadow: `
-                    0 0 20px ${primaryColor}60,
-                    0 6px 16px rgba(0,0,0,0.4),
-                    inset 0 1px 0 rgba(255,255,255,0.2),
-                    inset 0 -2px 4px rgba(0,0,0,0.3)
-                  `,
-                  border: "1px solid rgba(255,255,255,0.15)",
-                }}
-              >
-                {/* 金属反射 */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
+            ))
+          ) : (
+            // Supabase商品を表示（最大3件）
+            Array.from({ length: 3 }).map((_, index) => {
+              const product = supabaseProducts[index];
+              const label = String.fromCharCode(65 + index);
+              const tokenSymbol = vendingMachine?.settings?.tokenSymbol || 'tNHT';
+
+              if (!product) {
+                // プレースホルダー
+                return (
+                  <div
+                    key={`placeholder-${index}`}
+                    className="rounded-xl py-2.5 px-3 text-center"
+                    style={{
+                      background: "linear-gradient(145deg, #2a2f3e, #1f2330)",
+                      boxShadow: `
+                        0 4px 12px rgba(0,0,0,0.4),
+                        inset 0 1px 0 rgba(255,255,255,0.05),
+                        inset 0 -1px 2px rgba(0,0,0,0.4)
+                      `,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    <div className="text-sm font-bold text-white/40 tracking-wide">{label}</div>
+                    <div className="mt-0.5 text-xs text-white/30 font-semibold">準備中</div>
+                  </div>
+                );
+              }
+
+              // Wei → トークン単位に変換
+              const priceInTokens = formatUnits(BigInt(product.price_amount_wei), TOKEN.DECIMALS);
+              const price = `${Math.floor(Number(priceInTokens))} ${tokenSymbol}`;
+              const isSelected = selectedProducts.includes(product.id);
+
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => handleProductSelect(product.id)}
+                  onMouseEnter={() => handleProductHover(product)}
+                  onMouseLeave={handleProductLeave}
+                  disabled={isPurchasing || isSelected}
+                  className="group relative overflow-hidden rounded-xl py-2.5 px-3 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    background: "linear-gradient(165deg, transparent 0%, rgba(255,255,255,0.1) 30%, transparent 60%)",
+                    background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
+                    boxShadow: `
+                      0 0 20px ${primaryColor}60,
+                      0 6px 16px rgba(0,0,0,0.4),
+                      inset 0 1px 0 rgba(255,255,255,0.2),
+                      inset 0 -2px 4px rgba(0,0,0,0.3)
+                    `,
+                    border: "1px solid rgba(255,255,255,0.15)",
                   }}
-                />
-                {/* ホバー時の発光レイヤー */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  style={{
-                    background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)`,
-                  }}
-                />
-                <div className="relative text-base font-black text-white tracking-wider drop-shadow-lg">{label}</div>
-                <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
-              </button>
-            );
-          })}
+                >
+                  {/* 金属反射 */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "linear-gradient(165deg, transparent 0%, rgba(255,255,255,0.1) 30%, transparent 60%)",
+                    }}
+                  />
+                  {/* ホバー時の発光レイヤー */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    style={{
+                      background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)`,
+                    }}
+                  />
+                  <div className="relative text-base font-black text-white tracking-wider drop-shadow-lg">{label}</div>
+                  <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
+                  {isSelected && (
+                    <div className="relative mt-1 text-[10px] text-yellow-300">
+                      {isPurchasing ? "購入中..." : "選択済み"}
+                    </div>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -326,16 +448,23 @@ export default function VendingApp() {
                 border: "1px solid rgba(255,255,255,0.03)",
               }}
             >
-              {selectedProducts.length > 0 ? (
-                <div className="space-y-2 text-sm text-white/80">
-                  {selectedProducts.map((id) => {
-                    const product = contentSet?.contents?.find((p: any) => p.contentId === id);
-                    return (
-                      <div key={id} className="flex items-center justify-between">
-                        <span>✅ {product?.name ?? id}</span>
+              {purchasedProducts.length > 0 ? (
+                <div className="space-y-3 text-sm text-white/80">
+                  {purchasedProducts.map((product) => (
+                    <div key={product.id} className="rounded-lg p-3 bg-emerald-900/20 border border-emerald-500/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-emerald-300">✅ {product.name}</span>
                       </div>
-                    );
-                  })}
+                      <a
+                        href={product.downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-xs text-blue-400 hover:text-blue-300 underline break-all"
+                      >
+                        🔗 ダウンロードURL: {product.downloadUrl}
+                      </a>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="text-center text-sm text-white/30">
