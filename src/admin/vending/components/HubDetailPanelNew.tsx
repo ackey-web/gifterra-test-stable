@@ -6,6 +6,7 @@ import { useSupabaseProducts } from '../../../hooks/useSupabaseProducts';
 import { ProductForm, type ProductFormData } from '../../products/ProductForm';
 import { createProduct, updateProduct, deleteProduct, formDataToCreateParams, formDataToUpdateParams } from '../../../lib/supabase/products';
 import { uploadImage } from '../../../lib/supabase';
+import { generateSlug } from '../../../utils/slugGenerator';
 
 interface HubDetailPanelNewProps {
   machine: VendingMachine | null;
@@ -421,7 +422,11 @@ export function HubDetailPanelNew({
               <input
                 type="text"
                 value={machine.name}
-                onChange={(e) => onUpdateMachine?.({ name: e.target.value })}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  const newSlug = generateSlug(newName);
+                  onUpdateMachine?.({ name: newName, slug: newSlug });
+                }}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -433,6 +438,9 @@ export function HubDetailPanelNew({
                 }}
                 placeholder="例: 本社1階 GIFT HUB"
               />
+              <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                スラッグ（URL用）: <code style={{ color: '#3B82F6' }}>{machine.slug || 'machine'}</code>
+              </p>
             </div>
 
             {/* 設置場所 */}
@@ -855,7 +863,7 @@ export function HubDetailPanelNew({
                 プレビュー
               </h3>
               <a
-                href={`/vending/${machine.slug}`}
+                href={`/content?machine=${machine.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
