@@ -14,7 +14,7 @@ interface HubDetailPanelNewProps {
   onUpdateMachine?: (updates: Partial<VendingMachine>) => void;
 }
 
-type TabType = 'design' | 'products' | 'preview';
+type TabType = 'settings' | 'design' | 'products' | 'preview';
 
 export function HubDetailPanelNew({
   machine,
@@ -22,7 +22,7 @@ export function HubDetailPanelNew({
   onToggleActive,
   onUpdateMachine
 }: HubDetailPanelNewProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('design');
+  const [activeTab, setActiveTab] = useState<TabType>('settings');
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -321,6 +321,25 @@ export function HubDetailPanelNew({
         }}
       >
         <button
+          onClick={() => setActiveTab('settings')}
+          role="tab"
+          aria-selected={activeTab === 'settings'}
+          aria-controls="settings-panel"
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'settings' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'settings' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            border: 'none',
+            borderBottom: activeTab === 'settings' ? '2px solid #3B82F6' : '2px solid transparent',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          ⚙️ Settings
+        </button>
+        <button
           onClick={() => setActiveTab('design')}
           role="tab"
           aria-selected={activeTab === 'design'}
@@ -388,6 +407,109 @@ export function HubDetailPanelNew({
           color: '#fff'
         }}
       >
+        {activeTab === 'settings' && (
+          <div>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700, color: '#fff' }}>
+              基本設定
+            </h3>
+
+            {/* GIFT HUB名 */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                GIFT HUB名
+              </label>
+              <input
+                type="text"
+                value={machine.name}
+                onChange={(e) => onUpdateMachine?.({ name: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14
+                }}
+                placeholder="例: 本社1階 GIFT HUB"
+              />
+            </div>
+
+            {/* 設置場所 */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                設置場所
+              </label>
+              <input
+                type="text"
+                value={machine.location}
+                onChange={(e) => onUpdateMachine?.({ location: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14
+                }}
+                placeholder="例: 東京本社 1階エントランス"
+              />
+            </div>
+
+            {/* 説明 */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                説明
+              </label>
+              <textarea
+                value={machine.description}
+                onChange={(e) => onUpdateMachine?.({ description: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14,
+                  minHeight: 100,
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+                placeholder="このGIFT HUBの説明を入力してください"
+              />
+            </div>
+
+            {/* スクロール表示テキスト */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                スクロール表示テキスト
+              </label>
+              <input
+                type="text"
+                value={machine.settings.welcomeMessage || ''}
+                onChange={(e) => onUpdateMachine?.({
+                  settings: { ...machine.settings, welcomeMessage: e.target.value }
+                })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14
+                }}
+                placeholder="例: ようこそGIFT HUBへ！"
+              />
+              <p style={{ margin: '8px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                GIFT HUBページ上部にスクロール表示されるメッセージです
+              </p>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'design' && (
           <div>
             <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700, color: '#fff' }}>
@@ -400,10 +522,10 @@ export function HubDetailPanelNew({
                 🎨 カラー設定
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {/* プライマリカラー */}
+                {/* グローエフェクト色 */}
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    メインカラー
+                    グローエフェクト色
                   </label>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
@@ -428,12 +550,15 @@ export function HubDetailPanelNew({
                       placeholder="#3B82F6"
                     />
                   </div>
+                  <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                    GIFT HUBの光る効果に適用されます
+                  </p>
                 </div>
 
-                {/* セカンダリカラー */}
+                {/* フラッシュエフェクト色 */}
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    サブカラー
+                    フラッシュエフェクト色
                   </label>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
@@ -458,66 +583,9 @@ export function HubDetailPanelNew({
                       placeholder="#10B981"
                     />
                   </div>
-                </div>
-
-                {/* アクセントカラー */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    アクセントカラー
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={machine.settings.design?.accentColor || '#F59E0B'}
-                      onChange={(e) => handleDesignChange('accentColor', e.target.value)}
-                      style={{ width: 50, height: 40, borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={machine.settings.design?.accentColor || '#F59E0B'}
-                      onChange={(e) => handleDesignChange('accentColor', e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: 6,
-                        color: '#fff',
-                        fontSize: 13
-                      }}
-                      placeholder="#F59E0B"
-                    />
-                  </div>
-                </div>
-
-                {/* ボタンカラー */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    ボタンカラー
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={machine.settings.design?.buttonColor || '#3B82F6'}
-                      onChange={(e) => handleDesignChange('buttonColor', e.target.value)}
-                      style={{ width: 50, height: 40, borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={machine.settings.design?.buttonColor || '#3B82F6'}
-                      onChange={(e) => handleDesignChange('buttonColor', e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: 6,
-                        color: '#fff',
-                        fontSize: 13
-                      }}
-                      placeholder="#3B82F6"
-                    />
-                  </div>
+                  <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                    購入時の点滅効果に適用されます
+                  </p>
                 </div>
               </div>
             </div>
@@ -594,47 +662,6 @@ export function HubDetailPanelNew({
                     />
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* プレビューカード */}
-            <div style={{ marginBottom: 32 }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
-                👁️ カラープレビュー
-              </h4>
-              <div style={{
-                padding: 24,
-                background: machine.settings.design?.cardBackgroundColor || 'rgba(255,255,255,0.05)',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}>
-                <h5 style={{
-                  margin: '0 0 12px 0',
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: machine.settings.design?.primaryColor || '#3B82F6'
-                }}>
-                  メインカラーのサンプル
-                </h5>
-                <p style={{
-                  margin: '0 0 16px 0',
-                  fontSize: 14,
-                  color: machine.settings.design?.textColor || '#fff'
-                }}>
-                  テキストカラーのサンプルです。現在の設定が反映されています。
-                </p>
-                <button style={{
-                  padding: '10px 20px',
-                  background: machine.settings.design?.buttonColor || '#3B82F6',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}>
-                  ボタンカラーのサンプル
-                </button>
               </div>
             </div>
           </div>
@@ -823,9 +850,37 @@ export function HubDetailPanelNew({
 
         {activeTab === 'preview' && (
           <div>
-            <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              プレビュー
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                プレビュー
+              </h3>
+              <a
+                href={`/vending/${machine.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '10px 20px',
+                  background: '#3B82F6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                🔗 GIFT HUBページを開く
+              </a>
+            </div>
+
+            {/* デザイン確認用プレビュー */}
+            <p style={{ margin: '0 0 16px 0', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+              以下はデザイン設定の確認用プレビューです。実際のGIFT HUBページは上のボタンから開いてください。
+            </p>
 
             {/* 自販機風プレビュー */}
             <div

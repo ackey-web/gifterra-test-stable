@@ -131,7 +131,7 @@ const VendingDashboardNew: React.FC = () => {
       {/* ページヘッダー */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>
-          GIFT HUB 管理（新レイアウト）
+          GIFT HUB 管理
         </h1>
         <p style={{ margin: '8px 0 0 0', fontSize: 14, opacity: 0.7 }}>
           左: HUB一覧 → 右: 詳細パネル（Design / Products / Preview）
