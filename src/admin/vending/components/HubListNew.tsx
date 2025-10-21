@@ -7,13 +7,15 @@ interface HubListNewProps {
   selectedMachineId: string | null;
   onSelectMachine: (machineId: string) => void;
   onAddNew: () => void;
+  onDeleteMachine?: (machineId: string) => void;
 }
 
 export function HubListNew({
   machines,
   selectedMachineId,
   onSelectMachine,
-  onAddNew
+  onAddNew,
+  onDeleteMachine
 }: HubListNewProps) {
   return (
     <div
@@ -94,37 +96,70 @@ export function HubListNew({
                 }
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
-                {machine.name}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
+                    {machine.name}
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.7 }}>
+                    特典: {machine.products?.length || 0}件
+                  </div>
+                  {machine.isActive ? (
+                    <span style={{
+                      display: 'inline-block',
+                      marginTop: 8,
+                      padding: '2px 8px',
+                      background: '#10B981',
+                      fontSize: 11,
+                      borderRadius: 4,
+                      fontWeight: 600
+                    }}>
+                      公開中
+                    </span>
+                  ) : (
+                    <span style={{
+                      display: 'inline-block',
+                      marginTop: 8,
+                      padding: '2px 8px',
+                      background: '#6B7280',
+                      fontSize: 11,
+                      borderRadius: 4,
+                      fontWeight: 600
+                    }}>
+                      非公開
+                    </span>
+                  )}
+                </div>
+                {onDeleteMachine && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`GIFT HUB「${machine.name}」を削除してもよろしいですか？\n\n※この操作は取り消せません`)) {
+                        onDeleteMachine(machine.id);
+                      }
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#DC2626',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      marginLeft: 8
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#B91C1C';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#DC2626';
+                    }}
+                  >
+                    削除
+                  </button>
+                )}
               </div>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>
-                特典: {machine.products?.length || 0}件
-              </div>
-              {machine.isActive ? (
-                <span style={{
-                  display: 'inline-block',
-                  marginTop: 8,
-                  padding: '2px 8px',
-                  background: '#10B981',
-                  fontSize: 11,
-                  borderRadius: 4,
-                  fontWeight: 600
-                }}>
-                  公開中
-                </span>
-              ) : (
-                <span style={{
-                  display: 'inline-block',
-                  marginTop: 8,
-                  padding: '2px 8px',
-                  background: '#6B7280',
-                  fontSize: 11,
-                  borderRadius: 4,
-                  fontWeight: 600
-                }}>
-                  非公開
-                </span>
-              )}
             </div>
           ))}
         </div>
