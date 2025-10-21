@@ -1,12 +1,13 @@
 // src/admin/vending/components/HubDetailPanelNew.tsx
 // 右カラム：選択したHUBの詳細パネル（タブ切替）
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { VendingMachine } from '../../../types/vending';
 import { useSupabaseProducts } from '../../../hooks/useSupabaseProducts';
 import { ProductForm, type ProductFormData } from '../../products/ProductForm';
 import { createProduct, updateProduct, deleteProduct, formDataToCreateParams, formDataToUpdateParams } from '../../../lib/supabase/products';
-import { uploadImage } from '../../../lib/supabase';
+import { uploadImage, deleteFileFromUrl } from '../../../lib/supabase';
 import { generateSlug } from '../../../utils/slugGenerator';
+import { calculateFileHash } from '../../../utils/fileHash';
 
 interface HubDetailPanelNewProps {
   machine: VendingMachine | null;
@@ -39,6 +40,12 @@ export function HubDetailPanelNew({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingHeaderImage, setUploadingHeaderImage] = useState(false);
   const [uploadingBackgroundImage, setUploadingBackgroundImage] = useState(false);
+
+  // 画像ハッシュ管理（重複検知用）
+  const [headerImageHash, setHeaderImageHash] = useState<string | null>(null);
+  const [backgroundImageHash, setBackgroundImageHash] = useState<string | null>(null);
+  const previousHeaderImageRef = useRef<string | null>(machine?.settings?.design?.headerImage || null);
+  const previousBackgroundImageRef = useRef<string | null>(machine?.settings?.design?.backgroundImage || null);
 
   // Supabase商品取得（HUBのIDをtenantIdとして使用）
   const tenantId = machine?.id || 'default';
@@ -157,32 +164,61 @@ export function HubDetailPanelNew({
   const handleDesignChange = (field: string, value: string) => {
     if (!machine || !onUpdateMachine) return;
 
+    // カラー設定の場合は primaryColor と secondaryColor を連動させる
+    const designUpdates = field === 'primaryColor' || field === 'secondaryColor'
+      ? {
+          ...machine.settings.design,
+          primaryColor: value,
+          secondaryColor: value
+        }
+      : {
+          ...machine.settings.design,
+          [field]: value
+        };
+
     const updatedMachine: Partial<VendingMachine> = {
       settings: {
         ...machine.settings,
-        design: {
-          ...machine.settings.design,
-          [field]: value
-        }
+        design: designUpdates
       }
     };
 
     onUpdateMachine(updatedMachine);
   };
 
-  // ヘッダー画像アップロード
+  // ディスプレイ画像アップロード
   const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadingHeaderImage(true);
     try {
-      console.log('📤 ヘッダー画像アップロード開始:', file.name);
+      // ファイルハッシュを計算して重複チェック
+      const fileHash = await calculateFileHash(file);
+
+      if (headerImageHash === fileHash) {
+        const proceed = confirm('⚠️ 同じ画像が既にアップロードされています。\n\n上書きしますか？');
+        if (!proceed) {
+          setUploadingHeaderImage(false);
+          e.target.value = '';
+          return;
+        }
+      }
+
+      console.log('📤 ディスプレイ画像アップロード開始:', file.name);
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
+        // 古い画像を削除
+        if (previousHeaderImageRef.current && previousHeaderImageRef.current !== imageUrl) {
+          console.log('🗑️ 古いディスプレイ画像を削除:', previousHeaderImageRef.current);
+          await deleteFileFromUrl(previousHeaderImageRef.current);
+        }
+
         handleDesignChange('headerImage', imageUrl);
-        alert('✅ ヘッダー画像をアップロードしました');
+        setHeaderImageHash(fileHash);
+        previousHeaderImageRef.current = imageUrl;
+        alert('✅ ディスプレイ画像をアップロードしました');
         console.log('✅ アップロード成功:', imageUrl);
       } else {
         throw new Error('uploadImage returned null');
@@ -204,11 +240,31 @@ export function HubDetailPanelNew({
 
     setUploadingBackgroundImage(true);
     try {
+      // ファイルハッシュを計算して重複チェック
+      const fileHash = await calculateFileHash(file);
+
+      if (backgroundImageHash === fileHash) {
+        const proceed = confirm('⚠️ 同じ画像が既にアップロードされています。\n\n上書きしますか？');
+        if (!proceed) {
+          setUploadingBackgroundImage(false);
+          e.target.value = '';
+          return;
+        }
+      }
+
       console.log('📤 背景画像アップロード開始:', file.name);
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
+        // 古い画像を削除
+        if (previousBackgroundImageRef.current && previousBackgroundImageRef.current !== imageUrl) {
+          console.log('🗑️ 古い背景画像を削除:', previousBackgroundImageRef.current);
+          await deleteFileFromUrl(previousBackgroundImageRef.current);
+        }
+
         handleDesignChange('backgroundImage', imageUrl);
+        setBackgroundImageHash(fileHash);
+        previousBackgroundImageRef.current = imageUrl;
         alert('✅ 背景画像をアップロードしました');
         console.log('✅ アップロード成功:', imageUrl);
       } else {
@@ -552,72 +608,34 @@ export function HubDetailPanelNew({
               <h4 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
                 🎨 カラー設定
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {/* グローエフェクト色 */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    グローエフェクト色
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={machine.settings.design?.primaryColor || '#3B82F6'}
-                      onChange={(e) => handleDesignChange('primaryColor', e.target.value)}
-                      style={{ width: 50, height: 40, borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={machine.settings.design?.primaryColor || '#3B82F6'}
-                      onChange={(e) => handleDesignChange('primaryColor', e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: 6,
-                        color: '#fff',
-                        fontSize: 13
-                      }}
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                  <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                    GIFT HUBの光る効果に適用されます
-                  </p>
+              <div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={machine.settings.design?.primaryColor || '#3B82F6'}
+                    onChange={(e) => handleDesignChange('primaryColor', e.target.value)}
+                    style={{ width: 50, height: 40, borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+                  />
+                  <input
+                    type="text"
+                    value={machine.settings.design?.primaryColor || '#3B82F6'}
+                    onChange={(e) => handleDesignChange('primaryColor', e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 6,
+                      color: '#fff',
+                      fontSize: 13,
+                      maxWidth: 300
+                    }}
+                    placeholder="#3B82F6"
+                  />
                 </div>
-
-                {/* フラッシュエフェクト色 */}
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                    フラッシュエフェクト色
-                  </label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={machine.settings.design?.secondaryColor || '#10B981'}
-                      onChange={(e) => handleDesignChange('secondaryColor', e.target.value)}
-                      style={{ width: 50, height: 40, borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      value={machine.settings.design?.secondaryColor || '#10B981'}
-                      onChange={(e) => handleDesignChange('secondaryColor', e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: 6,
-                        color: '#fff',
-                        fontSize: 13
-                      }}
-                      placeholder="#10B981"
-                    />
-                  </div>
-                  <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                    購入時の点滅効果に適用されます
-                  </p>
-                </div>
+                <p style={{ margin: '8px 0 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                  GIFT HUBのエフェクト色に適用されます
+                </p>
               </div>
             </div>
 
@@ -627,10 +645,10 @@ export function HubDetailPanelNew({
                 🖼️ 画像設定
               </h4>
 
-              {/* ヘッダー画像 */}
+              {/* ディスプレイ画像 */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                  ヘッダー画像（自販機上部）
+                  ディスプレイ画像
                 </label>
                 <input
                   type="file"
@@ -654,7 +672,7 @@ export function HubDetailPanelNew({
                   <div style={{ marginTop: 12 }}>
                     <img
                       src={machine.settings.design.headerImage}
-                      alt="Header preview"
+                      alt="Display preview"
                       style={{ width: '100%', maxHeight: 150, objectFit: 'cover', borderRadius: 6 }}
                     />
                   </div>
