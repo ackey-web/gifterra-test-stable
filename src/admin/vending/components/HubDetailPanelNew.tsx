@@ -322,6 +322,9 @@ export function HubDetailPanelNew({
       >
         <button
           onClick={() => setActiveTab('design')}
+          role="tab"
+          aria-selected={activeTab === 'design'}
+          aria-controls="design-panel"
           style={{
             padding: '12px 24px',
             background: activeTab === 'design' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
@@ -338,6 +341,9 @@ export function HubDetailPanelNew({
         </button>
         <button
           onClick={() => setActiveTab('products')}
+          role="tab"
+          aria-selected={activeTab === 'products'}
+          aria-controls="products-panel"
           style={{
             padding: '12px 24px',
             background: activeTab === 'products' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
@@ -354,6 +360,9 @@ export function HubDetailPanelNew({
         </button>
         <button
           onClick={() => setActiveTab('preview')}
+          role="tab"
+          aria-selected={activeTab === 'preview'}
+          aria-controls="preview-panel"
           style={{
             padding: '12px 24px',
             background: activeTab === 'preview' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',

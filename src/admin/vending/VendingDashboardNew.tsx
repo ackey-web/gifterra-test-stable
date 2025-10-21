@@ -140,6 +140,7 @@ const VendingDashboardNew: React.FC = () => {
 
       {/* 2カラムレイアウト */}
       <div
+        className="vending-dashboard-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: '400px 1fr',
@@ -164,10 +165,18 @@ const VendingDashboardNew: React.FC = () => {
         />
       </div>
 
-      {/* レスポンシブ対応のメモ（STEP6で実装） */}
+      {/* レスポンシブ対応 */}
       <style>{`
-        @media (max-width: 768px) {
-          /* モバイルでは1カラムに崩す予定 */
+        @keyframes scrollText {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
+
+        @media (max-width: 1024px) {
+          .vending-dashboard-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
         }
       `}</style>
     </div>
