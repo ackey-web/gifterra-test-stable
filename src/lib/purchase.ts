@@ -18,6 +18,7 @@ export interface Product {
 export interface PurchaseResult {
   success: boolean;
   token?: string;
+  downloadUrl?: string;
   error?: string;
 }
 
@@ -115,6 +116,12 @@ export async function purchaseProduct(
     }
 
     console.log('✅ 購入完了！ダウンロードトークン:', result.token);
+
+    // ダウンロードURLを構築（トークンから）
+    if (result.token) {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      result.downloadUrl = `${baseUrl}/api/download/${result.token}`;
+    }
 
     return result;
 
