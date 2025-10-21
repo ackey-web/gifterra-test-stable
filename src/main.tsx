@@ -8,8 +8,8 @@ import TipApp from "./tip-ui/App";
 import VendingApp from "./vending-ui/App";
 import AdminDashboard from "./admin/Dashboard";
 import AdminDashboardMobile from "./admin/DashboardMobile";
-import { DownloadPage } from "./pages/DownloadPage";
-import { MyPurchasesPage } from "./pages/MyPurchasesPage";
+import DownloadPage from "./pages/DownloadPage";
+import MyPurchasesPage from "./pages/MyPurchasesPage";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================

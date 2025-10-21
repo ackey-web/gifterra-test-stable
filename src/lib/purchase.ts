@@ -128,6 +128,22 @@ export async function purchaseProduct(
 }
 
 /**
+ * executePurchase - Stub for comparison branch build
+ * This function exists only to resolve imports
+ * DO NOT MERGE THIS BRANCH - COMPARISON ONLY
+ */
+export async function executePurchase(
+  _product: any,
+  _userAddress: string
+): Promise<PurchaseResult> {
+  console.warn('⚠️ executePurchase stub called - comparison branch only');
+  return {
+    success: false,
+    error: 'This is a stub implementation for comparison purposes only',
+  };
+}
+
+/**
  * 価格を読みやすい形式に変換
  */
 export function formatPrice(priceWei: string, decimals: number = 18): string {

@@ -1,17 +1,13 @@
 // api/download/[token].ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { bucket } from '../../src/lib/storageBuckets.js';
 
 // Supabase クライアント（サービスロール）
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE!;
 
 if (!supabaseUrl || !supabaseServiceRole) {
-  console.error('❌ 環境変数が設定されていません', {
-    hasUrl: !!supabaseUrl,
-    hasServiceRole: !!supabaseServiceRole
-  });
+  console.error('❌ 環境変数が設定されていません');
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceRole);
@@ -79,17 +75,17 @@ export default async function handler(
 
     console.log('✅ 商品情報取得:', product.content_path);
 
-    // 非公開バケット（gh-downloads）から署名URL（10分間有効）を生成
+    // 署名付きURLを生成（TTL=600秒）
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from(bucket('DOWNLOADS'))
-      .createSignedUrl(product.content_path, 600); // 600秒 = 10分
+      .from('gh-downloads')
+      .createSignedUrl(product.content_path, 600);
 
-    if (signedUrlError || !signedUrlData || !signedUrlData.signedUrl) {
-      console.error('❌ 署名URL生成失敗:', signedUrlError);
+    if (signedUrlError || !signedUrlData) {
+      console.error('❌ 署名付きURL生成失敗:', signedUrlError);
       return res.status(500).json({ error: 'ダウンロードURLの生成に失敗しました' });
     }
 
-    console.log('✅ 署名URL生成成功（有効期限: 10分）');
+    console.log('✅ 署名付きURL生成成功');
 
     // 302リダイレクト
     return res.redirect(302, signedUrlData.signedUrl);

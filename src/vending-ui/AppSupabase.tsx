@@ -2,7 +2,7 @@
 // Supabase 正本版の GIFT HUB UI
 import { useState, useEffect } from "react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits } from "viem";
 import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import { executePurchase } from "../lib/purchase";
 import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
