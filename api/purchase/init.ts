@@ -6,11 +6,15 @@ import { polygonAmoy } from 'viem/chains';
 
 // Supabase クライアント（サービスロール）
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE!;
+const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const alchemyRpcUrl = process.env.ALCHEMY_RPC_URL!;
 
 if (!supabaseUrl || !supabaseServiceRole || !alchemyRpcUrl) {
-  console.error('❌ 環境変数が設定されていません');
+  console.error('❌ 環境変数が設定されていません', {
+    hasUrl: !!supabaseUrl,
+    hasServiceRole: !!supabaseServiceRole,
+    hasAlchemy: !!alchemyRpcUrl
+  });
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceRole);
@@ -26,12 +30,6 @@ interface PurchaseInitRequest {
   buyer: string;
   txHash: string;
   amountWei: string;
-}
-
-interface PurchaseInitResponse {
-  success: boolean;
-  token?: string;
-  error?: string;
 }
 
 export default async function handler(
