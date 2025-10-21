@@ -55,7 +55,7 @@ export function MyPurchasesPage() {
     }
   };
 
-  const handleRedownload = async (purchaseId: string, productName: string) => {
+  const handleRedownload = async (_purchaseId: string, _productName: string) => {
     if (!address) return;
 
     try {

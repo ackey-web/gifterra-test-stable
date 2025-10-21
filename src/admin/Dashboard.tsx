@@ -21,7 +21,7 @@ import {
 import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
-import VendingDashboard from "./vending/VendingDashboard";
+import VendingDashboardNew from "./vending/VendingDashboardNew";
 import ProductManager from "./products/ProductManager";
 import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage } from "../lib/supabase";
@@ -1961,7 +1961,7 @@ export default function AdminDashboard() {
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (
-        <VendingDashboard />
+        <VendingDashboardNew />
       ) : currentPage === "product-management" ? (
         <ProductManager />
       ) : currentPage === "diagnostics" ? (

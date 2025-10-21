@@ -128,6 +128,21 @@ export async function purchaseProduct(
 }
 
 /**
+ * executePurchase - Temporary stub to enable build
+ * TODO: Implement proper executePurchase or migrate to purchaseProduct
+ */
+export async function executePurchase(
+  _product: any,
+  _userAddress: string
+): Promise<PurchaseResult> {
+  console.warn('⚠️ executePurchase stub called - not fully implemented');
+  return {
+    success: false,
+    error: 'Purchase function is being migrated. Please contact support.',
+  };
+}
+
+/**
  * 価格を読みやすい形式に変換
  */
 export function formatPrice(priceWei: string, decimals: number = 18): string {
