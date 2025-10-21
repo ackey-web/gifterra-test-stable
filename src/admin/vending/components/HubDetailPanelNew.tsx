@@ -42,6 +42,14 @@ export function HubDetailPanelNew({
 
   // Supabase商品取得（HUBのIDをtenantIdとして使用）
   const tenantId = machine?.id || 'default';
+
+  console.log('🎯 [HubDetailPanel] 現在のGIFT HUB:', {
+    machineId: machine?.id,
+    machineName: machine?.name,
+    machineSlug: machine?.slug,
+    tenantId
+  });
+
   const { products, isLoading, error } = useSupabaseProducts({ tenantId, isActive: true });
 
   // 新規商品追加モーダルを開く
@@ -77,6 +85,8 @@ export function HubDetailPanelNew({
   const handleSubmitProduct = async (formData: ProductFormData) => {
     setIsSubmitting(true);
     try {
+      console.log('💾 [特典保存] tenantId:', tenantId, 'formData.id:', formData.id);
+
       if (formData.id) {
         // 更新
         const params = formDataToUpdateParams(formData, tenantId);
@@ -84,6 +94,7 @@ export function HubDetailPanelNew({
           alert('❌ 更新データの変換に失敗しました');
           return;
         }
+        console.log('📝 [特典更新] params:', { productId: params.productId, tenantId: params.tenantId });
         const result = await updateProduct(params);
         if (!result.success) {
           alert(`❌ 更新に失敗しました\n\n${result.error}`);
@@ -93,6 +104,7 @@ export function HubDetailPanelNew({
       } else {
         // 新規作成
         const params = formDataToCreateParams(formData, tenantId);
+        console.log('🆕 [特典作成] params:', { tenantId: params.tenantId, name: params.name });
         const result = await createProduct(params);
         if (!result.success) {
           alert(`❌ 作成に失敗しました\n\n${result.error}`);
