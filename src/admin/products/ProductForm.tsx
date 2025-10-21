@@ -202,7 +202,7 @@ export function ProductForm({
   const handleSubmit = async () => {
     // バリデーション
     if (!formData.name || !formData.priceAmountWei) {
-      alert('商品名と価格は必須です');
+      alert('特典名と必要TIP数は必須です');
       return;
     }
 
@@ -210,7 +210,7 @@ export function ProductForm({
     if (!formData.contentPath) {
       const confirmed = confirm(
         '⚠️ 配布ファイルが設定されていません。\n' +
-        'このまま保存すると、購入後のダウンロードができません。\n\n' +
+        'このまま保存すると、受け取り後のダウンロードができません。\n\n' +
         '保存を続けますか？'
       );
       if (!confirmed) return;
@@ -223,13 +223,13 @@ export function ProductForm({
     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4 text-gray-800">
-          {formData.id ? '商品編集' : '新規商品追加'}
+          {formData.id ? '特典編集' : '新規特典追加'}
         </h2>
 
         <div className="space-y-4">
-          {/* 商品名 */}
+          {/* 特典名 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">商品名 *</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">特典名 *</label>
             <input
               type="text"
               value={formData.name}
@@ -247,13 +247,13 @@ export function ProductForm({
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full border border-gray-300 rounded px-3 py-2"
               rows={3}
-              placeholder="商品の説明を入力してください"
+              placeholder="特典の説明を入力してください"
             />
           </div>
 
-          {/* 価格 */}
+          {/* 必要TIP数 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">価格（Wei） *</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">必要TIP数（Wei） *</label>
             <input
               type="text"
               value={formData.priceAmountWei}
@@ -266,7 +266,7 @@ export function ProductForm({
             </p>
           </div>
 
-          {/* 在庫設定 */}
+          {/* 提供数設定 */}
           <div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -275,13 +275,13 @@ export function ProductForm({
                 onChange={(e) => handleChange('isUnlimited', e.target.checked)}
                 className="w-4 h-4"
               />
-              <span className="text-sm font-semibold text-gray-700">在庫無制限（∞）</span>
+              <span className="text-sm font-semibold text-gray-700">提供数無制限（∞）</span>
             </label>
           </div>
 
           {!formData.isUnlimited && (
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">在庫数</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">提供可能数</label>
               <input
                 type="number"
                 value={formData.stock}
@@ -313,7 +313,7 @@ export function ProductForm({
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               配布ファイル
-              <span className="text-orange-600 ml-1">(購入後のダウンロードに必要)</span>
+              <span className="text-orange-600 ml-1">(受け取り後のダウンロードに必要)</span>
             </label>
             <input
               type="file"

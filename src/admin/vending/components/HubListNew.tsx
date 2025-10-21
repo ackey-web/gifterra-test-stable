@@ -98,7 +98,7 @@ export function HubListNew({
                 {machine.name}
               </div>
               <div style={{ fontSize: 13, opacity: 0.7 }}>
-                商品: {machine.products?.length || 0}件
+                特典: {machine.products?.length || 0}件
               </div>
               {machine.isActive ? (
                 <span style={{

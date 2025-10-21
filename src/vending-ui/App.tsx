@@ -17,10 +17,10 @@ export default function VendingApp() {
   const machineId = urlParams.get("machine") || "main";
   const spaceId = "default";
 
-  // 管理データ（vendingMachine設定のみ使用、contentSetは使わずSupabase商品を使用）
+  // 管理データ（vendingMachine設定のみ使用、contentSetは使わずSupabase特典を使用）
   const { contentSet: _contentSet, vendingMachine, error } = useMetaverseContent(spaceId, machineId);
 
-  // Supabase商品データを取得（vendingMachine.idをtenantIdとして使用）
+  // Supabase特典データを取得（vendingMachine.idをtenantIdとして使用）
   const tenantId = vendingMachine?.id || "";
   const { products: supabaseProducts, isLoading: productsLoading } = useSupabaseProducts({
     tenantId,
@@ -72,15 +72,15 @@ export default function VendingApp() {
       return;
     }
 
-    // 購入中は複数クリック防止
+    // 受け取り中は複数クリック防止
     if (isPurchasing) {
       return;
     }
 
-    // 商品を探す
+    // 特典を探す
     const product = supabaseProducts.find((p) => p.id === productId);
     if (!product) {
-      alert("商品が見つかりません");
+      alert("特典が見つかりません");
       return;
     }
 
@@ -90,7 +90,7 @@ export default function VendingApp() {
       return;
     }
 
-    // 購入処理開始
+    // 受け取り処理開始
     setIsPurchasing(true);
     setSelectedProducts((prev) => [...prev, productId]);
 
@@ -112,7 +112,7 @@ export default function VendingApp() {
 
       if (result.success) {
         if (result.downloadUrl) {
-          // 購入成功 - ダウンロードURLを取得済み商品に追加
+          // 受け取り成功 - ダウンロードURLを取得済み特典に追加
           const downloadUrl = result.downloadUrl; // 型を確定させる
           setPurchasedProducts((prev) => [
             ...prev,
@@ -123,21 +123,21 @@ export default function VendingApp() {
             }
           ]);
 
-          alert(`購入完了！「${product.name}」が商品取り出し口に追加されました。`);
+          alert(`受け取り完了！「${product.name}」が特典取り出し口に追加されました。`);
         } else {
           // ダウンロードURLが生成されなかった
-          alert(`購入は完了しましたが、ダウンロードURLの生成に失敗しました。管理者にお問い合わせください。`);
+          alert(`受け取りは完了しましたが、ダウンロードURLの生成に失敗しました。管理者にお問い合わせください。`);
           setSelectedProducts((prev) => prev.filter((id) => id !== productId));
         }
       } else {
-        // 購入失敗
-        alert(`購入に失敗しました: ${result.error || "不明なエラー"}`);
+        // 受け取り失敗
+        alert(`受け取りに失敗しました: ${result.error || "不明なエラー"}`);
         // 選択リストから削除
         setSelectedProducts((prev) => prev.filter((id) => id !== productId));
       }
     } catch (err) {
       console.error("Purchase error:", err);
-      alert(`購入エラー: ${err instanceof Error ? err.message : String(err)}`);
+      alert(`受け取りエラー: ${err instanceof Error ? err.message : String(err)}`);
       // 選択リストから削除
       setSelectedProducts((prev) => prev.filter((id) => id !== productId));
     } finally {
@@ -189,7 +189,7 @@ export default function VendingApp() {
           {previewImage ? (
             <img
               src={previewImage}
-              alt="商品プレビュー"
+              alt="特典プレビュー"
               className="w-full h-full object-contain"
             />
           ) : headerImage ? (
@@ -199,12 +199,12 @@ export default function VendingApp() {
               className="w-full h-full object-contain"
             />
           ) : (
-            <p className="text-sm text-white/50">商品プレビュー</p>
+            <p className="text-sm text-white/50">特典プレビュー</p>
           )}
         </div>
       </div>
 
-      {/* ===== 商品ボタン ===== */}
+      {/* ===== 特典ボタン ===== */}
       <div className="relative z-10 px-5 py-5">
         <div className="grid grid-cols-3 gap-3">
           {productsLoading ? (
@@ -230,7 +230,7 @@ export default function VendingApp() {
               </div>
             ))
           ) : (
-            // Supabase商品を表示（最大3件）
+            // Supabase特典を表示（最大3件）
             Array.from({ length: 3 }).map((_, index) => {
               const product = supabaseProducts[index];
               const label = String.fromCharCode(65 + index);
@@ -301,7 +301,7 @@ export default function VendingApp() {
                   <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
                   {isSelected && (
                     <div className="relative mt-1 text-[10px] text-yellow-300">
-                      {isPurchasing ? "購入中..." : "選択済み"}
+                      {isPurchasing ? "受け取り中..." : "選択済み"}
                     </div>
                   )}
                 </button>
@@ -429,7 +429,7 @@ export default function VendingApp() {
 
           <div className="relative">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-bold text-yellow-300/90" style={{ textShadow: "0 0 10px rgba(253,224,71,0.5)" }}>商品取出し口</h3>
+              <h3 className="font-bold text-yellow-300/90" style={{ textShadow: "0 0 10px rgba(253,224,71,0.5)" }}>特典取出し口</h3>
               <span
                 className="rounded-full px-3 py-1.5 text-xs font-bold text-white"
                 style={{
@@ -437,7 +437,7 @@ export default function VendingApp() {
                   boxShadow: "0 2px 8px rgba(220,38,38,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
                 }}
               >
-                {selectedProducts.length}個の商品
+                {selectedProducts.length}個の特典
               </span>
             </div>
 
@@ -469,8 +469,8 @@ export default function VendingApp() {
                 </div>
               ) : (
                 <div className="text-center text-sm text-white/30">
-                  <p className="mb-2">📦 購入した商品がここに表示されます</p>
-                  <p>上の商品ボタンから購入してください</p>
+                  <p className="mb-2">📦 受け取った特典がここに表示されます</p>
+                  <p>上の特典ボタンから受け取ってください</p>
                 </div>
               )}
             </div>

@@ -89,7 +89,7 @@ export function HubDetailPanelNew({
           alert(`❌ 更新に失敗しました\n\n${result.error}`);
           return;
         }
-        alert('✅ 商品を更新しました');
+        alert('✅ 特典を更新しました');
       } else {
         // 新規作成
         const params = formDataToCreateParams(formData, tenantId);
@@ -98,7 +98,7 @@ export function HubDetailPanelNew({
           alert(`❌ 作成に失敗しました\n\n${result.error}`);
           return;
         }
-        alert('✅ 商品を作成しました');
+        alert('✅ 特典を作成しました');
       }
 
       // モーダルを閉じてリフレッシュ（useSupabaseProductsが自動的に再取得）
@@ -121,7 +121,7 @@ export function HubDetailPanelNew({
 
   // 商品削除
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('この商品を削除してもよろしいですか？')) return;
+    if (!confirm('この特典を削除してもよろしいですか？')) return;
 
     try {
       const result = await deleteProduct(productId);
@@ -129,7 +129,7 @@ export function HubDetailPanelNew({
         alert(`❌ 削除に失敗しました\n\n${result.error}`);
         return;
       }
-      alert('✅ 商品を削除しました');
+      alert('✅ 特典を削除しました');
 
       // 強制的に再レンダリング
       setTimeout(() => {
@@ -688,10 +688,10 @@ export function HubDetailPanelNew({
 
         {activeTab === 'products' && (
           <div>
-            {/* ヘッダー: 新規商品追加ボタン */}
+            {/* ヘッダー: 新規特典追加ボタン */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>
-                Supabase 商品一覧（tenant: {tenantId}）
+                Supabase 特典一覧（tenant: {tenantId}）
               </h3>
               <button
                 onClick={handleAddProduct}
@@ -709,7 +709,7 @@ export function HubDetailPanelNew({
                   gap: 6
                 }}
               >
-                ＋ 新規商品
+                ＋ 新規特典
               </button>
             </div>
 
@@ -734,12 +734,12 @@ export function HubDetailPanelNew({
               </div>
             )}
 
-            {/* 商品一覧 */}
+            {/* 特典一覧 */}
             {!isLoading && products.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.5)' }}>
-                <p style={{ margin: 0, fontSize: 16 }}>📦 商品がありません</p>
+                <p style={{ margin: 0, fontSize: 16 }}>📦 特典がありません</p>
                 <p style={{ margin: '8px 0 0 0', fontSize: 13 }}>
-                  「＋ 新規商品」ボタンから追加してください
+                  「＋ 新規特典」ボタンから追加してください
                 </p>
               </div>
             )}
@@ -803,19 +803,19 @@ export function HubDetailPanelNew({
                       </p>
                     )}
 
-                    {/* 価格 */}
+                    {/* 必要TIP数 */}
                     <div style={{ marginBottom: 12 }}>
                       <span style={{ fontSize: 14, color: '#10B981', fontWeight: 700 }}>
                         {(Number(product.price_amount_wei) / 1e18).toFixed(2)} tNHT
                       </span>
                     </div>
 
-                    {/* 在庫 */}
+                    {/* 提供可能数 */}
                     <div style={{ marginBottom: 12, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
                       {product.is_unlimited ? (
-                        <span>在庫: <strong style={{ color: '#10B981' }}>∞ 無制限</strong></span>
+                        <span>提供可能数: <strong style={{ color: '#10B981' }}>∞ 無制限</strong></span>
                       ) : (
-                        <span>在庫: <strong style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }}>{product.stock}</strong></span>
+                        <span>提供可能数: <strong style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }}>{product.stock}</strong></span>
                       )}
                     </div>
 
