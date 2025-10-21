@@ -31,26 +31,34 @@ export interface UpdateProductParams extends CreateProductParams {
  */
 export async function createProduct(params: CreateProductParams): Promise<{ success: boolean; error?: string }> {
   try {
+    const tenantId = params.tenantId || DEFAULT_TENANT_ID;
+    console.log('🆕 [商品作成] tenant_id:', tenantId, 'name:', params.name);
+
+    const productData = {
+      tenant_id: tenantId,
+      name: params.name,
+      description: params.description,
+      content_path: params.contentPath,
+      image_url: params.imageUrl,
+      price_token: DEFAULT_TOKEN,
+      price_amount_wei: params.priceAmountWei,
+      stock: params.stock,
+      is_unlimited: params.isUnlimited,
+      is_active: true,
+    };
+
+    console.log('📤 [商品作成] データ:', { tenant_id: productData.tenant_id, name: productData.name });
+
     const { error } = await supabase
       .from('products')
-      .insert([{
-        tenant_id: params.tenantId || DEFAULT_TENANT_ID,
-        name: params.name,
-        description: params.description,
-        content_path: params.contentPath,
-        image_url: params.imageUrl,
-        price_token: DEFAULT_TOKEN,
-        price_amount_wei: params.priceAmountWei,
-        stock: params.stock,
-        is_unlimited: params.isUnlimited,
-        is_active: true,
-      }]);
+      .insert([productData]);
 
     if (error) {
       console.error('❌ 商品作成エラー:', error);
       return { success: false, error: error.message };
     }
 
+    console.log('✅ [商品作成] 成功 - tenant_id:', tenantId);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品作成エラー (catch):', err);
@@ -65,10 +73,13 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
  */
 export async function updateProduct(params: UpdateProductParams): Promise<{ success: boolean; error?: string }> {
   try {
+    const tenantId = params.tenantId || DEFAULT_TENANT_ID;
+    console.log('🔄 [商品更新] product_id:', params.productId, 'tenant_id:', tenantId, 'name:', params.name);
+
     const { error } = await supabase
       .from('products')
       .update({
-        tenant_id: params.tenantId || DEFAULT_TENANT_ID,
+        tenant_id: tenantId,
         name: params.name,
         description: params.description,
         content_path: params.contentPath,
@@ -86,6 +97,7 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
       return { success: false, error: error.message };
     }
 
+    console.log('✅ [商品更新] 成功 - product_id:', params.productId);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品更新エラー (catch):', err);
@@ -100,17 +112,26 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
  */
 export async function deleteProduct(productId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('🗑️ [削除開始] 商品ID:', productId);
+
     // まず商品データを取得
     const { data: product, error: fetchError } = await supabase
       .from('products')
-      .select('image_url, content_path')
+      .select('image_url, content_path, is_active')
       .eq('id', productId)
       .single();
 
     if (fetchError) {
       console.error('❌ 商品取得エラー:', fetchError);
-      return { success: false, error: fetchError.message };
+      return { success: false, error: `商品データの取得に失敗: ${fetchError.message}` };
     }
+
+    if (!product) {
+      console.error('❌ 商品が見つかりません:', productId);
+      return { success: false, error: '商品が見つかりません' };
+    }
+
+    console.log('📦 削除対象商品:', { id: productId, name: product.image_url, is_active: product.is_active });
 
     // 関連ファイルを削除
     const deletionResults: string[] = [];
@@ -141,14 +162,15 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
     }
 
     // 商品を非アクティブに設定
+    console.log('🔄 is_activeをfalseに設定中...');
     const { error } = await supabase
       .from('products')
       .update({ is_active: false })
       .eq('id', productId);
 
     if (error) {
-      console.error('❌ 商品削除エラー:', error);
-      return { success: false, error: error.message };
+      console.error('❌ 商品削除エラー (UPDATE失敗):', error);
+      return { success: false, error: `商品の非アクティブ化に失敗: ${error.message}` };
     }
 
     console.log('✅ 商品削除完了:', deletionResults);
