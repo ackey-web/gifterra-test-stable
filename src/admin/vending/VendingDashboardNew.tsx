@@ -119,6 +119,15 @@ const VendingDashboardNew: React.FC = () => {
     setMachines(updated);
   };
 
+  // GIFT HUB削除
+  const handleDeleteMachine = (machineId: string) => {
+    const updated = machines.filter(m => m.id !== machineId);
+    setMachines(updated);
+    if (selectedMachineId === machineId) {
+      setSelectedMachineId(null);
+    }
+  };
+
   return (
     <div
       style={{
@@ -154,6 +163,7 @@ const VendingDashboardNew: React.FC = () => {
           selectedMachineId={selectedMachineId}
           onSelectMachine={handleSelectMachine}
           onAddNew={handleAddMachine}
+          onDeleteMachine={handleDeleteMachine}
         />
 
         {/* 右カラム：詳細パネル */}
