@@ -17,13 +17,23 @@ interface HubDetailPanelNewProps {
 
 type TabType = 'settings' | 'design' | 'products' | 'preview';
 
+const REDIRECT_TAB_KEY = 'vending_redirect_tab';
+
 export function HubDetailPanelNew({
   machine,
   onSave,
   onToggleActive,
   onUpdateMachine
 }: HubDetailPanelNewProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('settings');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // リダイレクト用に保存されたタブがあればそれを使用
+    const savedTab = localStorage.getItem(REDIRECT_TAB_KEY);
+    if (savedTab && ['settings', 'design', 'products', 'preview'].includes(savedTab)) {
+      localStorage.removeItem(REDIRECT_TAB_KEY);
+      return savedTab as TabType;
+    }
+    return 'settings';
+  });
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductFormData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +103,9 @@ export function HubDetailPanelNew({
 
       // モーダルを閉じてリフレッシュ（useSupabaseProductsが自動的に再取得）
       handleCloseModal();
+
+      // リロード後にProductsタブを開くためにlocalStorageに保存
+      localStorage.setItem(REDIRECT_TAB_KEY, 'products');
 
       // 強制的に再レンダリングさせるため、少し待ってからページリロード
       setTimeout(() => {
@@ -379,16 +392,14 @@ export function HubDetailPanelNew({
           📦 Products
         </button>
         <button
-          onClick={() => setActiveTab('preview')}
-          role="tab"
-          aria-selected={activeTab === 'preview'}
-          aria-controls="preview-panel"
+          onClick={() => window.open(`/content?machine=${machine.slug}`, '_blank')}
+          role="button"
           style={{
             padding: '12px 24px',
-            background: activeTab === 'preview' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-            color: activeTab === 'preview' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            background: 'transparent',
+            color: 'rgba(255,255,255,0.6)',
             border: 'none',
-            borderBottom: activeTab === 'preview' ? '2px solid #3B82F6' : '2px solid transparent',
+            borderBottom: '2px solid transparent',
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
@@ -853,245 +864,6 @@ export function HubDetailPanelNew({
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === 'preview' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>
-                プレビュー
-              </h3>
-              <a
-                href={`/content?machine=${machine.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  padding: '10px 20px',
-                  background: '#3B82F6',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6
-                }}
-              >
-                🔗 GIFT HUBページを開く
-              </a>
-            </div>
-
-            {/* デザイン確認用プレビュー */}
-            <p style={{ margin: '0 0 16px 0', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-              以下はデザイン設定の確認用プレビューです。実際のGIFT HUBページは上のボタンから開いてください。
-            </p>
-
-            {/* 自販機風プレビュー */}
-            <div
-              style={{
-                background: machine.settings.design?.backgroundImage
-                  ? `linear-gradient(rgba(26, 26, 46, 0.85), rgba(22, 33, 62, 0.85)), url(${machine.settings.design.backgroundImage})`
-                  : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                borderRadius: 16,
-                padding: 24,
-                minHeight: 600,
-                border: '2px solid rgba(255,255,255,0.1)',
-                boxShadow: `0 0 40px ${machine.settings.design?.primaryColor || '#3B82F6'}40`
-              }}
-            >
-              {/* ヘッダー画像 */}
-              {machine.settings.design?.headerImage && (
-                <div style={{ marginBottom: 20, borderRadius: 12, overflow: 'hidden' }}>
-                  <img
-                    src={machine.settings.design.headerImage}
-                    alt="Header"
-                    style={{ width: '100%', height: 120, objectFit: 'cover' }}
-                  />
-                </div>
-              )}
-
-              {/* HUBタイトル */}
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '16px 0',
-                  marginBottom: 24,
-                  borderRadius: 8,
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 24,
-                    fontWeight: 800,
-                    color: machine.settings.design?.primaryColor || '#3B82F6',
-                    textShadow: `0 0 20px ${machine.settings.design?.primaryColor || '#3B82F6'}80`
-                  }}
-                >
-                  {machine.settings.displayName || machine.name}
-                </h2>
-                <p style={{ margin: '8px 0 0 0', fontSize: 14, color: machine.settings.design?.textColor || '#fff', opacity: 0.8 }}>
-                  {machine.settings.welcomeMessage}
-                </p>
-              </div>
-
-              {/* 商品一覧グリッド */}
-              <div style={{ marginBottom: 24 }}>
-                <h4 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color: machine.settings.design?.secondaryColor || '#10B981'
-                }}>
-                  商品一覧（{products.length}件）
-                </h4>
-
-                {isLoading && (
-                  <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.6)' }}>
-                    <p style={{ margin: 0, fontSize: 14 }}>⏳ 読み込み中...</p>
-                  </div>
-                )}
-
-                {!isLoading && products.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.5)' }}>
-                    <p style={{ margin: 0, fontSize: 14 }}>📦 商品がありません</p>
-                  </div>
-                )}
-
-                {!isLoading && products.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-                    {products.slice(0, 6).map((product) => (
-                      <div
-                        key={product.id}
-                        style={{
-                          background: machine.settings.design?.cardBackgroundColor || 'rgba(255,255,255,0.05)',
-                          borderRadius: 8,
-                          padding: 12,
-                          border: `1px solid ${machine.settings.design?.accentColor || '#F59E0B'}40`,
-                          transition: 'all 0.2s',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {product.image_url && (
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            style={{
-                              width: '100%',
-                              height: 80,
-                              objectFit: 'cover',
-                              borderRadius: 6,
-                              marginBottom: 8
-                            }}
-                          />
-                        )}
-                        <h5 style={{
-                          margin: '0 0 4px 0',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: machine.settings.design?.textColor || '#fff',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {product.name}
-                        </h5>
-                        <p style={{
-                          margin: 0,
-                          fontSize: 11,
-                          color: machine.settings.design?.secondaryColor || '#10B981',
-                          fontWeight: 600
-                        }}>
-                          {(Number(product.price_amount_wei) / 1e18).toFixed(1)} tNHT
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!isLoading && products.length > 6 && (
-                  <p style={{ margin: '16px 0 0 0', fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
-                    ※ 最初の6件を表示中（全{products.length}件）
-                  </p>
-                )}
-              </div>
-
-              {/* サンプル購入ボタン */}
-              <div style={{ textAlign: 'center' }}>
-                <button
-                  disabled
-                  style={{
-                    padding: '12px 32px',
-                    background: machine.settings.design?.buttonColor || '#3B82F6',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'not-allowed',
-                    opacity: 0.6,
-                    boxShadow: `0 4px 12px ${machine.settings.design?.buttonColor || '#3B82F6'}40`
-                  }}
-                >
-                  購入ボタン（プレビューのみ）
-                </button>
-              </div>
-
-              {/* 設定情報表示 */}
-              <div style={{
-                marginTop: 24,
-                padding: 16,
-                background: 'rgba(0,0,0,0.3)',
-                borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}>
-                <h5 style={{ margin: '0 0 12px 0', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
-                  現在のデザイン設定
-                </h5>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                  <p style={{ margin: '4px 0' }}>
-                    メインカラー: <span style={{ color: machine.settings.design?.primaryColor || '#3B82F6' }}>●</span> {machine.settings.design?.primaryColor || '#3B82F6'}
-                  </p>
-                  <p style={{ margin: '4px 0' }}>
-                    サブカラー: <span style={{ color: machine.settings.design?.secondaryColor || '#10B981' }}>●</span> {machine.settings.design?.secondaryColor || '#10B981'}
-                  </p>
-                  <p style={{ margin: '4px 0' }}>
-                    アクセントカラー: <span style={{ color: machine.settings.design?.accentColor || '#F59E0B' }}>●</span> {machine.settings.design?.accentColor || '#F59E0B'}
-                  </p>
-                  <p style={{ margin: '4px 0' }}>
-                    ボタンカラー: <span style={{ color: machine.settings.design?.buttonColor || '#3B82F6' }}>●</span> {machine.settings.design?.buttonColor || '#3B82F6'}
-                  </p>
-                  <p style={{ margin: '4px 0' }}>
-                    営業時間: {machine.settings.operatingHours.start} - {machine.settings.operatingHours.end}
-                  </p>
-                  <p style={{ margin: '4px 0' }}>
-                    トークン: {machine.settings.tokenSymbol || 'tNHT'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 注意書き */}
-            <div style={{
-              marginTop: 20,
-              padding: 16,
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              borderRadius: 8
-            }}>
-              <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
-                💡 このプレビューはデザイン設定の確認用です。実際のGIFT HUBは別ページで表示されます。
-                Designタブでカラーや画像を変更すると、このプレビューにリアルタイムで反映されます。
-              </p>
-            </div>
           </div>
         )}
       </div>

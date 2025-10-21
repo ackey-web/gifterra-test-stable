@@ -1779,36 +1779,6 @@ export default function AdminDashboard() {
         >
           🏪 GIFT HUB管理
         </button>
-        <button
-          onClick={() => setCurrentPage("product-management")}
-          style={{
-            background: currentPage === "product-management" ? "#0284c7" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          📦 商品管理（Supabase）
-        </button>
-        <button
-          onClick={() => setCurrentPage("diagnostics")}
-          style={{
-            background: currentPage === "diagnostics" ? "#dc2626" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          🔧 診断
-        </button>
         {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
         {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
           <button
