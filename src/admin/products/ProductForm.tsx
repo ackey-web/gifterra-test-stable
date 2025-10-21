@@ -1,7 +1,8 @@
 // src/admin/products/ProductForm.tsx
 // 商品作成・編集用の再利用可能なフォームコンポーネント
-import React, { useState } from 'react';
-import { uploadImage } from '../../lib/supabase';
+import React, { useState, useRef } from 'react';
+import { uploadImage, deleteFileFromUrl } from '../../lib/supabase';
+import { calculateFileHash } from '../../utils/fileHash';
 
 export interface ProductFormData {
   id?: string;
@@ -44,6 +45,14 @@ export function ProductForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
+  // 現在アップロードされているファイルのハッシュを追跡
+  const [currentImageHash, setCurrentImageHash] = useState<string | null>(null);
+  const [currentFileHash, setCurrentFileHash] = useState<string | null>(null);
+
+  // 初期データから設定されたURLを保持（差し替え時の削除用）
+  const previousImageUrlRef = useRef<string | null>(initialData?.imageUrl || null);
+  const previousContentPathRef = useRef<string | null>(initialData?.contentPath || null);
+
   const handleChange = (field: keyof ProductFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -56,10 +65,42 @@ export function ProductForm({
     setUploadingImage(true);
     try {
       console.log('📤 画像アップロード開始:', file.name, file.size);
+
+      // ファイルハッシュを計算して重複チェック
+      const fileHash = await calculateFileHash(file);
+      console.log('🔍 ファイルハッシュ:', fileHash);
+
+      // 同じファイルが既にアップロードされている場合は警告
+      if (currentImageHash === fileHash) {
+        const proceed = confirm(
+          '⚠️ 同じ画像が既にアップロードされています。\n' +
+          'このファイルは現在設定されている画像と同一です。\n\n' +
+          '再度アップロードしますか？'
+        );
+        if (!proceed) {
+          setUploadingImage(false);
+          e.target.value = '';
+          return;
+        }
+      }
+
+      // 新しい画像をアップロード
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
+        // 古い画像を削除（差し替えの場合）
+        if (previousImageUrlRef.current && previousImageUrlRef.current !== imageUrl) {
+          console.log('🗑️ 古い画像を削除:', previousImageUrlRef.current);
+          const deleted = await deleteFileFromUrl(previousImageUrlRef.current);
+          if (deleted) {
+            console.log('✅ 古い画像を削除しました');
+          }
+        }
+
+        // 新しい画像を設定
         handleChange('imageUrl', imageUrl);
+        setCurrentImageHash(fileHash);
+        previousImageUrlRef.current = imageUrl;
         alert('✅ 画像をアップロードしました');
         console.log('✅ アップロード成功:', imageUrl);
       } else {
@@ -97,16 +138,51 @@ export function ProductForm({
     try {
       console.log('📤 配布ファイルアップロード開始:', file.name, file.size);
 
+      // ファイルハッシュを計算して重複チェック
+      const fileHash = await calculateFileHash(file);
+      console.log('🔍 ファイルハッシュ:', fileHash);
+
+      // 同じファイルが既にアップロードされている場合は警告
+      if (currentFileHash === fileHash) {
+        const proceed = confirm(
+          '⚠️ 同じ配布ファイルが既にアップロードされています。\n' +
+          'このファイルは現在設定されている配布ファイルと同一です。\n\n' +
+          '再度アップロードしますか？'
+        );
+        if (!proceed) {
+          setUploadingFile(false);
+          e.target.value = '';
+          return;
+        }
+      }
+
       // 一時的に gh-public バケットにアップロード
       // TODO: 本番環境では gh-downloads（非公開）+ サーバーサイドAPI経由に変更
       const fileUrl = await uploadImage(file, 'gh-public');
 
       if (fileUrl) {
+        // 古い配布ファイルを削除（差し替えの場合）
+        if (previousContentPathRef.current) {
+          // content_pathはファイル名のみの場合があるので、フルURLを構築
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const oldContentUrl = previousContentPathRef.current.startsWith('http')
+            ? previousContentPathRef.current
+            : `${supabaseUrl}/storage/v1/object/public/gh-public/${previousContentPathRef.current}`;
+
+          console.log('🗑️ 古い配布ファイルを削除:', oldContentUrl);
+          const deleted = await deleteFileFromUrl(oldContentUrl);
+          if (deleted) {
+            console.log('✅ 古い配布ファイルを削除しました');
+          }
+        }
+
         // URLからファイルパスを抽出（公開URLから）
         const urlParts = fileUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
 
         handleChange('contentPath', fileName);
+        setCurrentFileHash(fileHash);
+        previousContentPathRef.current = fileName;
         alert('✅ 配布ファイルをアップロードしました');
         console.log('✅ アップロード成功:', fileUrl);
       } else {

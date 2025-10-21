@@ -2,11 +2,12 @@
 // Supabase 商品管理用のヘルパー関数
 // RLSポリシーに準拠し、サービスロールは使用しない
 
-import { supabase } from '../supabase';
+import { supabase, deleteFileFromUrl } from '../supabase';
 import type { ProductFormData } from '../../admin/products/ProductForm';
 
 const DEFAULT_TENANT_ID = 'default';
 const DEFAULT_TOKEN = '0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea'; // tNHT
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
 export interface CreateProductParams {
   tenantId?: string;
@@ -93,12 +94,53 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
 }
 
 /**
- * 商品を削除（実際には is_active = false に設定）
+ * 商品を削除（関連ファイルも削除し、is_active = false に設定）
  * @param productId 商品ID
  * @returns 成功/失敗
  */
 export async function deleteProduct(productId: string): Promise<{ success: boolean; error?: string }> {
   try {
+    // まず商品データを取得
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('image_url, content_path')
+      .eq('id', productId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ 商品取得エラー:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    // 関連ファイルを削除
+    const deletionResults: string[] = [];
+
+    if (product?.image_url) {
+      console.log('🗑️ サムネイル画像を削除:', product.image_url);
+      const imageDeleted = await deleteFileFromUrl(product.image_url);
+      if (imageDeleted) {
+        deletionResults.push('サムネイル画像を削除しました');
+      } else {
+        deletionResults.push('サムネイル画像の削除に失敗しました（既に削除済みの可能性）');
+      }
+    }
+
+    if (product?.content_path) {
+      // content_pathはファイル名のみの場合があるので、フルURLを構築
+      const contentUrl = product.content_path.startsWith('http')
+        ? product.content_path
+        : `${supabaseUrl}/storage/v1/object/public/gh-public/${product.content_path}`;
+
+      console.log('🗑️ 配布ファイルを削除:', contentUrl);
+      const contentDeleted = await deleteFileFromUrl(contentUrl);
+      if (contentDeleted) {
+        deletionResults.push('配布ファイルを削除しました');
+      } else {
+        deletionResults.push('配布ファイルの削除に失敗しました（既に削除済みの可能性）');
+      }
+    }
+
+    // 商品を非アクティブに設定
     const { error } = await supabase
       .from('products')
       .update({ is_active: false })
@@ -109,6 +151,7 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
       return { success: false, error: error.message };
     }
 
+    console.log('✅ 商品削除完了:', deletionResults);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品削除エラー (catch):', err);

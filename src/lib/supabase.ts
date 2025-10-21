@@ -12,6 +12,72 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 /**
+ * URLからファイルパスを抽出
+ * 例: https://xxx.supabase.co/storage/v1/object/public/gh-public/12345.jpg → 12345.jpg
+ */
+export function extractFilePathFromUrl(url: string, bucketName: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    const bucketIndex = pathParts.indexOf(bucketName);
+    if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+      // バケット名以降のパスを結合
+      return pathParts.slice(bucketIndex + 1).join('/');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * URLからバケット名とファイルパスを自動抽出して削除
+ *
+ * @param url - ファイルの公開URL
+ * @returns 削除成功時 true
+ */
+export async function deleteFileFromUrl(url: string): Promise<boolean> {
+  try {
+    if (!url) return false;
+
+    // URLからバケット名を推定
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+
+    // バケット名を探す（gh-public, gh-downloads など）
+    const bucketName = pathParts.find(part => part.startsWith('gh-'));
+    if (!bucketName) {
+      console.error('❌ バケット名を特定できませんでした:', url);
+      return false;
+    }
+
+    // ファイルパスを抽出
+    const filePath = extractFilePathFromUrl(url, bucketName);
+    if (!filePath) {
+      console.error('❌ ファイルパスを抽出できませんでした:', url);
+      return false;
+    }
+
+    console.log('🗑️ ファイル削除:', { bucket: bucketName, path: filePath });
+
+    const { error } = await supabase.storage
+      .from(bucketName)
+      .remove([filePath]);
+
+    if (error) {
+      console.error('❌ ファイルの削除に失敗:', error);
+      return false;
+    }
+
+    console.log('✅ ファイル削除成功:', filePath);
+    return true;
+  } catch (error) {
+    console.error('❌ ファイル削除中にエラー:', error);
+    return false;
+  }
+}
+
+/**
  * ファイルをSupabase Storageにアップロード（用途ベース）
  *
  * @param file - アップロードするファイル
