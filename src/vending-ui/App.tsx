@@ -98,7 +98,8 @@ export default function VendingApp() {
       // Viem walletClient を作成（既存のpurchaseProduct関数が必要とする）
       const walletClient = createWalletClient({
         chain: baseSepolia,
-        transport: custom(window.ethereum)
+        transport: custom(window.ethereum),
+        account: address as `0x${string}`
       });
 
       // 既存のpurchaseProduct関数を呼び出し
