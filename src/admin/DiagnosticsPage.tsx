@@ -1,6 +1,6 @@
 // src/admin/DiagnosticsPage.tsx
 // Supabase 接続診断ページ
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { bucket, getAllBucketNames } from '../lib/storageBuckets';
 
@@ -174,7 +174,7 @@ export default function DiagnosticsPage() {
       for (const bucketName of commonBucketNames) {
         try {
           // list() を使ってバケットの存在確認
-          const { data, error } = await supabase.storage
+          const { error } = await supabase.storage
             .from(bucketName)
             .list('', { limit: 1 });
 
