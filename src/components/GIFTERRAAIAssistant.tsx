@@ -94,7 +94,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     loadProfile();
   }, [walletAddress]);
 
-  // チャット履歴の復元（localStorage から）
+  // チャット履歴の復元（localStorage から）+ 自動削除
   useEffect(() => {
     if (!walletAddress) return;
 
@@ -104,14 +104,29 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // タイムスタンプを Date オブジェクトに変換
-        const restored: Message[] = parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
-        console.log('💬 チャット履歴を復元:', restored.length, '件');
-        setMessages(restored);
-        return;
+        const now = new Date().getTime();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+
+        // タイムスタンプを Date オブジェクトに変換 + 24時間以上古いメッセージを除外
+        const restored: Message[] = parsed
+          .map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+          .filter((msg: Message) => {
+            const messageAge = now - msg.timestamp.getTime();
+            return messageAge < twentyFourHours;
+          })
+          .slice(-10); // 最新10件のみ保持
+
+        if (restored.length > 0) {
+          console.log('💬 チャット履歴を復元:', restored.length, '件（24時間以内、最新10件）');
+          setMessages(restored);
+          return;
+        } else {
+          console.log('🗑️ 24時間以上経過した履歴を削除しました');
+          localStorage.removeItem(storageKey);
+        }
       } catch (error) {
         console.warn('⚠️ チャット履歴の復元に失敗:', error);
       }
@@ -128,16 +143,64 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     setMessages([greeting]);
   }, [walletAddress, autoOpenContext]);
 
-  // チャット履歴の保存（localStorage へ）
+  // チャット履歴の保存（localStorage へ）- 最新10件のみ
   useEffect(() => {
     if (!walletAddress || messages.length === 0) return;
 
     const storageKey = `gifterra_chat_${walletAddress}`;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-      console.log('💾 チャット履歴を保存:', messages.length, '件');
+      // 最新10件のみ保存してストレージ容量を節約
+      const messagesToSave = messages.slice(-10);
+      localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
+      console.log('💾 チャット履歴を保存:', messagesToSave.length, '件（最新10件）');
     } catch (error) {
       console.warn('⚠️ チャット履歴の保存に失敗:', error);
+    }
+  }, [messages, walletAddress]);
+
+  // 問題解決検出とチャット削除提案
+  useEffect(() => {
+    if (messages.length < 2) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const secondLastMessage = messages[messages.length - 2];
+
+    // ギフティが「この問題は解決しましたか」と聞いている場合
+    if (
+      secondLastMessage.role === 'assistant' &&
+      (secondLastMessage.content.includes('問題は解決しましたか') ||
+       secondLastMessage.content.includes('解決しましたか'))
+    ) {
+      // ユーザーが肯定的に答えた場合
+      if (
+        lastMessage.role === 'user' &&
+        (lastMessage.content.match(/はい|解決|大丈夫|ok|オーケー|ありがとう|thanks/i))
+      ) {
+        console.log('✅ 問題解決を検出 - チャット履歴削除を提案');
+
+        // 少し待ってから削除提案
+        setTimeout(() => {
+          const confirmed = window.confirm(
+            '問題が解決したようで良かったです！\n\n' +
+            'チャット履歴を削除しますか？\n' +
+            '（削除すると運営側のコスト削減にもなります）'
+          );
+
+          if (confirmed && walletAddress) {
+            const storageKey = `gifterra_chat_${walletAddress}`;
+            localStorage.removeItem(storageKey);
+
+            // 初期メッセージにリセット
+            const greeting: Message = {
+              role: 'assistant',
+              content: 'こんにちは！ギフティです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
+              timestamp: new Date()
+            };
+            setMessages([greeting]);
+            console.log('🗑️ 問題解決後にチャット履歴を削除しました');
+          }
+        }, 1000);
+      }
     }
   }, [messages, walletAddress]);
 
