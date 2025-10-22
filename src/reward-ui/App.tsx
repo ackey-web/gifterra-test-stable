@@ -46,6 +46,11 @@ export default function App() {
   const chain = useChain();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
 
+  // 背景画像をlocalStorageから取得（管理画面で設定可能）
+  const [customBgImage] = useState<string>(() => {
+    return localStorage.getItem('reward-bg-image') || '/ui-wallpaper.png';
+  });
+
   // ---- 読み取り（エラーハンドリング強化）----
   const { data: dailyRewardRaw, error: dailyRewardError } = useContractRead(
     contract,
@@ -172,9 +177,7 @@ export default function App() {
           ...(isMobileDevice ? {} : { image: TOKEN.ICON })
         },
       };
-      
-      console.log('🪙 トークン追加試行:', { isMobileDevice, tokenParams });
-      
+
       const wasAdded = await eth.request({
         method: "wallet_watchAsset",
         params: tokenParams,
@@ -383,8 +386,6 @@ export default function App() {
     // ethersが失敗した場合のThirdWebフォールバック
     for (let i = 0; i < maxTry; i++) {
       try {
-        console.log(`ThirdWeb attempt ${i + 1}/${maxTry}`);
-        
         // ThirdWeb経由でのトランザクション送信
         const res: any = await (contract as any).call("claimDailyReward", []);
         let receipt =
@@ -461,7 +462,6 @@ export default function App() {
         
         if (i < maxTry - 1 && isRetriable) {
           const waitTime = 1000 * (i + 1); // 1s, 2s, 3s
-          console.log(`Retrying in ${waitTime}ms...`);
           await sleep(waitTime);
           continue;
         }
@@ -505,8 +505,11 @@ export default function App() {
         width: "100vw",
         maxWidth: "100vw",
         background: bgGradient || "#0b1620",
-        backgroundSize: "200% 200%",
-        backgroundPosition: "0% 50%",
+        backgroundImage: bgGradient ? 'none' : `url(${customBgImage})`,
+        backgroundSize: bgGradient ? "200% 200%" : "cover",
+        backgroundPosition: bgGradient ? "0% 50%" : "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
         animation: bgGradient ? "gradientShift 3s ease-in-out" : "none",
         color: "#fff",
         display: "grid",
