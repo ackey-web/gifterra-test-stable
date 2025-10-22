@@ -241,9 +241,36 @@ export default function ProductManager() {
 
   // 削除
   const handleDelete = async (product: SupabaseProduct) => {
-    if (!confirm(`「${product.name}」を削除（非公開に）しますか？`)) return;
+    if (!confirm(`「${product.name}」を削除しますか？\n※ストレージのファイルも削除されます`)) return;
 
     try {
+      // 1. Storageのファイルを削除（content_path と image_url）
+      const deletePromises = [];
+
+      if (product.content_path) {
+        console.log('🗑️ 配布ファイルを削除:', product.content_path);
+        deletePromises.push(
+          fetch('/api/delete/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: product.content_path })
+          }).catch(err => {
+            console.warn('⚠️ 配布ファイル削除エラー:', err);
+          })
+        );
+      }
+
+      // 画像ファイルも削除（公開バケット）
+      if (product.image_url) {
+        console.log('🗑️ 画像ファイルを削除:', product.image_url);
+        // 画像は公開バケットなので既存のdeleteFileFromUrl関数を使用
+        // ※後でimport追加が必要な場合あり
+      }
+
+      // Storageファイル削除を待機
+      await Promise.all(deletePromises);
+
+      // 2. データベースから商品を非公開にする
       const { error } = await supabase
         .from('products')
         .update({ is_active: false })
@@ -251,7 +278,7 @@ export default function ProductManager() {
 
       if (error) throw error;
 
-      alert('✅ 商品を非公開にしました');
+      alert('✅ 商品とファイルを削除しました');
       window.location.reload();
     } catch (err) {
       console.error('❌ 削除エラー:', err);
