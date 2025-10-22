@@ -163,7 +163,7 @@ function getDefaultGiftHubData() {
   return {
     claimCount: 0,
     totalTipped: '0',
-    favoriteCategories: [],
+    favoriteCategories: [] as string[],
     lastClaimDate: ''
   };
 }
