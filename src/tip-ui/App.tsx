@@ -89,6 +89,11 @@ export default function TipApp() {
   const chain = useChain();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
 
+  // 背景画像をlocalStorageから取得（管理画面で設定可能）
+  const [customBgImage] = useState<string>(() => {
+    return localStorage.getItem('tip-bg-image') || '/ui-wallpaper.png';
+  });
+
   // コントラクトデータ（手動管理）
   const [userInfoRaw, setUserInfoRaw] = useState<any>(null);
   const [levelRaw, setLevelRaw] = useState<any>(null);
@@ -338,15 +343,7 @@ export default function TipApp() {
     try {
       // AI分析システムと統一された熱量計算を使用
       const tipAmount = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
-      
-      // デバッグログ追加
-      console.log(`🔥 Heat Analysis Debug:`, {
-        address: address?.slice(0, 6) + '...',
-        tipAmount,
-        totalTips: totalTips.toString(),
-        currentLevel
-      });
-      
+
       // AI分析ロジックと統一した計算方法
       // Tipスコア（0-400）: tipAmount / 10で正規化
       const amountScore = Math.min(400, tipAmount / 10);
@@ -370,18 +367,7 @@ export default function TipApp() {
       if (finalScore >= 800) level = "🔥熱狂";
       else if (finalScore >= 600) level = "💎高額";
       else if (finalScore >= 400) level = "🎉アクティブ";
-      
-      console.log(`🔥 Heat Result (AI統一版):`, {
-        amountScore: Math.round(amountScore),
-        frequencyScore: Math.round(frequencyScore),
-        sentimentScore: Math.round(sentimentScore),
-        baseScore,
-        decayFactor,
-        finalScore,
-        level,
-        thresholds: { 熱狂: '800+', 高額: '600+', アクティブ: '400+', ライト: '<400' }
-      });
-      
+
       setUserHeatData({
         heatScore: finalScore,
         heatLevel: level,
@@ -779,12 +765,17 @@ export default function TipApp() {
 
 
   return (
-    <main 
-      style={{ 
-        minHeight: "100vh", 
-        background: bgGradient || "#0b1620", 
-        color: "#fff", 
-        display: "grid", 
+    <main
+      style={{
+        minHeight: "100vh",
+        background: bgGradient || "#0b1620",
+        backgroundImage: bgGradient ? 'none' : `url(${customBgImage})`,
+        backgroundSize: bgGradient ? "initial" : "cover",
+        backgroundPosition: bgGradient ? "initial" : "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        color: "#fff",
+        display: "grid",
         gridTemplateRows: "auto 1fr auto", 
         padding: "24px 12px 20px",
         transition: "background 0.8s ease",

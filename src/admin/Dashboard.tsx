@@ -377,21 +377,7 @@ export default function AdminDashboard() {
           const lookback = OPTIMIZED_LOOKBACK[period];
           fb = BigInt(Math.max(0, latest - lookback));
         }
-        
-        const blockRange = latest - Number(fb);
-        console.log("⚡ Optimized block range calculated:", {
-          period,
-          latestBlock: latest,
-          lookbackBlocks: period === "all" ? MAX_BLOCK_RANGE : OPTIMIZED_LOOKBACK[period],
-          fromBlock: fb.toString(),
-          blockRange,
-          estimatedDataLoad: period === "all" ? "Heavy (Protected)" : 
-                           period === "month" ? "Medium" : "Light",
-          estimatedLoadTime: blockRange < 50000 ? "Fast (<2s)" : 
-                           blockRange < 200000 ? "Medium (2-10s)" : "Heavy (>10s)",
-          optimizedForSpeed: true
-        });
-        
+
         if (!cancelled) setFromBlock(fb);
       } catch (e: any) {
         console.error("❌ Block range calculation failed:", e);
@@ -421,24 +407,7 @@ export default function AdminDashboard() {
           period
         });
 
-        // ⚡ パフォーマンス最適化: 期間に応じた適切なブロック範囲
-        const currentBlock = await getLatestBlockNumber();
-        const actualFromBlock = Number(fromBlock);
         const finalFromBlockHex = "0x" + fromBlock.toString(16);
-        const blockRangeSize = currentBlock - actualFromBlock;
-        
-        console.log("⚡ Optimized log fetch:", {
-          message: "期間別最適化されたTipイベント検索",
-          period,
-          fromBlock: fromBlock.toString(),
-          currentBlock,
-          blockRangeSize,
-          estimatedLoadTime: blockRangeSize < 50000 ? "Fast (<2s)" : 
-                           blockRangeSize < 200000 ? "Medium (2-10s)" : "Heavy (>10s)",
-          performanceLevel: blockRangeSize < 50000 ? "Excellent" : 
-                          blockRangeSize < 200000 ? "Good" : "Acceptable",
-          rpcStrategy: "Public RPC優先 + Alchemy補完"
-        });
 
         const logRequest = {
           address: CONTRACT_ADDRESS,
@@ -448,11 +417,6 @@ export default function AdminDashboard() {
         };
         
                 const logs: any[] = await rpc("eth_getLogs", [logRequest]);
-        
-        console.log("📊 Raw logs received:", {
-          count: logs.length,
-          logs: logs.slice(0, 3) // 最初の3件のみ表示
-        });
 
         const items: TipItem[] = logs.map((log) => {
           const topic1: string = log.topics?.[1] || "0x";
@@ -1119,9 +1083,19 @@ export default function AdminDashboard() {
   // リワードUI管理ページコンポーネント
   const RewardUIManagementPage = () => {
     const [editingAds, setEditingAds] = useState<AdData[]>(adManagementData);
+    const [rewardBgImage, setRewardBgImage] = useState<string>(() => {
+      return localStorage.getItem('reward-bg-image') || '';
+    });
 
     const handleSave = () => {
       saveAdData(editingAds);
+      // 背景画像も保存
+      if (rewardBgImage) {
+        localStorage.setItem('reward-bg-image', rewardBgImage);
+      } else {
+        localStorage.removeItem('reward-bg-image');
+      }
+      alert('✅ 設定を保存しました！');
     };
 
     const updateAd = (index: number, field: 'src' | 'href', value: string) => {
@@ -1311,12 +1285,18 @@ export default function AdminDashboard() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // Supabaseに画像をアップロード
-                      const imageUrl = await uploadImage(file, 'ad-images');
-                      if (imageUrl) {
-                        updateAd(index, 'src', imageUrl);
-                      } else {
-                        alert('画像のアップロードに失敗しました。');
+                      try {
+                        // Supabaseに画像をアップロード（PUBLICバケットを使用）
+                        const imageUrl = await uploadImage(file, 'PUBLIC');
+                        if (imageUrl) {
+                          updateAd(index, 'src', imageUrl);
+                          alert('✅ 画像のアップロードが完了しました！');
+                        } else {
+                          alert('❌ 画像のアップロードに失敗しました。');
+                        }
+                      } catch (error: any) {
+                        console.error('画像アップロードエラー:', error);
+                        alert(`❌ 画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
                       }
                     }
                   }}
@@ -1335,7 +1315,7 @@ export default function AdminDashboard() {
                     width: "100%"
                   }}
                 >
-                  📁 ローカルから画像を選択
+                  📁 ファイルを選択
                 </button>
               </div>
               
@@ -1380,7 +1360,7 @@ export default function AdminDashboard() {
               ➕ 広告スロット追加
             </button>
           )}
-          
+
           <button
             onClick={handleSave}
             style={{
@@ -1398,6 +1378,149 @@ export default function AdminDashboard() {
           </button>
         </div>
 
+        {/* 背景画像設定セクション */}
+        <div style={{ marginTop: 32, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 Reward UI 背景画像設定</h3>
+          <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
+            <li>Reward UI の背景画像を設定できます</li>
+            <li>設定しない場合は、デフォルト背景画像が表示されます</li>
+            <li>デフォルト背景: <code style={{ padding: "2px 6px", background: "rgba(255,255,255,.1)", borderRadius: 4 }}>/ui-wallpaper.png</code></li>
+          </ul>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+              背景画像URL:
+            </label>
+            <input
+              type="text"
+              value={rewardBgImage}
+              onChange={(e) => setRewardBgImage(e.target.value)}
+              placeholder="/ui-wallpaper.png（デフォルト）または画像URLを入力"
+              style={{
+                width: "100%",
+                padding: 8,
+                background: "rgba(255,255,255,.1)",
+                border: "1px solid rgba(255,255,255,.2)",
+                borderRadius: 4,
+                color: "#fff",
+                fontSize: 14,
+                marginBottom: 8
+              }}
+            />
+            <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>
+              ※ 画像ファイルを選択してSupabaseにアップロードすることもできます
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              id="reward-bg-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  try {
+                    const imageUrl = await uploadImage(file, 'PUBLIC');
+                    if (imageUrl) {
+                      setRewardBgImage(imageUrl);
+                      alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
+                    } else {
+                      alert('❌ 背景画像のアップロードに失敗しました。');
+                    }
+                  } catch (error: any) {
+                    console.error('背景画像アップロードエラー:', error);
+                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                  }
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('reward-bg-upload')?.click()}
+              style={{
+                padding: "10px 16px",
+                background: "#7c3aed",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                fontSize: 14,
+                cursor: "pointer",
+                width: "100%"
+              }}
+            >
+              📁 ファイルを選択
+            </button>
+          </div>
+
+          {/* プレビュー */}
+          {rewardBgImage && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>プレビュー:</div>
+              <div style={{
+                width: "100%",
+                height: 200,
+                background: `url(${rewardBgImage}) center/cover`,
+                borderRadius: 8,
+                border: "2px solid rgba(255,255,255,.2)"
+              }} />
+            </div>
+          )}
+        </div>
+
+        {/* Reward UI URL表示セクション */}
+        <div style={{ marginTop: 32, padding: 16, background: "rgba(124, 58, 237, 0.1)", border: "1px solid rgba(124, 58, 237, 0.3)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🔗 Reward UI ページURL</h3>
+          <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>
+            このURLをユーザーに共有してください
+          </div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="text"
+              value={typeof window !== 'undefined' ? `${window.location.origin}/reward` : '/reward'}
+              readOnly
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.9)',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(124, 58, 237, 0.4)',
+                borderRadius: 6,
+                fontFamily: 'monospace',
+                outline: 'none'
+              }}
+            />
+            <button
+              onClick={() => {
+                const url = typeof window !== 'undefined' ? `${window.location.origin}/reward` : '/reward';
+                navigator.clipboard.writeText(url);
+                const btn = document.activeElement as HTMLButtonElement;
+                if (btn) {
+                  const originalText = btn.textContent;
+                  btn.textContent = '✓ コピー完了';
+                  setTimeout(() => {
+                    btn.textContent = originalText;
+                  }, 1500);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#fff',
+                background: 'rgba(124, 58, 237, 0.8)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              📋 コピー
+            </button>
+          </div>
+        </div>
 
       </div>
     );
@@ -1601,27 +1724,190 @@ export default function AdminDashboard() {
 
   // ---- Tip UI管理ページ ----
   const TipUIManagementPage = () => {
+    const [tipBgImage, setTipBgImage] = useState<string>(() => {
+      return localStorage.getItem('tip-bg-image') || '';
+    });
+
+    const handleSaveTipBg = () => {
+      if (tipBgImage) {
+        localStorage.setItem('tip-bg-image', tipBgImage);
+      } else {
+        localStorage.removeItem('tip-bg-image');
+      }
+      alert('✅ TIP UI背景画像の設定を保存しました！');
+    };
+
     return (
       <div style={{
+        width: "min(800px, 96vw)",
+        margin: "20px auto",
+        background: "rgba(255,255,255,.04)",
+        borderRadius: 12,
         padding: 24,
       }}>
         <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          💸 Tip UI 管理
+          💸 TIP UI 総合管理
         </h2>
-        
-        <div style={{ 
-          padding: 40, 
-          background: "rgba(255,255,255,.04)", 
-          borderRadius: 8, 
-          textAlign: "center",
-          opacity: 0.7
-        }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 18 }}>準備中</h3>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            Tip UI の管理機能は現在開発中です。<br />
-            今後のアップデートでリリース予定です。
-          </p>
+
+        {/* 背景画像設定セクション */}
+        <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 TIP UI 背景画像設定</h3>
+          <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
+            <li>TIP UI の背景画像を設定できます</li>
+            <li>設定しない場合は、デフォルト背景画像が表示されます</li>
+            <li>デフォルト背景: <code style={{ padding: "2px 6px", background: "rgba(255,255,255,.1)", borderRadius: 4 }}>/ui-wallpaper.png</code></li>
+          </ul>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
+              背景画像URL:
+            </label>
+            <input
+              type="text"
+              value={tipBgImage}
+              onChange={(e) => setTipBgImage(e.target.value)}
+              placeholder="/ui-wallpaper.png（デフォルト）または画像URLを入力"
+              style={{
+                width: "100%",
+                padding: 8,
+                background: "rgba(255,255,255,.1)",
+                border: "1px solid rgba(255,255,255,.2)",
+                borderRadius: 4,
+                color: "#fff",
+                fontSize: 14,
+                marginBottom: 8
+              }}
+            />
+            <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>
+              ※ 画像ファイルを選択してSupabaseにアップロードすることもできます
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              id="tip-bg-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  try {
+                    const imageUrl = await uploadImage(file, 'PUBLIC');
+                    if (imageUrl) {
+                      setTipBgImage(imageUrl);
+                      alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
+                    } else {
+                      alert('❌ 背景画像のアップロードに失敗しました。');
+                    }
+                  } catch (error: any) {
+                    console.error('TIP背景画像アップロードエラー:', error);
+                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                  }
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('tip-bg-upload')?.click()}
+              style={{
+                padding: "10px 16px",
+                background: "#dc2626",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                fontSize: 14,
+                cursor: "pointer",
+                width: "100%"
+              }}
+            >
+              📁 ファイルを選択
+            </button>
+          </div>
+
+          {/* プレビュー */}
+          {tipBgImage && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>プレビュー:</div>
+              <div style={{
+                width: "100%",
+                height: 200,
+                background: `url(${tipBgImage}) center/cover`,
+                borderRadius: 8,
+                border: "2px solid rgba(255,255,255,.2)"
+              }} />
+            </div>
+          )}
+
+          <button
+            onClick={handleSaveTipBg}
+            style={{
+              background: "#dc2626",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 20px",
+              fontWeight: 800,
+              cursor: "pointer",
+              marginTop: 16,
+              width: "100%"
+            }}
+          >
+            💾 保存
+          </button>
+        </div>
+
+        {/* TIP UI URL表示セクション */}
+        <div style={{ marginTop: 32, padding: 16, background: "rgba(220, 38, 38, 0.1)", border: "1px solid rgba(220, 38, 38, 0.3)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🔗 TIP UI ページURL</h3>
+          <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>
+            このURLをユーザーに共有してください
+          </div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="text"
+              value={typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip'}
+              readOnly
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: 13,
+                color: 'rgba(255,255,255,0.9)',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                borderRadius: 6,
+                fontFamily: 'monospace',
+                outline: 'none'
+              }}
+            />
+            <button
+              onClick={() => {
+                const url = typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip';
+                navigator.clipboard.writeText(url);
+                const btn = document.activeElement as HTMLButtonElement;
+                if (btn) {
+                  const originalText = btn.textContent;
+                  btn.textContent = '✓ コピー完了';
+                  setTimeout(() => {
+                    btn.textContent = originalText;
+                  }, 1500);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#fff',
+                background: 'rgba(220, 38, 38, 0.8)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              📋 コピー
+            </button>
+          </div>
         </div>
       </div>
     );
