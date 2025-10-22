@@ -199,6 +199,26 @@ export function ProductForm({
       const data = await response.json();
       console.log('✅ アップロード成功:', data);
 
+      // 古い配布ファイルを削除（差し替えの場合）
+      if (previousContentPathRef.current && previousContentPathRef.current !== data.path) {
+        console.log('🗑️ 古い配布ファイルを削除:', previousContentPathRef.current);
+        try {
+          const deleteResponse = await fetch('/api/delete/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filePath: previousContentPathRef.current })
+          });
+
+          if (deleteResponse.ok) {
+            console.log('✅ 古い配布ファイルを削除しました');
+          } else {
+            console.warn('⚠️ 古い配布ファイルの削除に失敗しました（続行します）');
+          }
+        } catch (deleteErr) {
+          console.warn('⚠️ 古い配布ファイルの削除エラー（続行します）:', deleteErr);
+        }
+      }
+
       // 非公開バケットにアップロードされたファイルパスを保存
       handleChange('contentPath', data.path);
       setCurrentFileHash(fileHash);
