@@ -42,8 +42,14 @@ export default async function handler(
     console.log('🔑 ダウンロードトークン検証:', token);
 
     // トークンを検証して消費
-    const { data: tokenData, error: tokenError } = await supabase
+    const { data: tokenDataRaw, error: tokenError } = await supabase
       .rpc('consume_download_token', { p_token: token });
+
+    console.log('🔍 [DEBUG] RPC結果:', {
+      tokenDataRaw,
+      isArray: Array.isArray(tokenDataRaw),
+      length: Array.isArray(tokenDataRaw) ? tokenDataRaw.length : 'N/A'
+    });
 
     if (tokenError) {
       console.error('❌ トークン検証エラー:', tokenError);
@@ -59,7 +65,14 @@ export default async function handler(
       return res.status(400).json({ error: 'トークンが無効です' });
     }
 
-    if (!tokenData) {
+    // RETURNS TABLE は配列として返される
+    const tokenData = Array.isArray(tokenDataRaw) ? tokenDataRaw[0] : tokenDataRaw;
+
+    if (!tokenData || !tokenData.product_id) {
+      console.error('❌ トークンデータが不正:', {
+        tokenData,
+        hasProductId: !!tokenData?.product_id
+      });
       return res.status(404).json({ error: 'トークンが見つかりません' });
     }
 
