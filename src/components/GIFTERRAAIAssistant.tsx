@@ -24,6 +24,40 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
   const [kodomiProfile, setKodomiProfile] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // URLをリンク化する関数
+  const linkifyUrls = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#60a5fa',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#93c5fd';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#60a5fa';
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   // 自動スクロール
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,19 +94,52 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     loadProfile();
   }, [walletAddress]);
 
-  // 初期メッセージ設定
+  // チャット履歴の復元（localStorage から）
   useEffect(() => {
-    if (messages.length === 0) {
-      const greeting: Message = {
-        role: 'assistant',
-        content: autoOpenContext === 'CLAIM_FAILED'
-          ? '申し訳ございません。特典の受け取りに問題が発生した可能性があります。\n\nどのような状況かお聞かせいただけますか？履歴を確認して、すぐにサポートいたします。'
-          : 'こんにちは！ギフティです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
-        timestamp: new Date()
-      };
-      setMessages([greeting]);
+    if (!walletAddress) return;
+
+    const storageKey = `gifterra_chat_${walletAddress}`;
+    const saved = localStorage.getItem(storageKey);
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // タイムスタンプを Date オブジェクトに変換
+        const restored: Message[] = parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        console.log('💬 チャット履歴を復元:', restored.length, '件');
+        setMessages(restored);
+        return;
+      } catch (error) {
+        console.warn('⚠️ チャット履歴の復元に失敗:', error);
+      }
     }
-  }, [autoOpenContext]);
+
+    // 保存された履歴がない場合は初期メッセージを設定
+    const greeting: Message = {
+      role: 'assistant',
+      content: autoOpenContext === 'CLAIM_FAILED'
+        ? '申し訳ございません。特典の受け取りに問題が発生した可能性があります。\n\nどのような状況かお聞かせいただけますか？履歴を確認して、すぐにサポートいたします。'
+        : 'こんにちは！ギフティです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
+      timestamp: new Date()
+    };
+    setMessages([greeting]);
+  }, [walletAddress, autoOpenContext]);
+
+  // チャット履歴の保存（localStorage へ）
+  useEffect(() => {
+    if (!walletAddress || messages.length === 0) return;
+
+    const storageKey = `gifterra_chat_${walletAddress}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+      console.log('💾 チャット履歴を保存:', messages.length, '件');
+    } catch (error) {
+      console.warn('⚠️ チャット履歴の保存に失敗:', error);
+    }
+  }, [messages, walletAddress]);
 
   // メッセージ送信
   const handleSend = async () => {
@@ -294,7 +361,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
                 wordBreak: 'break-word'
               }}
             >
-              {msg.content}
+              {linkifyUrls(msg.content)}
             </div>
           </div>
         ))}

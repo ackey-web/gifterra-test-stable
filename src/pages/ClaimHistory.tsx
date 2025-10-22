@@ -15,7 +15,7 @@ interface Claim {
   txHash: string;
   amountWei: string;
   claimedAt: string;
-  status: 'completed' | 'expired' | 'available' | 'pending';
+  status: 'completed' | 'expired' | 'available' | 'pending' | 'failed';
   statusLabel: string;
   hasValidToken: boolean;
   tokenExpiresAt: string | null;
@@ -241,10 +241,12 @@ export default function ClaimHistory() {
                                 background: claim.status === 'completed' ? 'rgba(16, 185, 129, 0.2)'
                                   : claim.status === 'available' ? 'rgba(59, 130, 246, 0.2)'
                                   : claim.status === 'expired' ? 'rgba(245, 158, 11, 0.2)'
+                                  : claim.status === 'failed' ? 'rgba(239, 68, 68, 0.2)'
                                   : 'rgba(107, 114, 128, 0.2)',
                                 color: claim.status === 'completed' ? '#10b981'
                                   : claim.status === 'available' ? '#3b82f6'
                                   : claim.status === 'expired' ? '#f59e0b'
+                                  : claim.status === 'failed' ? '#ef4444'
                                   : '#6b7280'
                               }}
                             >
@@ -256,8 +258,63 @@ export default function ClaimHistory() {
                             チップ額: <strong>{Math.floor(Number(amountInTokens))} tNHT</strong>
                           </div>
 
-                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12, wordBreak: 'break-all' }}>
-                            TX: {claim.txHash}
+                          {/* トランザクションハッシュ（コピー機能付き） */}
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
+                              トランザクションハッシュ
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={claim.txHash}
+                                readOnly
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 10px',
+                                  fontSize: 11,
+                                  color: 'rgba(255,255,255,0.8)',
+                                  background: 'rgba(255,255,255,0.05)',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  borderRadius: 6,
+                                  fontFamily: 'monospace',
+                                  outline: 'none'
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(claim.txHash);
+                                  // 簡易フィードバック
+                                  const btn = document.activeElement as HTMLButtonElement;
+                                  if (btn) {
+                                    const originalText = btn.textContent;
+                                    btn.textContent = '✓';
+                                    setTimeout(() => {
+                                      btn.textContent = originalText;
+                                    }, 1000);
+                                  }
+                                }}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: '#fff',
+                                  background: 'rgba(59, 130, 246, 0.8)',
+                                  border: 'none',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
+                                }}
+                              >
+                                コピー
+                              </button>
+                            </div>
                           </div>
 
                           {/* アクション */}
@@ -326,6 +383,20 @@ export default function ClaimHistory() {
                                 color: '#10b981'
                               }}>
                                 ダウンロード完了済み
+                              </div>
+                            )}
+
+                            {claim.status === 'failed' && (
+                              <div style={{
+                                padding: '10px 16px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                borderRadius: 8,
+                                fontSize: 13,
+                                color: '#ef4444',
+                                lineHeight: 1.5
+                              }}>
+                                トランザクションが失敗しました。<br />
+                                ギフティにお問い合わせください。
                               </div>
                             )}
                           </div>
