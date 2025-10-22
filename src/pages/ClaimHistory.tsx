@@ -35,6 +35,10 @@ export default function ClaimHistory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ページネーション
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // 受け取り履歴を取得
   useEffect(() => {
     if (!address) {
@@ -118,6 +122,18 @@ export default function ClaimHistory() {
     return `残り ${minutes}分`;
   };
 
+  // ページネーション計算
+  const totalPages = Math.ceil(claims.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentClaims = claims.slice(startIndex, endIndex);
+
+  // ページ変更時にトップにスクロール
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding: '40px 20px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -186,12 +202,17 @@ export default function ClaimHistory() {
               </div>
             ) : (
               <>
-                <div style={{ marginBottom: 20, color: '#fff', fontSize: 14, opacity: 0.8 }}>
-                  合計 {claims.length} 件の受け取り
+                <div style={{ marginBottom: 20, color: '#fff', fontSize: 14, opacity: 0.8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>合計 {claims.length} 件の受け取り</div>
+                  {totalPages > 1 && (
+                    <div style={{ fontSize: 13 }}>
+                      ページ {currentPage} / {totalPages}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {claims.map((claim) => {
+                  {currentClaims.map((claim) => {
                     const amountInTokens = formatUnits(BigInt(claim.amountWei), TOKEN.DECIMALS);
 
                     return (
@@ -405,6 +426,83 @@ export default function ClaimHistory() {
                     );
                   })}
                 </div>
+
+                {/* ページネーション */}
+                {totalPages > 1 && (
+                  <div style={{
+                    marginTop: 32,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 12
+                  }}>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '10px 20px',
+                        background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.8)',
+                        color: currentPage === 1 ? 'rgba(255,255,255,0.3)' : '#fff',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== 1) {
+                          e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
+                        }
+                      }}
+                    >
+                      ← 前へ
+                    </button>
+
+                    <div style={{
+                      color: '#fff',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      minWidth: 80,
+                      textAlign: 'center'
+                    }}>
+                      {currentPage} / {totalPages}
+                    </div>
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      style={{
+                        padding: '10px 20px',
+                        background: currentPage === totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.8)',
+                        color: currentPage === totalPages ? 'rgba(255,255,255,0.3)' : '#fff',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== totalPages) {
+                          e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
+                        }
+                      }}
+                    >
+                      次へ →
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </>
