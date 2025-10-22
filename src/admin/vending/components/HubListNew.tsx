@@ -1,6 +1,8 @@
 // src/admin/vending/components/HubListNew.tsx
 // 左カラム：GIFT HUB一覧
+import { useState, useEffect } from 'react';
 import type { VendingMachine } from '../../../types/vending';
+import { supabase } from '../../../lib/supabase';
 
 interface HubListNewProps {
   machines: VendingMachine[];
@@ -17,6 +19,35 @@ export function HubListNew({
   onAddNew,
   onDeleteMachine
 }: HubListNewProps) {
+  // 各GIFT HUBの商品数を管理
+  const [productCounts, setProductCounts] = useState<Record<string, number>>({});
+
+  // 全GIFT HUBの商品数を取得
+  useEffect(() => {
+    const fetchProductCounts = async () => {
+      const counts: Record<string, number> = {};
+
+      for (const machine of machines) {
+        const tenantId = machine.id;
+        const { data, error } = await supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true);
+
+        if (!error) {
+          counts[tenantId] = data?.length || 0;
+        }
+      }
+
+      setProductCounts(counts);
+    };
+
+    if (machines.length > 0) {
+      fetchProductCounts();
+    }
+  }, [machines]);
+
   return (
     <div
       style={{
@@ -102,7 +133,7 @@ export function HubListNew({
                     {machine.name}
                   </div>
                   <div style={{ fontSize: 13, opacity: 0.7 }}>
-                    特典: {machine.products?.length || 0}件
+                    特典: {productCounts[machine.id] || 0}件
                   </div>
                   {machine.isActive ? (
                     <span style={{
