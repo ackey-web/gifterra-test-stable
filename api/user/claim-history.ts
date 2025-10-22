@@ -16,6 +16,14 @@ interface ClaimHistoryRequest {
   message?: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  price_amount_wei: string;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -111,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Step 5: データを結合
-    const productsMap = new Map(products?.map(p => [p.id, p]) || []);
+    const productsMap = new Map<string, Product>(products?.map(p => [p.id, p]) || []);
     const tokensMap = new Map<string, any[]>();
 
     // purchase_idごとにトークンをグループ化
