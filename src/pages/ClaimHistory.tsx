@@ -61,7 +61,13 @@ export default function ClaimHistory() {
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ APIエラー詳細:', errorData);
+
+        const errorMessage = errorData.error || `API Error: ${response.status}`;
+        const errorDetails = errorData.details || errorData.code;
+
+        throw new Error(errorDetails ? `${errorMessage} (${errorDetails})` : errorMessage);
       }
 
       const data: ClaimHistoryResponse = await response.json();
