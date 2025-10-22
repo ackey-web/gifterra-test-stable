@@ -90,6 +90,12 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
 
     try {
       // AI APIに送信
+      console.log('🤖 ギフティAPI呼び出し:', {
+        endpoint: '/api/ai/chat',
+        walletAddress,
+        message: userMessage.content
+      });
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,11 +107,28 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         })
       });
 
+      console.log('📡 API レスポンス:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        // エラーレスポンスの詳細を取得
+        let errorDetail = '';
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.error || JSON.stringify(errorData);
+        } catch (e) {
+          errorDetail = await response.text();
+        }
+
+        console.error('❌ API エラー詳細:', errorDetail);
+        throw new Error(`API Error ${response.status}: ${errorDetail}`);
       }
 
       const data = await response.json();
+      console.log('✅ API レスポンスデータ:', data);
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -116,9 +139,16 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('❌ AI応答エラー:', error);
+
+      // デバッグ用：エラー詳細をユーザーにも表示
+      const errorDetail = error instanceof Error ? error.message : String(error);
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
       const errorMessage: Message = {
         role: 'assistant',
-        content: '申し訳ございません。一時的にエラーが発生しました。しばらく経ってから再度お試しください。',
+        content: isDevelopment
+          ? `🔧 デバッグモード\n\nエラー詳細:\n${errorDetail}\n\n原因の可能性：\n1. Vercel環境変数 OPENAI_API_KEY が未設定\n2. APIエンドポイントが正しくデプロイされていない\n3. OpenAI APIキーが無効`
+          : '申し訳ございません。一時的にエラーが発生しました。\n\nブラウザのコンソールログ（F12キー）をご確認いただくか、しばらく経ってから再度お試しください。',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
