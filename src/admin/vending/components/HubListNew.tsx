@@ -135,6 +135,9 @@ export function HubListNew({
                   <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
                     {machine.name}
                   </div>
+                  <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+                    📍 {machine.location}
+                  </div>
                   <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>
                     特典: {productCounts[machine.id] || 0}件 | トークン: {machine.settings?.tokenSymbol || 'tNHT'}
                   </div>
