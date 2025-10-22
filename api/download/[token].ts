@@ -63,7 +63,10 @@ export default async function handler(
       return res.status(404).json({ error: 'トークンが見つかりません' });
     }
 
-    console.log('✅ トークン検証成功:', tokenData);
+    console.log('✅ トークン検証成功:', {
+      product_id: tokenData.product_id,
+      buyer: tokenData.buyer
+    });
 
     // 商品情報を取得
     const { data: product, error: productError } = await supabase
@@ -73,23 +76,54 @@ export default async function handler(
       .single();
 
     if (productError || !product) {
-      console.error('❌ 商品が見つかりません:', productError);
-      return res.status(404).json({ error: '商品が見つかりません' });
+      console.error('❌ 商品が見つかりません:', {
+        product_id: tokenData.product_id,
+        error: productError,
+        errorMessage: productError?.message,
+        errorCode: productError?.code,
+        errorDetails: productError?.details
+      });
+      return res.status(404).json({
+        error: '商品が見つかりません',
+        details: productError?.message,
+        product_id: tokenData.product_id
+      });
     }
 
-    console.log('✅ 商品情報取得:', product.content_path);
+    console.log('✅ 商品情報取得:', {
+      product_id: tokenData.product_id,
+      content_path: product.content_path
+    });
 
     // 非公開バケット（gh-downloads）から署名URL（10分間有効）を生成
+    console.log('📦 署名URL生成開始:', {
+      bucket: bucket('DOWNLOADS'),
+      content_path: product.content_path
+    });
+
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(bucket('DOWNLOADS'))
       .createSignedUrl(product.content_path, 600); // 600秒 = 10分
 
     if (signedUrlError || !signedUrlData || !signedUrlData.signedUrl) {
-      console.error('❌ 署名URL生成失敗:', signedUrlError);
-      return res.status(500).json({ error: 'ダウンロードURLの生成に失敗しました' });
+      console.error('❌ 署名URL生成失敗:', {
+        bucket: bucket('DOWNLOADS'),
+        content_path: product.content_path,
+        error: signedUrlError,
+        errorMessage: signedUrlError?.message,
+        signedUrlData
+      });
+      return res.status(500).json({
+        error: 'ダウンロードURLの生成に失敗しました',
+        details: signedUrlError?.message,
+        bucket: bucket('DOWNLOADS'),
+        path: product.content_path
+      });
     }
 
-    console.log('✅ 署名URL生成成功（有効期限: 10分）');
+    console.log('✅ 署名URL生成成功（有効期限: 10分）:', {
+      signedUrl: signedUrlData.signedUrl.substring(0, 100) + '...'
+    });
 
     // 302リダイレクト
     return res.redirect(302, signedUrlData.signedUrl);
