@@ -10,6 +10,7 @@ interface HubListNewProps {
   onSelectMachine: (machineId: string) => void;
   onAddNew: () => void;
   onDeleteMachine?: (machineId: string) => void;
+  refreshTrigger?: number; // 特典数をリフレッシュするためのトリガー
 }
 
 export function HubListNew({
@@ -17,7 +18,8 @@ export function HubListNew({
   selectedMachineId,
   onSelectMachine,
   onAddNew,
-  onDeleteMachine
+  onDeleteMachine,
+  refreshTrigger
 }: HubListNewProps) {
   // 各GIFT HUBの商品数を管理
   const [productCounts, setProductCounts] = useState<Record<string, number>>({});
@@ -40,13 +42,14 @@ export function HubListNew({
         }
       }
 
+      console.log('🔢 [HubListNew] 特典数を更新:', counts);
       setProductCounts(counts);
     };
 
     if (machines.length > 0) {
       fetchProductCounts();
     }
-  }, [machines]);
+  }, [machines, refreshTrigger]); // refreshTriggerを依存配列に追加
 
   return (
     <div

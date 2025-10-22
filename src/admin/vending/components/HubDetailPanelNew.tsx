@@ -14,6 +14,7 @@ interface HubDetailPanelNewProps {
   onSave?: () => void;
   onToggleActive?: () => void;
   onUpdateMachine?: (updates: Partial<VendingMachine>) => void;
+  onProductChange?: () => void; // 特典追加/削除時のコールバック
 }
 
 type TabType = 'settings' | 'design' | 'products' | 'preview';
@@ -24,7 +25,8 @@ export function HubDetailPanelNew({
   machine,
   onSave,
   onToggleActive,
-  onUpdateMachine
+  onUpdateMachine,
+  onProductChange
 }: HubDetailPanelNewProps) {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     // リダイレクト用に保存されたタブがあればそれを使用
@@ -124,6 +126,9 @@ export function HubDetailPanelNew({
       handleCloseModal();
       await refetch();
 
+      // 特典数をリフレッシュ
+      onProductChange?.();
+
       // Productsタブに切り替え
       setActiveTab('products');
     } catch (err) {
@@ -160,6 +165,9 @@ export function HubDetailPanelNew({
       // データを再取得
       await refetch();
       console.log('✅ [HubDetailPanel] refetch完了');
+
+      // 特典数をリフレッシュ
+      onProductChange?.();
     } catch (err) {
       console.error('❌ [HubDetailPanel] 商品削除エラー:', err);
       alert('❌ 予期しないエラーが発生しました');
@@ -600,6 +608,35 @@ export function HubDetailPanelNew({
                 GIFT HUBページ上部にスクロール表示されるメッセージです
               </p>
             </div>
+
+            {/* 使用トークン選択 */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                使用トークン
+              </label>
+              <select
+                value={machine.settings.tokenSymbol || 'tNHT'}
+                onChange={(e) => onUpdateMachine?.({
+                  settings: { ...machine.settings, tokenSymbol: e.target.value as 'tNHT' | 'JPYC' }
+                })}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14,
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="tNHT" style={{ background: '#1a1a2e', color: '#fff' }}>tNHT (Testnet)</option>
+                <option value="JPYC" disabled style={{ background: '#1a1a2e', color: '#6B7280' }}>JPYC (近日予定)</option>
+              </select>
+              <p style={{ margin: '8px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                このGIFT HUBでチップに使用するトークンを選択してください
+              </p>
+            </div>
           </div>
         )}
 
@@ -928,6 +965,7 @@ export function HubDetailPanelNew({
               onSubmit={handleSubmitProduct}
               onCancel={handleCloseModal}
               isSubmitting={isSubmitting}
+              tokenSymbol={machine?.settings?.tokenSymbol || 'tNHT'}
             />
           </div>
         </div>

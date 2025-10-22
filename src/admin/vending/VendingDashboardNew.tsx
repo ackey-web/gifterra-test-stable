@@ -31,6 +31,7 @@ const VendingDashboardNew: React.FC = () => {
   });
 
   const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0); // 特典数リフレッシュ用トリガー
 
   // localStorageに保存（既存ロジック維持）
   useEffect(() => {
@@ -215,6 +216,7 @@ const VendingDashboardNew: React.FC = () => {
           onSelectMachine={handleSelectMachine}
           onAddNew={handleAddMachine}
           onDeleteMachine={handleDeleteMachine}
+          refreshTrigger={refreshTrigger}
         />
 
         {/* 右カラム：詳細パネル */}
@@ -223,6 +225,7 @@ const VendingDashboardNew: React.FC = () => {
           onSave={handleSave}
           onToggleActive={handleToggleActive}
           onUpdateMachine={handleUpdateMachine}
+          onProductChange={() => setRefreshTrigger(prev => prev + 1)}
         />
       </div>
 
