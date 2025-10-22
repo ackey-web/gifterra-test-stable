@@ -57,31 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('📊 受け取り履歴取得:', walletAddress);
 
-    // 受け取り履歴を取得（purchasesテーブル + productsテーブル + download_tokensテーブル）
+    // Step 1: purchasesテーブルから購入履歴を取得
     const { data: purchases, error: purchasesError } = await supabase
       .from('purchases')
-      .select(`
-        id,
-        product_id,
-        buyer,
-        tx_hash,
-        amount_wei,
-        created_at,
-        products (
-          id,
-          name,
-          description,
-          image_url,
-          price_amount_wei
-        ),
-        download_tokens (
-          token,
-          is_consumed,
-          expires_at,
-          consumed_at,
-          created_at
-        )
-      `)
+      .select('id, product_id, buyer, tx_hash, amount_wei, created_at')
       .eq('buyer', walletAddress)
       .order('created_at', { ascending: false });
 
@@ -105,14 +84,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Step 2: product_idのリストを取得
+    const productIds = [...new Set(purchases.map(p => p.product_id))];
+
+    // Step 3: productsテーブルから商品情報を取得
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, description, image_url, price_amount_wei')
+      .in('id', productIds);
+
+    if (productsError) {
+      console.error('❌ 商品情報取得エラー:', productsError);
+      // 商品情報が取得できなくても続行（商品名を「不明」にする）
+    }
+
+    // Step 4: purchase_idのリストでダウンロードトークンを取得
+    const purchaseIds = purchases.map(p => p.id);
+    const { data: tokens, error: tokensError } = await supabase
+      .from('download_tokens')
+      .select('purchase_id, token, is_consumed, expires_at, consumed_at, created_at')
+      .in('purchase_id', purchaseIds);
+
+    if (tokensError) {
+      console.error('❌ トークン情報取得エラー:', tokensError);
+      // トークン情報が取得できなくても続行（ステータスを「処理中」にする）
+    }
+
+    // Step 5: データを結合
+    const productsMap = new Map(products?.map(p => [p.id, p]) || []);
+    const tokensMap = new Map<string, any[]>();
+
+    // purchase_idごとにトークンをグループ化
+    tokens?.forEach(token => {
+      const purchaseId = token.purchase_id;
+      if (!tokensMap.has(purchaseId)) {
+        tokensMap.set(purchaseId, []);
+      }
+      tokensMap.get(purchaseId)!.push(token);
+    });
+
     // 受け取り履歴を整形
     const formattedClaims = purchases?.map(purchase => {
-      const product = Array.isArray(purchase.products) ? purchase.products[0] : purchase.products;
-      const tokens = Array.isArray(purchase.download_tokens) ? purchase.download_tokens : [purchase.download_tokens].filter(Boolean);
+      // 商品情報を取得
+      const product = productsMap.get(purchase.product_id);
+
+      // このpurchase_idに紐づくトークンを取得
+      const purchaseTokens = tokensMap.get(purchase.id) || [];
 
       // 最新のトークンを取得
-      const latestToken = tokens.length > 0
-        ? tokens.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+      const latestToken = purchaseTokens.length > 0
+        ? purchaseTokens.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
         : null;
 
       // ステータス判定
