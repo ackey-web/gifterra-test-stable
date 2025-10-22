@@ -9,6 +9,8 @@ import { purchaseProduct, type Product } from "../lib/purchase";
 import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
 import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
+import PurchaseConfirmDialog from "./components/PurchaseConfirmDialog";
+import PurchaseCompleteAnimation from "./components/PurchaseCompleteAnimation";
 
 export default function VendingApp() {
   const address = useAddress();
@@ -55,6 +57,10 @@ export default function VendingApp() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
+  // 確認ダイアログと完了アニメーション用のState
+  const [confirmingProduct, setConfirmingProduct] = useState<typeof supabaseProducts[0] | null>(null);
+  const [completedPurchase, setCompletedPurchase] = useState<{product: typeof supabaseProducts[0], downloadUrl: string} | null>(null);
+
   // ヘッダー画像を取得（管理画面で設定）
   const headerImage = vendingMachine?.settings?.design?.headerImage;
 
@@ -83,7 +89,7 @@ export default function VendingApp() {
     fetchBalance();
   }, [address]);
 
-  const handleProductSelect = async (productId: string) => {
+  const handleProductSelect = (productId: string) => {
     // ウォレット接続チェック
     if (!address) {
       alert("ウォレットを接続してください");
@@ -108,6 +114,25 @@ export default function VendingApp() {
       return;
     }
 
+    // 確認ダイアログを表示
+    setConfirmingProduct(product);
+  };
+
+  // 確認ダイアログでキャンセルされた場合
+  const handleConfirmCancel = () => {
+    setConfirmingProduct(null);
+  };
+
+  // 確認ダイアログで確認された場合 - 実際の購入処理を実行
+  const handleConfirmPurchase = async () => {
+    if (!confirmingProduct || !address) return;
+
+    const product = confirmingProduct;
+    const productId = product.id;
+
+    // ダイアログを閉じる
+    setConfirmingProduct(null);
+
     // 受け取り処理開始
     setIsPurchasing(true);
     setSelectedProducts((prev) => [...prev, productId]);
@@ -131,7 +156,7 @@ export default function VendingApp() {
       if (result.success) {
         if (result.downloadUrl) {
           // 受け取り成功 - ダウンロードURLを取得済み特典に追加
-          const downloadUrl = result.downloadUrl; // 型を確定させる
+          const downloadUrl = result.downloadUrl;
           setPurchasedProducts((prev) => [
             ...prev,
             {
@@ -141,7 +166,11 @@ export default function VendingApp() {
             }
           ]);
 
-          alert(`受け取り完了！「${product.name}」が特典取り出し口に追加されました。`);
+          // 完了アニメーションを表示
+          setCompletedPurchase({
+            product,
+            downloadUrl
+          });
         } else {
           // ダウンロードURLが生成されなかった
           alert(`受け取りは完了しましたが、ダウンロードURLの生成に失敗しました。管理者にお問い合わせください。`);
@@ -183,6 +212,11 @@ export default function VendingApp() {
     } finally {
       setIsPurchasing(false);
     }
+  };
+
+  // 完了アニメーションを閉じる
+  const handleCompleteClose = () => {
+    setCompletedPurchase(null);
   };
 
   const handleProductHover = (product: any) => {
@@ -559,6 +593,24 @@ export default function VendingApp() {
 
       {/* ===== GIFTERRA AI アシスタント ===== */}
       <GIFTERRAAIAssistant />
+
+      {/* ===== 確認ダイアログ ===== */}
+      {confirmingProduct && (
+        <PurchaseConfirmDialog
+          product={confirmingProduct}
+          onConfirm={handleConfirmPurchase}
+          onCancel={handleConfirmCancel}
+        />
+      )}
+
+      {/* ===== 購入完了アニメーション ===== */}
+      {completedPurchase && (
+        <PurchaseCompleteAnimation
+          product={completedPurchase.product}
+          downloadUrl={completedPurchase.downloadUrl}
+          onClose={handleCompleteClose}
+        />
+      )}
     </VendingMachineShell>
   );
 }
