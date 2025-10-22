@@ -57,7 +57,7 @@ export function HubDetailPanelNew({
     tenantId
   });
 
-  const { products, isLoading, error } = useSupabaseProducts({ tenantId, isActive: true });
+  const { products, isLoading, error, refetch } = useSupabaseProducts({ tenantId, isActive: true });
 
   // 新規商品追加モーダルを開く
   const handleAddProduct = () => {
@@ -120,16 +120,12 @@ export function HubDetailPanelNew({
         alert('✅ 特典を作成しました');
       }
 
-      // モーダルを閉じてリフレッシュ（useSupabaseProductsが自動的に再取得）
+      // モーダルを閉じてデータを再取得
       handleCloseModal();
+      await refetch();
 
-      // リロード後にProductsタブを開くためにlocalStorageに保存
-      localStorage.setItem(REDIRECT_TAB_KEY, 'products');
-
-      // 強制的に再レンダリングさせるため、少し待ってからページリロード
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Productsタブに切り替え
+      setActiveTab('products');
     } catch (err) {
       console.error('❌ 商品保存エラー:', err);
       alert('❌ 予期しないエラーが発生しました');
@@ -150,10 +146,8 @@ export function HubDetailPanelNew({
       }
       alert('✅ 特典を削除しました');
 
-      // 強制的に再レンダリング
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // データを再取得
+      await refetch();
     } catch (err) {
       console.error('❌ 商品削除エラー:', err);
       alert('❌ 予期しないエラーが発生しました');

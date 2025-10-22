@@ -28,46 +28,46 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      setError(null);
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        console.log('📦 Fetching products from Supabase:', { tenantId, isActive });
+    try {
+      console.log('📦 Fetching products from Supabase:', { tenantId, isActive });
 
-        let query = supabase
-          .from('products')
-          .select('*')
-          .eq('tenant_id', tenantId);
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('tenant_id', tenantId);
 
-        if (isActive !== undefined) {
-          query = query.eq('is_active', isActive);
-        }
-
-        // created_at の降順でソート
-        query = query.order('created_at', { ascending: false });
-
-        const { data, error: fetchError } = await query;
-
-        if (fetchError) {
-          console.error('❌ Failed to fetch products:', fetchError);
-          throw new Error(fetchError.message);
-        }
-
-        console.log(`✅ Fetched ${data?.length || 0} products from Supabase`);
-        setProducts(data || []);
-
-      } catch (err) {
-        console.error('❌ Error fetching products:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
+      if (isActive !== undefined) {
+        query = query.eq('is_active', isActive);
       }
-    };
 
+      // created_at の降順でソート
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) {
+        console.error('❌ Failed to fetch products:', fetchError);
+        throw new Error(fetchError.message);
+      }
+
+      console.log(`✅ Fetched ${data?.length || 0} products from Supabase`);
+      setProducts(data || []);
+
+    } catch (err) {
+      console.error('❌ Error fetching products:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProducts();
   }, [tenantId, isActive]);
 
-  return { products, isLoading, error };
+  return { products, isLoading, error, refetch: fetchProducts };
 }
