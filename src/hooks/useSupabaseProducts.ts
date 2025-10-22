@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseProducts.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface SupabaseProduct {
@@ -28,7 +28,8 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    console.log('🔄 [useSupabaseProducts] refetch開始:', { tenantId, isActive });
     setIsLoading(true);
     setError(null);
 
@@ -54,7 +55,7 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
         throw new Error(fetchError.message);
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} products from Supabase`);
+      console.log(`✅ Fetched ${data?.length || 0} products from Supabase`, data);
       setProducts(data || []);
 
     } catch (err) {
@@ -62,12 +63,13 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
+      console.log('✅ [useSupabaseProducts] refetch完了');
     }
-  };
+  }, [tenantId, isActive]);
 
   useEffect(() => {
     fetchProducts();
-  }, [tenantId, isActive]);
+  }, [fetchProducts]);
 
   return { products, isLoading, error, refetch: fetchProducts };
 }
