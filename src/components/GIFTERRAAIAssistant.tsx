@@ -232,6 +232,27 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     }
   };
 
+  // チャット履歴を削除
+  const handleClearHistory = () => {
+    if (!walletAddress) return;
+
+    const confirmed = window.confirm('チャット履歴を削除しますか？\n\nこの操作は取り消せません。');
+    if (!confirmed) return;
+
+    const storageKey = `gifterra_chat_${walletAddress}`;
+    localStorage.removeItem(storageKey);
+
+    // 初期メッセージにリセット
+    const greeting: Message = {
+      role: 'assistant',
+      content: 'こんにちは！ギフティです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
+      timestamp: new Date()
+    };
+    setMessages([greeting]);
+
+    console.log('🗑️ チャット履歴を削除しました');
+  };
+
   return (
     <div
       style={{
@@ -275,20 +296,45 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
             </div>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#fff',
-            fontSize: 24,
-            cursor: 'pointer',
-            padding: 4,
-            lineHeight: 1
-          }}
-        >
-          ×
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={handleClearHistory}
+            title="チャット履歴を削除"
+            style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#ef4444',
+              fontSize: 12,
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: 4,
+              fontWeight: 600,
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+            }}
+          >
+            🗑️
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#fff',
+              fontSize: 24,
+              cursor: 'pointer',
+              padding: 4,
+              lineHeight: 1
+            }}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Kodomi プロファイル表示 */}
