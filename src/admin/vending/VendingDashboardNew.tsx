@@ -119,12 +119,63 @@ const VendingDashboardNew: React.FC = () => {
     setMachines(updated);
   };
 
-  // GIFT HUB削除
-  const handleDeleteMachine = (machineId: string) => {
-    const updated = machines.filter(m => m.id !== machineId);
-    setMachines(updated);
-    if (selectedMachineId === machineId) {
-      setSelectedMachineId(null);
+  // GIFT HUB削除（関連商品とファイルも削除）
+  const handleDeleteMachine = async (machineId: string) => {
+    console.log('🗑️ [GIFT HUB削除] 開始:', machineId);
+
+    try {
+      // 1. このGIFT HUBに紐づく商品をすべて取得
+      const { supabase } = await import('../../lib/supabase');
+      const { data: products, error: fetchError } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('tenant_id', machineId);
+
+      if (fetchError) {
+        console.error('❌ 商品取得エラー:', fetchError);
+        alert(`エラー: 商品の取得に失敗しました\n${fetchError.message}`);
+        return;
+      }
+
+      console.log(`📦 削除対象の商品: ${products?.length || 0}件`, products);
+
+      // 2. 各商品を削除API経由で削除（ファイルも含む）
+      if (products && products.length > 0) {
+        const deletePromises = products.map(async (product) => {
+          console.log(`🗑️ 商品削除中: ${product.name} (${product.id})`);
+
+          const response = await fetch('/api/delete/product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn(`⚠️ 商品削除失敗: ${product.name}`, errorData);
+          } else {
+            console.log(`✅ 商品削除成功: ${product.name}`);
+          }
+        });
+
+        await Promise.all(deletePromises);
+        console.log('✅ すべての商品削除完了');
+      }
+
+      // 3. localStorageからGIFT HUBを削除
+      const deletedMachineName = machines.find(m => m.id === machineId)?.name;
+      const updated = machines.filter(m => m.id !== machineId);
+      setMachines(updated);
+      if (selectedMachineId === machineId) {
+        setSelectedMachineId(null);
+      }
+
+      alert(`✅ GIFT HUB「${deletedMachineName}」と関連する${products?.length || 0}件の特典を削除しました`);
+      console.log('✅ [GIFT HUB削除] 完了');
+
+    } catch (err) {
+      console.error('❌ GIFT HUB削除エラー:', err);
+      alert('GIFT HUBの削除中にエラーが発生しました');
     }
   };
 
