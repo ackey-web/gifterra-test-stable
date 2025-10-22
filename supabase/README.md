@@ -1,10 +1,10 @@
-# Supabase RLSポリシー設定手順
+# Supabase セットアップ手順
 
-## 問題の解決方法
+このドキュメントでは、GIFT HUB機能に必要なSupabaseのセットアップ手順を説明します。
 
-特典削除時に401エラーが発生する場合、以下の手順でRLSポリシーを更新してください。
+## 🚨 重要：初回セットアップ
 
-## 手順
+GIFT HUBで特典の受け取り機能を使用するには、以下のマイグレーションを**必ず実行**してください。
 
 ### 1. Supabaseダッシュボードを開く
 
@@ -14,33 +14,91 @@ https://app.supabase.com にアクセスし、プロジェクトを選択
 
 左メニューから「SQL Editor」をクリック
 
-### 3. 新規クエリを作成
+### 3. マイグレーションを順番に実行
 
-「New query」ボタンをクリック
+以下のファイルを**順番通り**に実行してください：
 
-### 4. RLSポリシー更新SQLを実行
+#### 3-1. 商品・購入履歴テーブルの作成
 
-`table-policies.sql`の内容をコピーして貼り付け、「Run」ボタンをクリック
+`supabase/migrations/001_create_products_and_purchases.sql` の内容をコピーして実行
 
-実行すると以下が行われます：
-- 既存のproductsテーブルのポリシーを削除
-- RLSを有効化
-- 新しいポリシーを作成（anon + authenticatedロールに対応）
+このSQLで以下が作成されます：
+- `products` テーブル（商品情報）
+- `purchases` テーブル（購入履歴）
+- `decrement_stock` RPC関数（在庫管理）
 
-### 5. 実行結果を確認
+#### 3-2. ダウンロードトークンテーブルの作成
 
-成功すると、以下のようなメッセージが表示されます：
+`supabase/migrations/002_create_download_tokens.sql` の内容をコピーして実行
+
+このSQLで以下が作成されます：
+- `download_tokens` テーブル（ワンタイムダウンロードトークン）
+- `create_download_token` RPC関数（トークン生成）
+- `consume_download_token` RPC関数（トークン検証・消費）
+- `cleanup_expired_tokens` RPC関数（期限切れトークン削除）
+- `get_user_purchases` RPC関数（購入履歴取得）
+
+#### 3-3. 商品画像URLカラムの追加
+
+`supabase/migrations/002_add_image_url_to_products.sql` の内容をコピーして実行
+
+このSQLで以下が追加されます：
+- `products.image_url` カラム（商品画像URL）
+
+#### 3-4. RLSポリシーの設定
+
+`supabase/table-policies.sql` の内容をコピーして実行
+
+このSQLで以下が設定されます：
+- `products` テーブルのRLSポリシー（開発環境用）
+
+#### 3-5. ストレージポリシーの設定
+
+`supabase/storage-policies.sql` の内容をコピーして実行
+
+このSQLで以下が設定されます：
+- `gh-public` バケットの作成
+- ストレージのRLSポリシー
+
+### 4. 実行結果を確認
+
+各マイグレーションが成功すると、以下のようなメッセージが表示されます：
 ```
 Success. No rows returned
 ```
 
-### 6. ブラウザをリロード
+エラーが表示された場合は、エラーメッセージを確認して修正してください。
 
-管理画面をリロードして、特典削除を再度試してください。
+---
 
-## ポリシーの内容
+## トラブルシューティング
 
-更新されたポリシーは以下の通りです：
+### 特典受け取り時に500エラーが発生する場合
+
+**エラーメッセージ**: 「ダウンロードトークンの発行に失敗しました」
+
+**原因**: `download_tokens` テーブルまたは `create_download_token` RPC関数が存在しない
+
+**解決方法**:
+1. 上記の「初回セットアップ」手順を実行
+2. 特に `002_create_download_tokens.sql` が正しく実行されているか確認
+3. Supabase Dashboard → Database → Tables で `download_tokens` テーブルが存在することを確認
+4. Supabase Dashboard → Database → Functions で `create_download_token` 関数が存在することを確認
+
+### 特典削除時に401エラーが発生する場合
+
+**エラーメッセージ**: 401 Unauthorized
+
+**原因**: RLSポリシーが `anon` ロールを許可していない
+
+**解決方法**:
+1. `supabase/table-policies.sql` の内容をSupabase SQL Editorで実行
+2. ブラウザをリロード
+3. 特典削除を再度試す
+
+### RLSポリシーの内容
+
+`table-policies.sql` で設定されるポリシー：
 
 - **SELECT**: `anon`と`authenticated`ロールがすべての商品を読み取り可能
 - **INSERT**: `anon`と`authenticated`ロールが商品を作成可能（開発環境用）
@@ -48,8 +106,6 @@ Success. No rows returned
 - **DELETE**: `anon`と`authenticated`ロールが商品を削除可能（開発環境用）
 
 **注意**: これらのポリシーは開発環境用です。本番環境では、より厳格なポリシーに変更する必要があります。
-
-## トラブルシューティング
 
 ### ポリシーが既に存在するエラー
 
@@ -71,11 +127,10 @@ ERROR: policy "products: Public Read Access" for table "products" already exists
 2. ブラウザの開発者ツールを開き、Networkタブで実際のリクエストヘッダーを確認
 3. Supabaseプロジェクトの環境変数（VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY）が正しく設定されているか確認
 
-## GIFT HUB削除ボタンについて
+### GIFT HUB削除ボタンが表示されない場合
 
-GIFT HUB削除ボタンは既に実装されています。各GIFT HUBの右側に赤い「削除」ボタンが表示されています。
+GIFT HUB削除ボタンは既に実装されています。各GIFT HUBカードの右側に赤い「削除」ボタンが表示されています。
 
 表示されていない場合：
-1. ページをリロード
-2. 別のGIFT HUBを選択してから戻る
-3. ブラウザのキャッシュをクリア
+1. ブラウザをハードリフレッシュ（Mac: `Cmd + Shift + R`, Windows: `Ctrl + Shift + R`）
+2. ブラウザのキャッシュをクリア
