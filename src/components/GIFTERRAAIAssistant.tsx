@@ -67,7 +67,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         role: 'assistant',
         content: autoOpenContext === 'CLAIM_FAILED'
           ? '申し訳ございません。特典の受け取りに問題が発生した可能性があります。\n\nどのような状況かお聞かせいただけますか？履歴を確認して、すぐにサポートいたします。'
-          : 'こんにちは！GIFTERRA AIアシスタントです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
+          : 'こんにちは！ギフティです。\n\n特典の受け取りに関するご質問や、おすすめの特典についてお答えします。お気軽にお声がけください。',
         timestamp: new Date()
       };
       setMessages([greeting]);
@@ -164,13 +164,17 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 24 }}>🤖</span>
+          <img
+            src="/gifterra-logo.png"
+            alt="ギフティ"
+            style={{ width: 32, height: 32, objectFit: 'contain' }}
+          />
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
-              GIFTERRA AI
+              ギフティ
             </div>
             <div style={{ fontSize: 12, opacity: 0.7, color: '#fff' }}>
-              特典サポートアシスタント
+              サポートアシスタント
             </div>
           </div>
         </div>
@@ -228,9 +232,23 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
             key={idx}
             style={{
               display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+              flexDirection: 'column',
+              alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'
             }}
           >
+            {/* ギフティからのメッセージにはLINE風のラベルを表示 */}
+            {msg.role === 'assistant' && (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.6)',
+                  marginBottom: 4,
+                  marginLeft: 4
+                }}
+              >
+                ギフティ
+              </div>
+            )}
             <div
               style={{
                 maxWidth: '80%',
@@ -379,12 +397,12 @@ export function GIFTERRAAIAssistant() {
             border: 'none',
             boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
             cursor: 'pointer',
-            fontSize: 28,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9998,
-            transition: 'transform 0.2s, box-shadow 0.2s'
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            padding: 10
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -395,7 +413,11 @@ export function GIFTERRAAIAssistant() {
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(59, 130, 246, 0.4)';
           }}
         >
-          🤖
+          <img
+            src="/gifterra-logo.png"
+            alt="ギフティ"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </button>
       )}
 
