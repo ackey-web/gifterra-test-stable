@@ -91,9 +91,34 @@ const VendingDashboardNew: React.FC = () => {
     setSelectedMachineId(machineId);
   };
 
-  // 保存（プレースホルダ）
+  // 保存
   const handleSave = () => {
-    alert('保存処理（STEP4以降で実装）');
+    if (!selectedMachine) {
+      alert('⚠️ GIFT HUBが選択されていません');
+      return;
+    }
+
+    try {
+      // 選択中のGIFT HUBのupdatedAtを更新
+      const updated = machines.map(m =>
+        m.id === selectedMachine.id
+          ? { ...m, updatedAt: new Date().toISOString() }
+          : m
+      );
+      setMachines(updated);
+
+      // localStorageへの保存はuseEffectで自動的に行われる
+      console.log('✅ [保存] GIFT HUB設定を保存:', {
+        id: selectedMachine.id,
+        name: selectedMachine.name,
+        slug: selectedMachine.slug
+      });
+
+      alert(`✅ GIFT HUB「${selectedMachine.name}」の設定を保存しました`);
+    } catch (error) {
+      console.error('❌ [保存] エラー:', error);
+      alert('❌ 保存中にエラーが発生しました');
+    }
   };
 
   // 公開/非公開切替
@@ -163,7 +188,37 @@ const VendingDashboardNew: React.FC = () => {
         console.log('✅ すべての商品削除完了');
       }
 
-      // 3. localStorageからGIFT HUBを削除
+      // 3. GIFT HUBのデザイン画像を削除（headerImage, backgroundImage）
+      const machine = machines.find(m => m.id === machineId);
+      if (machine?.settings?.design) {
+        const { headerImage, backgroundImage } = machine.settings.design;
+
+        // ヘッダー画像を削除
+        if (headerImage) {
+          console.log('🗑️ ディスプレイ画像を削除:', headerImage);
+          const { deleteFileFromUrl } = await import('../../lib/supabase');
+          const deleted = await deleteFileFromUrl(headerImage);
+          if (deleted) {
+            console.log('✅ ディスプレイ画像を削除しました');
+          } else {
+            console.warn('⚠️ ディスプレイ画像の削除に失敗しました（続行します）');
+          }
+        }
+
+        // 背景画像を削除
+        if (backgroundImage) {
+          console.log('🗑️ 背景画像を削除:', backgroundImage);
+          const { deleteFileFromUrl } = await import('../../lib/supabase');
+          const deleted = await deleteFileFromUrl(backgroundImage);
+          if (deleted) {
+            console.log('✅ 背景画像を削除しました');
+          } else {
+            console.warn('⚠️ 背景画像の削除に失敗しました（続行します）');
+          }
+        }
+      }
+
+      // 4. localStorageからGIFT HUBを削除
       const deletedMachineName = machines.find(m => m.id === machineId)?.name;
       const updated = machines.filter(m => m.id !== machineId);
       setMachines(updated);

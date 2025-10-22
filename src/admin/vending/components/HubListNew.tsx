@@ -135,13 +135,69 @@ export function HubListNew({
                   <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
                     {machine.name}
                   </div>
-                  <div style={{ fontSize: 13, opacity: 0.7 }}>
-                    特典: {productCounts[machine.id] || 0}件
+                  <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>
+                    特典: {productCounts[machine.id] || 0}件 | トークン: {machine.settings?.tokenSymbol || 'tNHT'}
                   </div>
+
+                  {/* URL表示とコピーボタン */}
+                  <div style={{ marginTop: 8, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={`${window.location.origin}/content?machine=${machine.slug}`}
+                        readOnly
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.currentTarget.select();
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '4px 8px',
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          borderRadius: 4,
+                          color: '#fff',
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                          cursor: 'text'
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const url = `${window.location.origin}/content?machine=${machine.slug}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            alert('✅ URLをコピーしました');
+                          }).catch(() => {
+                            alert('❌ コピーに失敗しました');
+                          });
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          background: '#3B82F6',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#2563EB';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#3B82F6';
+                        }}
+                      >
+                        コピー
+                      </button>
+                    </div>
+                  </div>
+
                   {machine.isActive ? (
                     <span style={{
                       display: 'inline-block',
-                      marginTop: 8,
                       padding: '2px 8px',
                       background: '#10B981',
                       fontSize: 11,
@@ -153,7 +209,6 @@ export function HubListNew({
                   ) : (
                     <span style={{
                       display: 'inline-block',
-                      marginTop: 8,
                       padding: '2px 8px',
                       background: '#6B7280',
                       fontSize: 11,
