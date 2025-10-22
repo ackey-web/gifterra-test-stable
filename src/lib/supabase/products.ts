@@ -24,7 +24,7 @@ export interface UpdateProductParams extends CreateProductParams {
 }
 
 /**
- * 商品を新規作成
+ * 商品を新規作成（サーバーサイドAPIを使用してRLSをバイパス）
  * @param params 商品データ
  * @returns 成功/失敗
  */
@@ -48,16 +48,24 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
 
     console.log('📤 [商品作成] データ:', { tenant_id: productData.tenant_id, name: productData.name });
 
-    const { error } = await supabase
-      .from('products')
-      .insert([productData]);
+    // サーバーサイドAPIで作成実行（RLSをバイパス）
+    const response = await fetch('/api/products/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productData)
+    });
 
-    if (error) {
-      console.error('❌ 商品作成エラー:', error);
-      return { success: false, error: error.message };
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ 商品作成API エラー:', errorData);
+      return {
+        success: false,
+        error: errorData.error || errorData.details || `作成に失敗しました (${response.status})`
+      };
     }
 
-    console.log('✅ [商品作成] 成功 - tenant_id:', tenantId);
+    const data = await response.json();
+    console.log('✅ [商品作成] 成功:', data);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品作成エラー (catch):', err);
@@ -66,7 +74,7 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
 }
 
 /**
- * 商品を更新
+ * 商品を更新（サーバーサイドAPIを使用してRLSをバイパス）
  * @param params 商品データ
  * @returns 成功/失敗
  */
@@ -75,28 +83,38 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
     const tenantId = params.tenantId || DEFAULT_TENANT_ID;
     console.log('🔄 [商品更新] product_id:', params.productId, 'tenant_id:', tenantId, 'name:', params.name);
 
-    const { error } = await supabase
-      .from('products')
-      .update({
-        tenant_id: tenantId,
-        name: params.name,
-        description: params.description,
-        content_path: params.contentPath,
-        image_url: params.imageUrl,
-        price_token: DEFAULT_TOKEN,
-        price_amount_wei: params.priceAmountWei,
-        stock: params.stock,
-        is_unlimited: params.isUnlimited,
-        is_active: true,
-      })
-      .eq('id', params.productId);
+    const updateData = {
+      productId: params.productId,
+      tenant_id: tenantId,
+      name: params.name,
+      description: params.description,
+      content_path: params.contentPath,
+      image_url: params.imageUrl,
+      price_token: DEFAULT_TOKEN,
+      price_amount_wei: params.priceAmountWei,
+      stock: params.stock,
+      is_unlimited: params.isUnlimited,
+      is_active: true,
+    };
 
-    if (error) {
-      console.error('❌ 商品更新エラー:', error);
-      return { success: false, error: error.message };
+    // サーバーサイドAPIで更新実行（RLSをバイパス）
+    const response = await fetch('/api/products/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ 商品更新API エラー:', errorData);
+      return {
+        success: false,
+        error: errorData.error || errorData.details || `更新に失敗しました (${response.status})`
+      };
     }
 
-    console.log('✅ [商品更新] 成功 - product_id:', params.productId);
+    const data = await response.json();
+    console.log('✅ [商品更新] 成功:', data);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品更新エラー (catch):', err);
