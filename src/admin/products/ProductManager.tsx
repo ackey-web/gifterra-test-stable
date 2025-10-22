@@ -270,15 +270,15 @@ export default function ProductManager() {
       // Storageファイル削除を待機
       await Promise.all(deletePromises);
 
-      // 2. データベースから商品を非公開にする
+      // 2. データベースから商品を完全に削除
       const { error } = await supabase
         .from('products')
-        .update({ is_active: false })
+        .delete()
         .eq('id', product.id);
 
       if (error) throw error;
 
-      alert('✅ 商品とファイルを削除しました');
+      alert('✅ 特典とファイルを削除しました');
       window.location.reload();
     } catch (err) {
       console.error('❌ 削除エラー:', err);

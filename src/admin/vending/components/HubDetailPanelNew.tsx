@@ -721,7 +721,7 @@ export function HubDetailPanelNew({
             {/* ヘッダー: 新規特典追加ボタン */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#fff' }}>
-                Supabase 特典一覧（tenant: {tenantId}）
+                配布特典一覧
               </h3>
               <button
                 onClick={handleAddProduct}
