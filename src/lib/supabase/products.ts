@@ -1,8 +1,7 @@
 // src/lib/supabase/products.ts
 // Supabase 商品管理用のヘルパー関数
-// RLSポリシーに準拠し、サービスロールは使用しない
+// サーバーサイドAPIを使用してRLSをバイパス
 
-import { supabase } from '../supabase';
 import type { ProductFormData } from '../../admin/products/ProductForm';
 
 const DEFAULT_TENANT_ID = 'default';
