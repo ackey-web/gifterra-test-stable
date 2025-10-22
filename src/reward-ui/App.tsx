@@ -48,7 +48,7 @@ export default function App() {
 
   // 背景画像をlocalStorageから取得（管理画面で設定可能）
   const [customBgImage] = useState<string>(() => {
-    return localStorage.getItem('reward-bg-image') || '/ui-wallpaper.png';
+    return localStorage.getItem('reward-bg-image') || '/ads/ui-wallpeaper.png';
   });
 
   // ---- 読み取り（エラーハンドリング強化）----

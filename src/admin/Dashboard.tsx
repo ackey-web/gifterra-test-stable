@@ -1383,33 +1383,9 @@ export default function AdminDashboard() {
           <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 Reward UI 背景画像設定</h3>
           <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
             <li>Reward UI の背景画像を設定できます</li>
-            <li>設定しない場合は、デフォルト背景画像が表示されます</li>
-            <li>デフォルト背景: <code style={{ padding: "2px 6px", background: "rgba(255,255,255,.1)", borderRadius: 4 }}>/ui-wallpaper.png</code></li>
           </ul>
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
-              背景画像URL:
-            </label>
-            <input
-              type="text"
-              value={rewardBgImage}
-              onChange={(e) => setRewardBgImage(e.target.value)}
-              placeholder="/ui-wallpaper.png（デフォルト）または画像URLを入力"
-              style={{
-                width: "100%",
-                padding: 8,
-                background: "rgba(255,255,255,.1)",
-                border: "1px solid rgba(255,255,255,.2)",
-                borderRadius: 4,
-                color: "#fff",
-                fontSize: 14,
-                marginBottom: 8
-              }}
-            />
-            <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>
-              ※ 画像ファイルを選択してSupabaseにアップロードすることもできます
-            </div>
 
             <input
               type="file"
@@ -1754,33 +1730,9 @@ export default function AdminDashboard() {
           <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 TIP UI 背景画像設定</h3>
           <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
             <li>TIP UI の背景画像を設定できます</li>
-            <li>設定しない場合は、デフォルト背景画像が表示されます</li>
-            <li>デフォルト背景: <code style={{ padding: "2px 6px", background: "rgba(255,255,255,.1)", borderRadius: 4 }}>/ui-wallpaper.png</code></li>
           </ul>
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 4, fontSize: 14, opacity: 0.8 }}>
-              背景画像URL:
-            </label>
-            <input
-              type="text"
-              value={tipBgImage}
-              onChange={(e) => setTipBgImage(e.target.value)}
-              placeholder="/ui-wallpaper.png（デフォルト）または画像URLを入力"
-              style={{
-                width: "100%",
-                padding: 8,
-                background: "rgba(255,255,255,.1)",
-                border: "1px solid rgba(255,255,255,.2)",
-                borderRadius: 4,
-                color: "#fff",
-                fontSize: 14,
-                marginBottom: 8
-              }}
-            />
-            <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>
-              ※ 画像ファイルを選択してSupabaseにアップロードすることもできます
-            </div>
 
             <input
               type="file"
