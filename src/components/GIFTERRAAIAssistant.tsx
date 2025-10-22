@@ -166,12 +166,12 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img
             src="/gifterra-logo.png"
-            alt="ギフティ"
+            alt="GIFTERRA AI"
             style={{ width: 32, height: 32, objectFit: 'contain' }}
           />
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
-              ギフティ
+              GIFTERRA AI
             </div>
             <div style={{ fontSize: 12, opacity: 0.7, color: '#fff' }}>
               サポートアシスタント
@@ -392,9 +392,9 @@ export function GIFTERRAAIAssistant() {
             right: 20,
             height: 50,
             borderRadius: 25,
-            background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-            border: 'none',
-            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -407,21 +407,21 @@ export function GIFTERRAAIAssistant() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 6px 24px rgba(59, 130, 246, 0.6)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 20px rgba(59, 130, 246, 0.4)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)';
           }}
         >
           <img
             src="/gifterra-logo.png"
-            alt="ギフティ"
+            alt="GIFTERRA AI"
             style={{ width: 32, height: 32, objectFit: 'contain' }}
           />
           <span
             style={{
-              color: '#fff',
+              color: '#2563EB',
               fontSize: 14,
               fontWeight: 700,
               letterSpacing: 0.5

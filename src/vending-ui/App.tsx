@@ -303,6 +303,10 @@ export default function VendingApp() {
               const price = `${Math.floor(Number(priceInTokens))} ${tokenSymbol}`;
               const isSelected = selectedProducts.includes(product.id);
 
+              // 特典名の長さに応じてフォントサイズを調整
+              const productName = product.name;
+              const isLongName = productName.length > 8;
+
               return (
                 <button
                   key={product.id}
@@ -337,7 +341,22 @@ export default function VendingApp() {
                       background: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)`,
                     }}
                   />
-                  <div className="relative text-base font-black text-white tracking-wider drop-shadow-lg">{label}</div>
+                  {/* 特典名（長い場合は小さいフォントで2行表示） */}
+                  <div
+                    className="relative font-black text-white tracking-wider drop-shadow-lg"
+                    style={{
+                      fontSize: isLongName ? '11px' : '16px',
+                      lineHeight: isLongName ? '1.2' : '1',
+                      minHeight: isLongName ? '26px' : 'auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
+                    {productName}
+                  </div>
                   <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
                   {isSelected && (
                     <div className="relative mt-1 text-[10px] text-yellow-300">
