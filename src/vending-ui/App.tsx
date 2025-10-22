@@ -8,6 +8,7 @@ import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 import { purchaseProduct, type Product } from "../lib/purchase";
 import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
+import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
 
 export default function VendingApp() {
   const address = useAddress();
@@ -147,14 +148,36 @@ export default function VendingApp() {
           setSelectedProducts((prev) => prev.filter((id) => id !== productId));
         }
       } else {
-        // 受け取り失敗
-        alert(`受け取りに失敗しました: ${result.error || "不明なエラー"}`);
+        // 受け取り失敗 - AIアシスタントを起動
+        alert(`受け取りに失敗しました: ${result.error || "不明なエラー"}\n\nAIアシスタントがサポートします。`);
+
+        // カスタムイベントを発火してAIアシスタントを自動起動
+        window.dispatchEvent(new CustomEvent('gifterraError', {
+          detail: {
+            type: 'CLAIM_FAILED',
+            error: result.error,
+            productId: product.id,
+            productName: product.name
+          }
+        }));
+
         // 選択リストから削除
         setSelectedProducts((prev) => prev.filter((id) => id !== productId));
       }
     } catch (err) {
-      console.error("Purchase error:", err);
-      alert(`受け取りエラー: ${err instanceof Error ? err.message : String(err)}`);
+      console.error("❌ 受け取りエラー:", err);
+      alert(`受け取りエラー: ${err instanceof Error ? err.message : String(err)}\n\nAIアシスタントがサポートします。`);
+
+      // カスタムイベントを発火してAIアシスタントを自動起動
+      window.dispatchEvent(new CustomEvent('gifterraError', {
+        detail: {
+          type: 'CLAIM_FAILED',
+          error: err instanceof Error ? err.message : String(err),
+          productId: product.id,
+          productName: product.name
+        }
+      }));
+
       // 選択リストから削除
       setSelectedProducts((prev) => prev.filter((id) => id !== productId));
     } finally {
@@ -494,6 +517,9 @@ export default function VendingApp() {
           </div>
         </div>
       </div>
+
+      {/* ===== GIFTERRA AI アシスタント ===== */}
+      <GIFTERRAAIAssistant />
     </VendingMachineShell>
   );
 }
