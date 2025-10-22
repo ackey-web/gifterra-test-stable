@@ -65,28 +65,45 @@ export default async function handler(
 
     console.log('✅ トークン検証成功:', {
       product_id: tokenData.product_id,
+      product_id_type: typeof tokenData.product_id,
       buyer: tokenData.buyer
+    });
+
+    // デバッグ: 全商品を確認
+    const { data: allProducts, error: allProductsError } = await supabase
+      .from('products')
+      .select('id, name, tenant_id');
+
+    console.log('🔍 [DEBUG] 全商品リスト:', {
+      count: allProducts?.length || 0,
+      products: allProducts?.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
     });
 
     // 商品情報を取得
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('content_path')
+      .select('content_path, name, id')
       .eq('id', tokenData.product_id)
       .single();
 
     if (productError || !product) {
       console.error('❌ 商品が見つかりません:', {
         product_id: tokenData.product_id,
+        product_id_type: typeof tokenData.product_id,
         error: productError,
         errorMessage: productError?.message,
         errorCode: productError?.code,
-        errorDetails: productError?.details
+        errorDetails: productError?.details,
+        hint: productError?.hint
       });
       return res.status(404).json({
         error: '商品が見つかりません',
         details: productError?.message,
-        product_id: tokenData.product_id
+        product_id: tokenData.product_id,
+        debug: {
+          available_products: allProducts?.length || 0,
+          error_code: productError?.code
+        }
       });
     }
 
