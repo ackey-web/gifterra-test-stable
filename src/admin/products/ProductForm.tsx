@@ -129,7 +129,7 @@ export function ProductForm({
     }
   };
 
-  // ファイルアップロード
+  // ファイルアップロード（非公開バケットgh-downloads経由）
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -137,6 +137,14 @@ export function ProductForm({
     setUploadingFile(true);
     try {
       console.log('📤 配布ファイルアップロード開始:', file.name, file.size);
+
+      // ファイルサイズチェック（100MB）
+      if (file.size > 100 * 1024 * 1024) {
+        alert('❌ ファイルサイズが大きすぎます（最大100MB）');
+        setUploadingFile(false);
+        e.target.value = '';
+        return;
+      }
 
       // ファイルハッシュを計算して重複チェック
       const fileHash = await calculateFileHash(file);
@@ -156,38 +164,47 @@ export function ProductForm({
         }
       }
 
-      // 一時的に gh-public バケットにアップロード
-      // TODO: 本番環境では gh-downloads（非公開）+ サーバーサイドAPI経由に変更
-      const fileUrl = await uploadImage(file, 'gh-public');
+      // ファイルをBase64にエンコード
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // data:...;base64, の部分を削除してBase64のみを取得
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      if (fileUrl) {
-        // 古い配布ファイルを削除（差し替えの場合）
-        if (previousContentPathRef.current) {
-          // content_pathはファイル名のみの場合があるので、フルURLを構築
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const oldContentUrl = previousContentPathRef.current.startsWith('http')
-            ? previousContentPathRef.current
-            : `${supabaseUrl}/storage/v1/object/public/gh-public/${previousContentPathRef.current}`;
+      console.log('📦 Base64エンコード完了:', `${(fileBase64.length / 1024 / 1024).toFixed(2)} MB`);
 
-          console.log('🗑️ 古い配布ファイルを削除:', oldContentUrl);
-          const deleted = await deleteFileFromUrl(oldContentUrl);
-          if (deleted) {
-            console.log('✅ 古い配布ファイルを削除しました');
-          }
-        }
+      // サーバーサイドAPIでgh-downloads（非公開バケット）にアップロード
+      const response = await fetch('/api/upload/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileBase64,
+          fileName: file.name,
+          mimeType: file.type,
+          fileSize: file.size
+        })
+      });
 
-        // URLからファイルパスを抽出（公開URLから）
-        const urlParts = fileUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-
-        handleChange('contentPath', fileName);
-        setCurrentFileHash(fileHash);
-        previousContentPathRef.current = fileName;
-        alert('✅ 配布ファイルをアップロードしました');
-        console.log('✅ アップロード成功:', fileUrl);
-      } else {
-        throw new Error('uploadImage returned null');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `アップロードに失敗しました (${response.status})`);
       }
+
+      const data = await response.json();
+      console.log('✅ アップロード成功:', data);
+
+      // 非公開バケットにアップロードされたファイルパスを保存
+      handleChange('contentPath', data.path);
+      setCurrentFileHash(fileHash);
+      previousContentPathRef.current = data.path;
+      alert('✅ 配布ファイルをアップロードしました\n非公開ストレージに安全に保存されました');
+
     } catch (err) {
       console.error('❌ ファイルアップロードエラー:', err);
 
