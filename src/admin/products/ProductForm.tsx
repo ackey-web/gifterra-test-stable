@@ -21,6 +21,7 @@ interface ProductFormProps {
   onSubmit: (data: ProductFormData) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
+  tokenSymbol?: 'tNHT' | 'JPYC'; // 使用するトークン
 }
 
 const DEFAULT_FORM_DATA: ProductFormData = {
@@ -37,7 +38,8 @@ export function ProductForm({
   initialData,
   onSubmit,
   onCancel,
-  isSubmitting = false
+  isSubmitting = false,
+  tokenSymbol = 'tNHT'
 }: ProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>(
     initialData || DEFAULT_FORM_DATA
@@ -290,16 +292,27 @@ export function ProductForm({
 
           {/* 必要TIP数 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">必要TIP数（Wei） *</label>
-            <input
-              type="text"
-              value={formData.priceAmountWei}
-              onChange={(e) => handleChange('priceAmountWei', e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              placeholder="10000000000000000000 (= 10 tNHT)"
-            />
+            <label className="block text-sm font-semibold text-gray-700 mb-1">必要TIP数 *</label>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={Math.floor(Number(formData.priceAmountWei) / 1e18) || ''}
+                onChange={(e) => {
+                  const tokenAmount = parseInt(e.target.value) || 0;
+                  const weiAmount = (tokenAmount * 1e18).toString();
+                  handleChange('priceAmountWei', weiAmount);
+                }}
+                className="w-full border border-gray-300 rounded px-3 py-2 pr-16"
+                placeholder="10"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-600">
+                {tokenSymbol}
+              </span>
+            </div>
             <p className="text-xs text-gray-500 mt-1">
-              現在: {(Number(formData.priceAmountWei) / 1e18).toFixed(2)} tNHT
+              ユーザーが特典を受け取るために必要なTIP数（整数のみ）
             </p>
           </div>
 
