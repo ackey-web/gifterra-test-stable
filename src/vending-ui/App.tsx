@@ -6,7 +6,7 @@ import { polygonAmoy } from "viem/chains";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
 import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 import { purchaseProduct, type Product } from "../lib/purchase";
-import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
+import { publicClient, TOKEN, ERC20_MIN_ABI, CONTRACT_ADDRESS } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
 import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
 import PurchaseConfirmDialog from "./components/PurchaseConfirmDialog";
@@ -138,6 +138,46 @@ export default function VendingApp() {
     setSelectedProducts((prev) => [...prev, productId]);
 
     try {
+      // 🔍 診断: トランザクション前の状態をチェック
+      console.log('🔍 [診断] トランザクション前チェック開始');
+
+      // トークン残高を確認
+      const tokenBalance = await publicClient.readContract({
+        address: product.price_token as `0x${string}`,
+        abi: ERC20_MIN_ABI,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      }) as bigint;
+
+      // Allowanceを確認
+      const allowance = await publicClient.readContract({
+        address: product.price_token as `0x${string}`,
+        abi: ERC20_MIN_ABI,
+        functionName: 'allowance',
+        args: [address as `0x${string}`, CONTRACT_ADDRESS],
+      }) as bigint;
+
+      const priceWei = BigInt(product.price_amount_wei);
+      const balanceInTokens = formatUnits(tokenBalance, 18);
+      const allowanceInTokens = formatUnits(allowance, 18);
+      const priceInTokens = formatUnits(priceWei, 18);
+
+      console.log('💰 残高確認:', {
+        トークン残高: balanceInTokens,
+        必要額: priceInTokens,
+        Allowance: allowanceInTokens,
+        残高十分: tokenBalance >= priceWei,
+        Allowance十分: allowance >= priceWei
+      });
+
+      // 残高不足チェック
+      if (tokenBalance < priceWei) {
+        alert(`❌ トークン残高不足\n\n必要: ${priceInTokens} tNHT\n現在: ${balanceInTokens} tNHT\n\n公式Faucetでトークンを取得してください。`);
+        setIsPurchasing(false);
+        setSelectedProducts((prev) => prev.filter((id) => id !== productId));
+        return;
+      }
+
       // Viem walletClient を作成（既存のpurchaseProduct関数が必要とする）
       const walletClient = createWalletClient({
         chain: polygonAmoy,
