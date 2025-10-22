@@ -29,14 +29,14 @@ export function HubListNew({
 
       for (const machine of machines) {
         const tenantId = machine.id;
-        const { data, error } = await supabase
+        const { count, error } = await supabase
           .from('products')
-          .select('id', { count: 'exact', head: true })
+          .select('*', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
           .eq('is_active', true);
 
         if (!error) {
-          counts[tenantId] = data?.length || 0;
+          counts[tenantId] = count || 0;
         }
       }
 
