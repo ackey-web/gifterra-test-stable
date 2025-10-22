@@ -63,9 +63,13 @@ export default async function handler(
       return res.status(404).json({ error: 'トークンが見つかりません' });
     }
 
+    // product_idを文字列として明示的に扱う
+    const productId = String(tokenData.product_id);
+
     console.log('✅ トークン検証成功:', {
-      product_id: tokenData.product_id,
+      product_id: productId,
       product_id_type: typeof tokenData.product_id,
+      product_id_string: productId,
       buyer: tokenData.buyer
     });
 
@@ -76,19 +80,26 @@ export default async function handler(
 
     console.log('🔍 [DEBUG] 全商品リスト:', {
       count: allProducts?.length || 0,
-      products: allProducts?.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
+      products: allProducts?.map(p => ({
+        id: p.id,
+        id_type: typeof p.id,
+        name: p.name,
+        tenant_id: p.tenant_id,
+        matches_search: p.id === productId || String(p.id) === productId
+      }))
     });
 
-    // 商品情報を取得
+    // 商品情報を取得（UUIDを文字列として比較）
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('content_path, name, id')
-      .eq('id', tokenData.product_id)
+      .eq('id', productId)
       .single();
 
     if (productError || !product) {
       console.error('❌ 商品が見つかりません:', {
-        product_id: tokenData.product_id,
+        product_id: productId,
+        product_id_original: tokenData.product_id,
         product_id_type: typeof tokenData.product_id,
         error: productError,
         errorMessage: productError?.message,
@@ -99,16 +110,17 @@ export default async function handler(
       return res.status(404).json({
         error: '商品が見つかりません',
         details: productError?.message,
-        product_id: tokenData.product_id,
+        product_id: productId,
         debug: {
           available_products: allProducts?.length || 0,
-          error_code: productError?.code
+          error_code: productError?.code,
+          all_product_ids: allProducts?.map(p => p.id)
         }
       });
     }
 
     console.log('✅ 商品情報取得:', {
-      product_id: tokenData.product_id,
+      product_id: productId,
       content_path: product.content_path
     });
 
