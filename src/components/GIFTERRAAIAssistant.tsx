@@ -390,9 +390,8 @@ export function GIFTERRAAIAssistant() {
             position: 'fixed',
             bottom: 20,
             right: 20,
-            width: 60,
-            height: 60,
-            borderRadius: '50%',
+            height: 50,
+            borderRadius: 25,
             background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
             border: 'none',
             boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)',
@@ -400,24 +399,36 @@ export function GIFTERRAAIAssistant() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 10,
             zIndex: 9998,
             transition: 'transform 0.2s, box-shadow 0.2s',
-            padding: 10
+            padding: '8px 20px 8px 12px',
+            whiteSpace: 'nowrap'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
             e.currentTarget.style.boxShadow = '0 6px 24px rgba(59, 130, 246, 0.6)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = '0 4px 20px rgba(59, 130, 246, 0.4)';
           }}
         >
           <img
             src="/gifterra-logo.png"
             alt="ギフティ"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            style={{ width: 32, height: 32, objectFit: 'contain' }}
           />
+          <span
+            style={{
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: 0.5
+            }}
+          >
+            AIサポートアシスタント
+          </span>
         </button>
       )}
 
