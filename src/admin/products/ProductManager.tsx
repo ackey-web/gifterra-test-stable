@@ -22,7 +22,7 @@ interface DraftProduct {
 
 export default function ProductManager() {
   const tenantId = DEFAULT_TENANT_ID;
-  const { products, isLoading, error } = useSupabaseProducts({ tenantId, isActive: true });
+  const { products, isLoading, error, refetch } = useSupabaseProducts({ tenantId, isActive: true });
 
   const [editingProduct, setEditingProduct] = useState<DraftProduct | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -228,8 +228,8 @@ export default function ProductManager() {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       setEditingProduct(null);
 
-      // 再読み込み（フックが自動で更新される）
-      window.location.reload();
+      // データを再取得
+      await refetch();
 
     } catch (err) {
       console.error('❌ 保存エラー:', err);
@@ -279,7 +279,7 @@ export default function ProductManager() {
       if (error) throw error;
 
       alert('✅ 特典とファイルを削除しました');
-      window.location.reload();
+      await refetch();
     } catch (err) {
       console.error('❌ 削除エラー:', err);
       alert(`削除に失敗しました\n\n${err instanceof Error ? err.message : String(err)}`);
