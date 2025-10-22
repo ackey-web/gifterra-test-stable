@@ -30,6 +30,15 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
 
   const fetchProducts = useCallback(async () => {
     console.log('🔄 [useSupabaseProducts] refetch開始:', { tenantId, isActive });
+
+    // tenantIdが空の場合は早期リターン（GIFT HUBデータ読み込み中）
+    if (!tenantId) {
+      console.log('⏸️ [useSupabaseProducts] tenantId が空のため、クエリをスキップ');
+      setIsLoading(false);
+      setProducts([]);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
