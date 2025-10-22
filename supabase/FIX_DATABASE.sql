@@ -142,6 +142,13 @@ CREATE TRIGGER update_products_updated_at
 -- STEP 6: RPC Functions
 -- ==========================================
 
+-- Drop existing functions first to avoid type conflicts
+DROP FUNCTION IF EXISTS decrement_stock(UUID);
+DROP FUNCTION IF EXISTS create_download_token(UUID, UUID, INTEGER);
+DROP FUNCTION IF EXISTS consume_download_token(TEXT);
+DROP FUNCTION IF EXISTS cleanup_expired_tokens();
+DROP FUNCTION IF EXISTS get_user_purchases(TEXT);
+
 -- Decrement stock
 CREATE OR REPLACE FUNCTION decrement_stock(p_product_id UUID)
 RETURNS TABLE(success BOOLEAN, remaining_stock INTEGER) AS $$
