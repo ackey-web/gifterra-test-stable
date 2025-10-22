@@ -7,7 +7,6 @@ import type { ProductFormData } from '../../admin/products/ProductForm';
 
 const DEFAULT_TENANT_ID = 'default';
 const DEFAULT_TOKEN = '0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea'; // tNHT
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
 export interface CreateProductParams {
   tenantId?: string;
