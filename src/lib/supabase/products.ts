@@ -106,7 +106,7 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
 }
 
 /**
- * 商品を削除（関連ファイルも削除し、is_active = false に設定）
+ * 商品を完全削除（関連ファイルも削除し、データベースからも削除）
  * @param productId 商品ID
  * @returns 成功/失敗
  */
@@ -117,7 +117,7 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
     // まず商品データを取得
     const { data: product, error: fetchError } = await supabase
       .from('products')
-      .select('image_url, content_path, is_active')
+      .select('image_url, content_path, name')
       .eq('id', productId)
       .single();
 
@@ -131,46 +131,61 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
       return { success: false, error: '商品が見つかりません' };
     }
 
-    console.log('📦 削除対象商品:', { id: productId, name: product.image_url, is_active: product.is_active });
+    console.log('📦 削除対象商品:', { id: productId, name: product.name });
 
     // 関連ファイルを削除
     const deletionResults: string[] = [];
 
+    // サムネイル画像を削除（公開バケット gh-public）
     if (product?.image_url) {
       console.log('🗑️ サムネイル画像を削除:', product.image_url);
-      const imageDeleted = await deleteFileFromUrl(product.image_url);
-      if (imageDeleted) {
-        deletionResults.push('サムネイル画像を削除しました');
-      } else {
-        deletionResults.push('サムネイル画像の削除に失敗しました（既に削除済みの可能性）');
+      try {
+        const imageDeleted = await deleteFileFromUrl(product.image_url);
+        if (imageDeleted) {
+          deletionResults.push('サムネイル画像を削除しました');
+        } else {
+          deletionResults.push('サムネイル画像の削除に失敗しました（既に削除済みの可能性）');
+        }
+      } catch (imgErr) {
+        console.warn('⚠️ サムネイル画像削除エラー:', imgErr);
+        deletionResults.push('サムネイル画像の削除をスキップしました');
       }
     }
 
+    // 配布ファイルを削除（非公開バケット gh-downloads）
     if (product?.content_path) {
-      // content_pathはファイル名のみの場合があるので、フルURLを構築
-      const contentUrl = product.content_path.startsWith('http')
-        ? product.content_path
-        : `${supabaseUrl}/storage/v1/object/public/gh-public/${product.content_path}`;
+      console.log('🗑️ 配布ファイルを削除:', product.content_path);
+      try {
+        const deleteResponse = await fetch('/api/delete/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePath: product.content_path })
+        });
 
-      console.log('🗑️ 配布ファイルを削除:', contentUrl);
-      const contentDeleted = await deleteFileFromUrl(contentUrl);
-      if (contentDeleted) {
-        deletionResults.push('配布ファイルを削除しました');
-      } else {
-        deletionResults.push('配布ファイルの削除に失敗しました（既に削除済みの可能性）');
+        if (deleteResponse.ok) {
+          deletionResults.push('配布ファイルを削除しました');
+          console.log('✅ 配布ファイル削除成功');
+        } else {
+          const errorData = await deleteResponse.json().catch(() => ({}));
+          console.warn('⚠️ 配布ファイル削除失敗:', errorData);
+          deletionResults.push('配布ファイルの削除に失敗しました（既に削除済みの可能性）');
+        }
+      } catch (contentErr) {
+        console.warn('⚠️ 配布ファイル削除エラー:', contentErr);
+        deletionResults.push('配布ファイルの削除をスキップしました');
       }
     }
 
-    // 商品を非アクティブに設定
-    console.log('🔄 is_activeをfalseに設定中...');
+    // データベースから商品を完全削除
+    console.log('🔄 データベースから商品を削除中...');
     const { error } = await supabase
       .from('products')
-      .update({ is_active: false })
+      .delete()
       .eq('id', productId);
 
     if (error) {
-      console.error('❌ 商品削除エラー (UPDATE失敗):', error);
-      return { success: false, error: `商品の非アクティブ化に失敗: ${error.message}` };
+      console.error('❌ 商品削除エラー (DELETE失敗):', error);
+      return { success: false, error: `商品の削除に失敗: ${error.message}` };
     }
 
     console.log('✅ 商品削除完了:', deletionResults);
