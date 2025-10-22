@@ -87,7 +87,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (purchasesError) {
       console.error('❌ 受け取り履歴取得エラー:', purchasesError);
-      return res.status(500).json({ error: '受け取り履歴の取得に失敗しました' });
+      return res.status(500).json({
+        error: '受け取り履歴の取得に失敗しました',
+        details: purchasesError.message,
+        code: purchasesError.code
+      });
+    }
+
+    // データが0件の場合は空配列を返す
+    if (!purchases || purchases.length === 0) {
+      console.log('ℹ️ 受け取り履歴なし:', walletAddress);
+      return res.json({
+        success: true,
+        walletAddress,
+        claims: [],
+        totalClaims: 0
+      });
     }
 
     // 受け取り履歴を整形
@@ -152,8 +167,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error('❌ claim-history API エラー:', error);
+    const errorMessage = error instanceof Error ? error.message : '内部サーバーエラー';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    console.error('❌ エラー詳細:', {
+      message: errorMessage,
+      stack: errorStack,
+      walletAddress: req.body?.walletAddress
+    });
+
     return res.status(500).json({
-      error: error instanceof Error ? error.message : '内部サーバーエラー'
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
     });
   }
 }
