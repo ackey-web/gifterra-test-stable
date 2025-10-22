@@ -136,20 +136,32 @@ export function HubDetailPanelNew({
 
   // 商品削除
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('この特典を削除してもよろしいですか？')) return;
+    console.log('🗑️ [HubDetailPanel] 削除処理開始:', productId);
+
+    if (!confirm('この特典を削除してもよろしいですか？')) {
+      console.log('⚠️ [HubDetailPanel] ユーザーがキャンセルしました');
+      return;
+    }
 
     try {
+      console.log('📞 [HubDetailPanel] deleteProduct関数を呼び出し...');
       const result = await deleteProduct(productId);
+      console.log('📊 [HubDetailPanel] deleteProduct結果:', result);
+
       if (!result.success) {
+        console.error('❌ [HubDetailPanel] 削除失敗:', result.error);
         alert(`❌ 削除に失敗しました\n\n${result.error}`);
         return;
       }
+
+      console.log('✅ [HubDetailPanel] 削除成功、refetch実行...');
       alert('✅ 特典を削除しました');
 
       // データを再取得
       await refetch();
+      console.log('✅ [HubDetailPanel] refetch完了');
     } catch (err) {
-      console.error('❌ 商品削除エラー:', err);
+      console.error('❌ [HubDetailPanel] 商品削除エラー:', err);
       alert('❌ 予期しないエラーが発生しました');
     }
   };
