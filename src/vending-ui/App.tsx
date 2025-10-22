@@ -537,6 +537,26 @@ export default function VendingApp() {
         </div>
       </div>
 
+      {/* ===== 受け取り履歴リンク ===== */}
+      {address && (
+        <div className="relative z-10 px-5 pb-6">
+          <a
+            href="/claim-history"
+            className="block text-center py-3 px-4 rounded-xl transition-all hover:-translate-y-[1px] active:translate-y-[1px]"
+            style={{
+              background: "linear-gradient(145deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15))",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              boxShadow: "0 2px 8px rgba(59, 130, 246, 0.2)",
+              color: "#60A5FA",
+              fontSize: 14,
+              fontWeight: 600
+            }}
+          >
+            📜 受け取り履歴を確認
+          </a>
+        </div>
+      )}
+
       {/* ===== GIFTERRA AI アシスタント ===== */}
       <GIFTERRAAIAssistant />
     </VendingMachineShell>
