@@ -10,6 +10,7 @@ import AdminDashboard from "./admin/Dashboard";
 import AdminDashboardMobile from "./admin/DashboardMobile";
 import { DownloadPage } from "./pages/DownloadPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
+import ClaimHistory from "./pages/ClaimHistory";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 
 // =============================
@@ -70,6 +71,7 @@ const wantsContent = path.includes("/content") || uiParam === "content";
 const wantsAdminMobile = path.includes("/admin-mobile");
 const wantsDownload = path.includes("/download") || uiParam === "download";
 const wantsPurchases = path.includes("/my-purchases") || uiParam === "purchases";
+const wantsClaimHistory = path.includes("/claim-history") || uiParam === "claim-history";
 
 // Admin アクセス時のデバイス判定による自動リダイレクト
 if (wantsAdmin && !wantsAdminMobile && getDeviceType() === 'mobile') {
@@ -113,6 +115,8 @@ root.render(
         <DownloadPage />
       ) : wantsPurchases ? (
         <MyPurchasesPage />
+      ) : wantsClaimHistory ? (
+        <ClaimHistory />
       ) : wantsAdminMobile ? (
         <AdminDashboardMobile />
       ) : wantsAdmin ? (
