@@ -131,12 +131,12 @@ export default async function handler(
         });
       }
 
-      // トークンが期限切れの場合、新しいトークンを発行
+      // トークンが期限切れの場合、新しいトークンを発行（24時間有効）
       const { data: newToken, error: tokenError } = await supabase
         .rpc('create_download_token', {
           p_purchase_id: existingPurchase.id,
           p_product_id: productId,
-          p_ttl_seconds: 900
+          p_ttl_seconds: 86400  // 24時間
         });
 
       if (tokenError || !newToken) {
@@ -194,12 +194,12 @@ export default async function handler(
 
     console.log('✅ 購入履歴を記録:', newPurchase.id);
 
-    // 7. ダウンロードトークンを発行（TTL=900秒）
+    // 7. ダウンロードトークンを発行（TTL=86400秒=24時間）
     const { data: downloadToken, error: tokenError } = await supabase
       .rpc('create_download_token', {
         p_purchase_id: newPurchase.id,
         p_product_id: productId,
-        p_ttl_seconds: 900
+        p_ttl_seconds: 86400  // 24時間
       });
 
     if (tokenError || !downloadToken) {
