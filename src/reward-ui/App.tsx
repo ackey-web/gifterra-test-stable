@@ -12,6 +12,7 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
 import { rewardSuccessConfetti } from "../utils/confetti";
+import AppShell from "../components/AppShell";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -140,7 +141,6 @@ export default function App() {
   
   // ---- 成功メッセージ表示用ステート ----
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [bgGradient, setBgGradient] = useState("");
 
   const addTokenToWallet = async () => {
     try {
@@ -361,15 +361,11 @@ export default function App() {
       if (args) {
         // 🎉 リワード受け取り成功エフェクト
         rewardSuccessConfetti().catch(console.warn);
-        setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
-        setTimeout(() => setBgGradient(""), 3000);
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
       } else {
         // 🎉 取引送信成功エフェクト
         rewardSuccessConfetti().catch(console.warn);
-        setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
-        setTimeout(() => setBgGradient(""), 3000);
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
       }
@@ -417,24 +413,18 @@ export default function App() {
           // 🎉 リワード受け取り成功エフェクト
           // 1. コンフェッティ（紙吹雪）
           rewardSuccessConfetti().catch(console.warn);
-          
-          // 2. オーラ／背景エフェクト
-          setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
-          setTimeout(() => setBgGradient(""), 3000);
-          
-          // 3. 成功メッセージ表示
+
+          // 2. 成功メッセージ表示
           setShowSuccessMessage(true);
           setTimeout(() => setShowSuccessMessage(false), 3000);
-          
+
           // showAddTokenは常時表示のため削除
         } else {
           // 🎉 取引送信成功エフェクト
           rewardSuccessConfetti().catch(console.warn);
-          setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
-          setTimeout(() => setBgGradient(""), 3000);
           setShowSuccessMessage(true);
           setTimeout(() => setShowSuccessMessage(false), 3000);
-          
+
           // showAddTokenは常時表示のため削除
         }
         setIsWriting(false);
@@ -499,63 +489,22 @@ export default function App() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        width: "100vw",
-        maxWidth: "100vw",
-        background: bgGradient || "#0b1620",
-        backgroundImage: bgGradient ? 'none' : `url(${customBgImage})`,
-        backgroundSize: bgGradient ? "200% 200%" : "cover",
-        backgroundPosition: bgGradient ? "0% 50%" : "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        animation: bgGradient ? "gradientShift 3s ease-in-out" : "none",
-        color: "#fff",
-        display: "grid",
-        gridTemplateRows: "auto 1fr auto",
-        alignContent: "start",
-        padding: "14px 10px 16px",
-        margin: 0,
-        overflowX: "hidden",
-        boxSizing: "border-box",
-        position: "relative",
-        transition: "background 0.8s ease"
-      }}
+    <AppShell
+      backgroundImage={customBgImage}
+      accentColor="#FF6B6B" // リワード用: オレンジ〜ピンク系
+      title="🎁 Daily Reward"
+      subtitle="毎日トークンを受け取ろう"
     >
-      {/* ロゴ（元レイアウト） */}
-      <div style={{ display: "grid", placeItems: "center", marginTop: 2 }}>
-        <img
-          src="/gifterra-logo.png"
-          alt="GIFTERRA"
-          style={{
-            width: "clamp(120px, 16vw, 180px)",
-            height: "auto",
-            objectFit: "contain"
-          }}
-        />
-      </div>
-
-      {/* 中央コンテンツ（元レイアウトを維持） */}
+      {/* メインコンテンツ */}
       <div
         style={{
-          marginTop: 26,
-          display: "grid",
-          justifyItems: "center",
-          gap: 10
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+          alignItems: "center"
         }}
       >
-        <h1
-          style={{
-            fontSize: "clamp(22px, 2.6vw, 30px)",
-            margin: "0 0 12px",
-            lineHeight: 1.3
-          }}
-        >
-          <span role="img" aria-label="gift">🎁</span> Daily Reward
-        </h1>
-
-        {/* 接続状態（元の色/余白を維持） */}
+        {/* 接続状態 */}
         <p
           style={{
             margin: "6px 0 8px 0",
@@ -772,6 +721,6 @@ export default function App() {
           100% { background-position: 0% 50%; }
         }
       `}</style>
-    </main>
+    </AppShell>
   );
 }

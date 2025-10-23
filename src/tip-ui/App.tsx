@@ -14,6 +14,7 @@ import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
 import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
+import AppShell from "../components/AppShell";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -765,22 +766,25 @@ export default function TipApp() {
 
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: bgGradient || "#0b1620",
-        backgroundImage: bgGradient ? 'none' : `url(${customBgImage})`,
-        backgroundSize: bgGradient ? "initial" : "cover",
-        backgroundPosition: bgGradient ? "initial" : "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        color: "#fff",
-        display: "grid",
-        gridTemplateRows: "auto 1fr auto", 
-        padding: "24px 12px 20px",
-        transition: "background 0.8s ease",
-      }}
+    <AppShell
+      backgroundImage={customBgImage}
+      accentColor="#3B82F6"
+      title="💝 Send TIP"
+      subtitle="プロジェクトを応援しよう"
     >
+      {/* 動的グラデーションオーバーレイ（感情分析・Tip成功エフェクト用）*/}
+      {bgGradient && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: bgGradient,
+            transition: "background 0.8s ease",
+            zIndex: 5,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {/* 感情分析オーバーレイ */}
       {sentimentState !== "idle" && (
         <div
@@ -854,14 +858,16 @@ export default function TipApp() {
         }
       `}</style>
 
-      <header style={{ textAlign: "center", marginBottom: 10 }}>
-        <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ width: "clamp(90px, 12vw, 140px)", marginBottom: 22, filter: "drop-shadow(0 10px 22px rgba(0,0,0,.30))" }} />
-        <h1 style={{ fontSize: "clamp(22px, 2.4vw, 28px)", margin: "10px 0 6px" }}>🎁 Send Your Gift</h1>
-        <p style={{ opacity: 0.85, margin: "0 0 4px", fontSize: 13 }}>あなたの想いを、Tipとして贈る。</p>
-        <div style={{ fontSize: 13, fontWeight: address ? 800 : 500, color: address ? "#22c55e" : "rgba(255,255,255,0.75)", marginTop: 8 }}>
-          {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
-        </div>
-      </header>
+      {/* ウォレット接続状態 */}
+      <div style={{
+        textAlign: "center",
+        marginBottom: 16,
+        fontSize: 13,
+        fontWeight: address ? 800 : 500,
+        color: address ? "#22c55e" : "rgba(255,255,255,0.75)"
+      }}>
+        {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
+      </div>
 
       <section style={{ 
         display: "grid", 
@@ -1246,6 +1252,6 @@ export default function TipApp() {
       <footer style={{ textAlign: "center", fontSize: 12, opacity: 0.6, marginTop: 6 }}>
         Presented by <strong>METATRON.</strong>
       </footer>
-    </main>
+    </AppShell>
   );
 }
