@@ -312,19 +312,24 @@ export default function AdminDashboard() {
   
   // 広告データの読み込み
   const loadAdData = () => {
+    console.log('📂 広告データ読み込み開始');
     try {
       const saved = localStorage.getItem('gifterra-ads');
+      console.log('📂 localStorage "gifterra-ads":', saved);
       if (saved) {
         const parsed = JSON.parse(saved);
+        console.log('📂 パース結果:', parsed);
         if (parsed.ads && Array.isArray(parsed.ads)) {
+          console.log('✅ 広告データを設定:', parsed.ads);
           setAdManagementData(parsed.ads);
           return;
         }
       }
     } catch (error) {
-      console.error('Failed to load ad data:', error);
+      console.error('❌ Failed to load ad data:', error);
     }
     // デフォルトデータ
+    console.log('📂 デフォルト広告データを設定');
     setAdManagementData([
       { src: "/ads/ad1.png", href: "https://example.com/1" },
       { src: "/ads/ad2.png", href: "https://example.com/2" },
@@ -1089,8 +1094,14 @@ export default function AdminDashboard() {
 
     // adManagementDataが更新されたときにeditingAdsを同期
     useEffect(() => {
+      console.log('🔄 adManagementData更新:', adManagementData);
       setEditingAds(adManagementData);
     }, [adManagementData]);
+
+    // デバッグ: editingAdsの状態を確認
+    useEffect(() => {
+      console.log('📋 editingAds更新:', editingAds);
+    }, [editingAds]);
 
     const handleSave = () => {
       saveAdData(editingAds);
@@ -1288,28 +1299,39 @@ export default function AdminDashboard() {
                   style={{ display: "none" }}
                   id={`ad-image-upload-${index}`}
                   onChange={async (e) => {
+                    console.log('📁 ファイル選択イベント発火', e.target.files);
                     const file = e.target.files?.[0];
                     if (file) {
+                      console.log('📤 アップロード開始:', { name: file.name, size: file.size, type: file.type });
                       try {
                         // Supabaseに画像をアップロード（PUBLICバケットを使用）
+                        console.log('📤 uploadImage呼び出し...');
                         const imageUrl = await uploadImage(file, 'PUBLIC');
+                        console.log('✅ アップロード完了:', imageUrl);
                         if (imageUrl) {
                           updateAd(index, 'src', imageUrl);
                           alert('✅ 画像のアップロードが完了しました！');
                         }
                       } catch (error: any) {
-                        console.error('画像アップロードエラー:', error);
-                        alert(`❌ 画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                        console.error('❌ 画像アップロードエラー:', error);
+                        alert(`❌ 画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}\n\n詳細はコンソールを確認してください。`);
                       } finally {
                         // ファイル入力をリセット（同じファイルを再度選択できるようにする）
                         e.target.value = '';
                       }
+                    } else {
+                      console.log('⚠️ ファイルが選択されませんでした');
                     }
                   }}
                 />
                 <button
                   type="button"
-                  onClick={() => document.getElementById(`ad-image-upload-${index}`)?.click()}
+                  onClick={() => {
+                    console.log(`🖱️ 広告スロット${index}のファイル選択ボタンクリック`);
+                    const input = document.getElementById(`ad-image-upload-${index}`);
+                    console.log('input要素:', input);
+                    input?.click();
+                  }}
                   style={{
                     padding: "10px 16px",
                     background: "#059669",
@@ -1399,21 +1421,26 @@ export default function AdminDashboard() {
               style={{ display: "none" }}
               id="reward-bg-upload"
               onChange={async (e) => {
+                console.log('📁 Reward背景画像選択イベント発火', e.target.files);
                 const file = e.target.files?.[0];
                 if (file) {
+                  console.log('📤 Reward背景画像アップロード開始:', { name: file.name, size: file.size });
                   try {
                     const imageUrl = await uploadImage(file, 'PUBLIC');
+                    console.log('✅ Reward背景画像アップロード完了:', imageUrl);
                     if (imageUrl) {
                       setRewardBgImage(imageUrl);
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
                     }
                   } catch (error: any) {
-                    console.error('背景画像アップロードエラー:', error);
-                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                    console.error('❌ 背景画像アップロードエラー:', error);
+                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}\n\n詳細はコンソールを確認してください。`);
                   } finally {
                     // ファイル入力をリセット
                     e.target.value = '';
                   }
+                } else {
+                  console.log('⚠️ Reward背景画像が選択されませんでした');
                 }
               }}
             />
@@ -1747,21 +1774,26 @@ export default function AdminDashboard() {
               style={{ display: "none" }}
               id="tip-bg-upload"
               onChange={async (e) => {
+                console.log('📁 TIP背景画像選択イベント発火', e.target.files);
                 const file = e.target.files?.[0];
                 if (file) {
+                  console.log('📤 TIP背景画像アップロード開始:', { name: file.name, size: file.size });
                   try {
                     const imageUrl = await uploadImage(file, 'PUBLIC');
+                    console.log('✅ TIP背景画像アップロード完了:', imageUrl);
                     if (imageUrl) {
                       setTipBgImage(imageUrl);
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
                     }
                   } catch (error: any) {
-                    console.error('TIP背景画像アップロードエラー:', error);
-                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                    console.error('❌ TIP背景画像アップロードエラー:', error);
+                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}\n\n詳細はコンソールを確認してください。`);
                   } finally {
                     // ファイル入力をリセット
                     e.target.value = '';
                   }
+                } else {
+                  console.log('⚠️ TIP背景画像が選択されませんでした');
                 }
               }}
             />
