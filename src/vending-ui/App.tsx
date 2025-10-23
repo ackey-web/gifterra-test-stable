@@ -175,18 +175,31 @@ export default function VendingApp() {
       }
 
       // 各購入のダウンロードトークンを取得
+      const purchaseIds = downloadablePurchases.map((p: any) => p.purchase_id);
+      console.log('📦 [ZIP] 検索対象のpurchase_id:', purchaseIds);
+
       const { data: tokens, error } = await supabase
         .from('download_tokens')
         .select('token, purchase_id')
-        .in('purchase_id', downloadablePurchases.map((p: any) => p.purchase_id))
+        .in('purchase_id', purchaseIds)
         .eq('is_consumed', false)
         .gt('expires_at', new Date().toISOString());
 
       console.log('📦 [ZIP] トークン取得結果:', { tokens, error, count: tokens?.length });
 
-      if (error || !tokens || tokens.length === 0) {
-        console.error('❌ [ZIP] トークン取得エラー:', error);
-        alert(`ダウンロードトークンの取得に失敗しました\n\n詳細: ${error?.message || 'トークンが見つかりません'}`);
+      if (error) {
+        console.error('❌ [ZIP] Supabaseエラー:', error);
+        alert(`ダウンロードトークンの取得に失敗しました\n\nエラー: ${error.message}`);
+        return;
+      }
+
+      if (!tokens || tokens.length === 0) {
+        console.error('❌ [ZIP] トークンが見つかりません:', {
+          購入件数: downloadablePurchases.length,
+          検索したID: purchaseIds,
+          見つかったトークン: tokens
+        });
+        alert(`ダウンロード可能なトークンが見つかりませんでした\n\n購入件数: ${downloadablePurchases.length}件\nトークン: 0件\n\n※トークンが期限切れの可能性があります`);
         return;
       }
 
