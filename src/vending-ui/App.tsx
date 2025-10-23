@@ -123,6 +123,17 @@ export default function VendingApp() {
         details: downloadable
       });
 
+      // 詳細情報を見やすく表示
+      console.log(`📊 [購入履歴] 統計: 全${data?.length}件中、ダウンロード可能${count}件`);
+
+      if (data && data.length > 0) {
+        console.table(data.map((p: any) => ({
+          商品名: p.product_name,
+          有効トークン: p.has_valid_token ? '✅' : '❌',
+          購入日時: new Date(p.purchased_at).toLocaleString('ja-JP')
+        })));
+      }
+
       setDownloadablePurchasesCount(count);
     } catch (err) {
       console.error('❌ [購入履歴] 取得エラー:', err);
