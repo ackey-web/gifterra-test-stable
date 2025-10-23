@@ -23,6 +23,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
   const [isLoading, setIsLoading] = useState(false);
   const [kodomiProfile, setKodomiProfile] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isClearing = useRef(false); // チャット履歴削除中フラグ
 
   // URLをリンク化する関数
   const linkifyUrls = (text: string) => {
@@ -147,6 +148,12 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
   useEffect(() => {
     if (!walletAddress || messages.length === 0) return;
 
+    // チャット履歴削除中は保存しない
+    if (isClearing.current) {
+      isClearing.current = false; // フラグをリセット
+      return;
+    }
+
     const storageKey = `gifterra_chat_${walletAddress}`;
     try {
       // 最新10件のみ保存してストレージ容量を節約
@@ -190,6 +197,9 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
             const storageKey = `gifterra_chat_${walletAddress}`;
             localStorage.removeItem(storageKey);
 
+            // チャット履歴削除中フラグを設定
+            isClearing.current = true;
+
             // 初期メッセージにリセット
             const greeting: Message = {
               role: 'assistant',
@@ -197,7 +207,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
               timestamp: new Date()
             };
             setMessages([greeting]);
-            console.log('🗑️ 問題解決後にチャット履歴を削除しました');
+            console.log('🗑️ チャット履歴を削除しました');
           }
         }, 1000);
       }
@@ -304,6 +314,9 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
 
     const storageKey = `gifterra_chat_${walletAddress}`;
     localStorage.removeItem(storageKey);
+
+    // チャット履歴削除中フラグを設定
+    isClearing.current = true;
 
     // 初期メッセージにリセット
     const greeting: Message = {
