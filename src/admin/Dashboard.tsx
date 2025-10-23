@@ -1,5 +1,5 @@
 // src/admin/Dashboard.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useAddress, ConnectWallet, useContract, useContractRead } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
@@ -24,7 +24,8 @@ import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } fr
 import VendingDashboardNew from "./vending/VendingDashboardNew";
 import ProductManager from "./products/ProductManager";
 import DiagnosticsPage from "./DiagnosticsPage";
-import { uploadImage } from "../lib/supabase";
+import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
+import { calculateFileHash } from "../utils/fileHash";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -1088,6 +1089,9 @@ export default function AdminDashboard() {
   // 広告データをコンポーネント内で管理するために状態を昇格
   const [editingAds, setEditingAds] = useState<AdData[]>([]);
 
+  // 以前の画像URLを追跡（古い画像削除用）
+  const previousAdImagesRef = useRef<string[]>([]);
+
   // adManagementDataが変わったらeditingAdsを更新（初回のみ）
   useEffect(() => {
     if (editingAds.length === 0 && adManagementData.length > 0) {
@@ -1123,6 +1127,9 @@ export default function AdminDashboard() {
     const [rewardBgImage, setRewardBgImage] = useState<string>(() => {
       return localStorage.getItem('reward-bg-image') || '';
     });
+
+    // 以前の背景画像URLを追跡（古い画像削除用）
+    const previousRewardBgRef = useRef<string>(localStorage.getItem('reward-bg-image') || '');
 
     // マウント確認（デバッグ用）
     useEffect(() => {
@@ -1315,12 +1322,29 @@ export default function AdminDashboard() {
                     if (file) {
                       console.log('📤 アップロード開始:', { name: file.name, size: file.size, type: file.type });
                       try {
-                        // Supabaseに画像をアップロード（PUBLICバケットを使用）
+                        // ファイルハッシュを計算して重複チェック
+                        const fileHash = await calculateFileHash(file);
+                        console.log('🔍 ファイルハッシュ:', fileHash);
+
+                        // 新しい画像をアップロード
                         console.log('📤 uploadImage呼び出し...');
-                        const imageUrl = await uploadImage(file, 'PUBLIC');
+                        const imageUrl = await uploadImage(file, 'gh-public');
                         console.log('✅ アップロード完了:', imageUrl);
+
                         if (imageUrl) {
+                          // 古い画像を削除（差し替えの場合）
+                          const previousUrl = previousAdImagesRef.current[index];
+                          if (previousUrl && previousUrl !== imageUrl) {
+                            console.log('🗑️ 古い広告画像を削除:', previousUrl);
+                            const deleted = await deleteFileFromUrl(previousUrl);
+                            if (deleted) {
+                              console.log('✅ 古い広告画像を削除しました');
+                            }
+                          }
+
+                          // 新しい画像を設定
                           updateAd(index, 'src', imageUrl);
+                          previousAdImagesRef.current[index] = imageUrl;
                           alert('✅ 画像のアップロードが完了しました！');
                         }
                       } catch (error: any) {
@@ -1437,10 +1461,28 @@ export default function AdminDashboard() {
                 if (file) {
                   console.log('📤 Reward背景画像アップロード開始:', { name: file.name, size: file.size });
                   try {
-                    const imageUrl = await uploadImage(file, 'PUBLIC');
+                    // ファイルハッシュを計算して重複チェック
+                    const fileHash = await calculateFileHash(file);
+                    console.log('🔍 ファイルハッシュ:', fileHash);
+
+                    // 新しい背景画像をアップロード
+                    const imageUrl = await uploadImage(file, 'gh-public');
                     console.log('✅ Reward背景画像アップロード完了:', imageUrl);
+
                     if (imageUrl) {
+                      // 古い背景画像を削除（差し替えの場合）
+                      const previousUrl = previousRewardBgRef.current;
+                      if (previousUrl && previousUrl !== imageUrl) {
+                        console.log('🗑️ 古いReward背景画像を削除:', previousUrl);
+                        const deleted = await deleteFileFromUrl(previousUrl);
+                        if (deleted) {
+                          console.log('✅ 古いReward背景画像を削除しました');
+                        }
+                      }
+
+                      // 新しい背景画像を設定
                       setRewardBgImage(imageUrl);
+                      previousRewardBgRef.current = imageUrl;
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
                     }
                   } catch (error: any) {
@@ -1749,6 +1791,9 @@ export default function AdminDashboard() {
       return localStorage.getItem('tip-bg-image') || '';
     });
 
+    // 以前の背景画像URLを追跡（古い画像削除用）
+    const previousTipBgRef = useRef<string>(localStorage.getItem('tip-bg-image') || '');
+
     const handleSaveTipBg = () => {
       if (tipBgImage) {
         localStorage.setItem('tip-bg-image', tipBgImage);
@@ -1790,10 +1835,28 @@ export default function AdminDashboard() {
                 if (file) {
                   console.log('📤 TIP背景画像アップロード開始:', { name: file.name, size: file.size });
                   try {
-                    const imageUrl = await uploadImage(file, 'PUBLIC');
+                    // ファイルハッシュを計算して重複チェック
+                    const fileHash = await calculateFileHash(file);
+                    console.log('🔍 ファイルハッシュ:', fileHash);
+
+                    // 新しい背景画像をアップロード
+                    const imageUrl = await uploadImage(file, 'gh-public');
                     console.log('✅ TIP背景画像アップロード完了:', imageUrl);
+
                     if (imageUrl) {
+                      // 古い背景画像を削除（差し替えの場合）
+                      const previousUrl = previousTipBgRef.current;
+                      if (previousUrl && previousUrl !== imageUrl) {
+                        console.log('🗑️ 古いTIP背景画像を削除:', previousUrl);
+                        const deleted = await deleteFileFromUrl(previousUrl);
+                        if (deleted) {
+                          console.log('✅ 古いTIP背景画像を削除しました');
+                        }
+                      }
+
+                      // 新しい背景画像を設定
                       setTipBgImage(imageUrl);
+                      previousTipBgRef.current = imageUrl;
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
                     }
                   } catch (error: any) {
