@@ -1085,24 +1085,44 @@ export default function AdminDashboard() {
 
 
 
+  // 広告データをコンポーネント内で管理するために状態を昇格
+  const [editingAds, setEditingAds] = useState<AdData[]>([]);
+
+  // adManagementDataが変わったらeditingAdsを更新（初回のみ）
+  useEffect(() => {
+    if (editingAds.length === 0 && adManagementData.length > 0) {
+      console.log('🔄 広告データ初期化:', adManagementData);
+      setEditingAds(adManagementData);
+    }
+  }, [adManagementData, editingAds.length]);
+
+  // デバッグ: editingAdsの状態を確認
+  useEffect(() => {
+    console.log('📋 editingAds更新:', editingAds);
+  }, [editingAds]);
+
+  // 広告データ操作関数（親で定義して再マウント時も保持）
+  const updateAd = (index: number, field: 'src' | 'href', value: string) => {
+    const updated = [...editingAds];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditingAds(updated);
+  };
+
+  const addAdSlot = () => {
+    if (editingAds.length < 3) {
+      setEditingAds([...editingAds, { src: '', href: '' }]);
+    }
+  };
+
+  const removeAdSlot = (index: number) => {
+    setEditingAds(editingAds.filter((_, i) => i !== index));
+  };
+
   // リワードUI管理ページコンポーネント
   const RewardUIManagementPage = () => {
-    const [editingAds, setEditingAds] = useState<AdData[]>([]);
     const [rewardBgImage, setRewardBgImage] = useState<string>(() => {
       return localStorage.getItem('reward-bg-image') || '';
     });
-
-    // 初回マウント時のみadManagementDataからeditingAdsを初期化（無限ループ防止）
-    useEffect(() => {
-      console.log('🔄 初回マウント: adManagementDataから初期化', adManagementData);
-      setEditingAds(adManagementData);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // 空の依存配列で初回のみ実行
-
-    // デバッグ: editingAdsの状態を確認
-    useEffect(() => {
-      console.log('📋 editingAds更新:', editingAds);
-    }, [editingAds]);
 
     const handleSave = () => {
       saveAdData(editingAds);
@@ -1113,22 +1133,6 @@ export default function AdminDashboard() {
         localStorage.removeItem('reward-bg-image');
       }
       alert('✅ 設定を保存しました！');
-    };
-
-    const updateAd = (index: number, field: 'src' | 'href', value: string) => {
-      const updated = [...editingAds];
-      updated[index] = { ...updated[index], [field]: value };
-      setEditingAds(updated);
-    };
-
-    const addAdSlot = () => {
-      if (editingAds.length < 3) {
-        setEditingAds([...editingAds, { src: '', href: '' }]);
-      }
-    };
-
-    const removeAdSlot = (index: number) => {
-      setEditingAds(editingAds.filter((_, i) => i !== index));
     };
 
     return (
@@ -2206,9 +2210,13 @@ export default function AdminDashboard() {
       </div>
       {/* ページ切り替え */}
       {currentPage === "reward-ui-management" ? (
-        <RewardUIManagementPage />
+        <React.Fragment key="reward-ui">
+          <RewardUIManagementPage />
+        </React.Fragment>
       ) : currentPage === "tip-ui-management" ? (
-        <TipUIManagementPage />
+        <React.Fragment key="tip-ui">
+          <TipUIManagementPage />
+        </React.Fragment>
       ) : currentPage === "vending-management" ? (
         <VendingDashboardNew />
       ) : currentPage === "product-management" ? (
