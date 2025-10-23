@@ -12,7 +12,6 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
 import { rewardSuccessConfetti } from "../utils/confetti";
-import AppShell from "../components/AppShell";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -489,25 +488,64 @@ export default function App() {
   };
 
   return (
-    <AppShell
-      backgroundImage={customBgImage}
-      accentColor="#FF6B6B" // リワード用: オレンジ〜ピンク系
-      title="🎁 Daily Reward"
-      subtitle="毎日トークンを受け取ろう"
+    <main
+      style={{
+        minHeight: "100vh",
+        width: "100vw",
+        maxWidth: "100vw",
+        background: "#0b1620",
+        backgroundImage: `url(${customBgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        color: "#fff",
+        display: "grid",
+        gridTemplateRows: "auto 1fr auto",
+        alignContent: "start",
+        padding: "14px 10px 16px",
+        margin: 0,
+        overflowX: "hidden",
+        boxSizing: "border-box",
+        position: "relative",
+      }}
     >
-      {/* メインコンテンツ */}
+      {/* タイトル（ロゴなし・モダンフォント） */}
+      <div style={{ textAlign: "center", marginTop: 8, marginBottom: 20 }}>
+        <h1
+          style={{
+            fontSize: "clamp(24px, 3vw, 32px)",
+            margin: "0 0 8px",
+            lineHeight: 1.2,
+            fontWeight: 800,
+            textShadow: "0 2px 12px rgba(0,0,0,0.5)"
+          }}
+        >
+          🎁 Daily Reward
+        </h1>
+        <p style={{
+          fontSize: 14,
+          opacity: 0.85,
+          margin: 0,
+          fontWeight: 500
+        }}>
+          毎日トークンを受け取ろう
+        </p>
+      </div>
+
+      {/* 中央コンテンツ */}
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-          alignItems: "center"
+          display: "grid",
+          justifyItems: "center",
+          gap: 12,
+          paddingTop: 4
         }}
       >
         {/* 接続状態 */}
         <p
           style={{
-            margin: "6px 0 8px 0",
+            margin: "0 0 6px 0",
             fontSize: 13,
             fontWeight: address ? 700 : 400,
             color: address ? "#4ade80" : "rgba(255,255,255,0.75)"
@@ -545,17 +583,21 @@ export default function App() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              height: 48, // ウォレット接続ボタンと同じ高さに変更
-              padding: "0 16px",
-              backgroundColor: canClaim ? "#ff7a00" : "#3a3f46",
+              height: 48,
+              padding: "0 20px",
+              background: canClaim
+                ? "linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%)"
+                : "rgba(58, 63, 70, 0.8)",
               color: "#fff",
-              borderRadius: 10,
-              border: "none",
+              borderRadius: 12,
+              border: canClaim ? "none" : "1px solid rgba(255,255,255,0.1)",
               cursor: canClaim ? "pointer" : "not-allowed",
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 700,
               lineHeight: 1,
-              opacity: canClaim ? 1 : 0.7
+              opacity: canClaim ? 1 : 0.7,
+              boxShadow: canClaim ? "0 4px 16px rgba(255,107,107,0.3)" : "none",
+              transition: "all 0.2s ease"
             }}
           >
             {isMaintenance
@@ -589,13 +631,16 @@ export default function App() {
               <button
                 onClick={addTokenToWallet}
                 style={{
-                  background: "#2563eb",
+                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                   color: "#fff",
                   border: "none",
-                  borderRadius: 8,
-                  padding: "6px 14px",
+                  borderRadius: 10,
+                  padding: "8px 16px",
                   fontSize: 13,
-                  cursor: "pointer"
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(59,130,246,0.3)",
+                  transition: "all 0.2s ease"
                 }}
               >
                 {TOKEN.SYMBOL} をウォレットに追加 🪙
@@ -604,20 +649,23 @@ export default function App() {
           )}
         </div>
 
-        {/* 情報カード（元レイアウト） */}
+        {/* 情報カード（モダンスタイル） */}
         <div
           style={{
             boxSizing: "border-box",
             width: "min(88vw, 520px)",
-            background: "rgba(255,255,255,0.06)",
-            padding: "8px 10px",
-            borderRadius: 12,
+            background: "rgba(255,255,255,0.08)",
+            backdropFilter: "blur(10px)",
+            padding: "12px 14px",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.12)",
             textAlign: "left",
-            fontSize: 12,
-            lineHeight: 1.35,
+            fontSize: 13,
+            lineHeight: 1.5,
             display: "grid",
-            rowGap: 4,
-            marginTop: 4
+            rowGap: 6,
+            marginTop: 4,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
           }}
         >
           <div><strong>Address:</strong> {address ?? "—"}</div>
@@ -648,7 +696,7 @@ export default function App() {
         />
       </div>
 
-      {/* フッター（元のまま） */}
+      {/* フッター */}
       <div
         style={{
           textAlign: "center",
@@ -721,6 +769,6 @@ export default function App() {
           100% { background-position: 0% 50%; }
         }
       `}</style>
-    </AppShell>
+    </main>
   );
 }
