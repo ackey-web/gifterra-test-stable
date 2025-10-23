@@ -44,7 +44,7 @@ CREATE POLICY "download_tokens: Buyers can read their own tokens"
 CREATE OR REPLACE FUNCTION create_download_token(
   p_purchase_id UUID,
   p_product_id UUID,
-  p_ttl_seconds INTEGER DEFAULT 900 -- デフォルト15分
+  p_ttl_seconds INTEGER DEFAULT 86400 -- デフォルト24時間
 )
 RETURNS TEXT AS $$
 DECLARE
