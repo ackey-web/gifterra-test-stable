@@ -314,6 +314,14 @@ export default function VendingApp() {
       return;
     }
 
+    // 在庫チェック
+    const stock = product.stock ?? 0;
+    const isUnlimited = product.is_unlimited ?? false;
+    if (!isUnlimited && stock <= 0) {
+      alert("申し訳ございません。この特典は売り切れました。");
+      return;
+    }
+
     // MetaMaskチェック
     if (!window.ethereum) {
       alert("MetaMaskがインストールされていません");
@@ -586,6 +594,11 @@ export default function VendingApp() {
               const price = `${Math.floor(Number(priceInTokens))} ${tokenSymbol}`;
               const isSelected = selectedProducts.includes(product.id);
 
+              // 在庫チェック
+              const stock = product.stock ?? 0;
+              const isUnlimited = product.is_unlimited ?? false;
+              const isSoldOut = !isUnlimited && stock <= 0;
+
               // 特典名の長さに応じてフォントサイズを調整
               const productName = product.name;
               const isLongName = productName.length > 8;
@@ -597,7 +610,7 @@ export default function VendingApp() {
                   onClick={() => handleProductSelect(product.id)}
                   onMouseEnter={() => handleProductHover(product)}
                   onMouseLeave={handleProductLeave}
-                  disabled={isPurchasing || isSelected}
+                  disabled={isPurchasing || isSelected || isSoldOut}
                   className="group relative overflow-hidden rounded-xl py-2.5 px-3 text-center transition-all hover:-translate-y-[1px] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     background: `linear-gradient(145deg, ${primaryColor}dd, ${secondaryColor}cc)`,
@@ -641,7 +654,15 @@ export default function VendingApp() {
                     {productName}
                   </div>
                   <div className="relative mt-0.5 text-xs text-white font-bold drop-shadow">{price}</div>
-                  {isSelected && (
+
+                  {/* 在庫表示 */}
+                  {!isUnlimited && (
+                    <div className={`relative mt-1 text-[10px] font-bold drop-shadow ${isSoldOut ? 'text-red-400' : stock <= 3 ? 'text-yellow-300' : 'text-white/70'}`}>
+                      {isSoldOut ? '売り切れ' : `残り${stock}個`}
+                    </div>
+                  )}
+
+                  {isSelected && !isSoldOut && (
                     <div className="relative mt-1 text-[10px] text-yellow-300">
                       {isPurchasing ? "受け取り中..." : "選択済み"}
                     </div>
