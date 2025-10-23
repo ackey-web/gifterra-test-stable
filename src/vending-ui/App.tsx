@@ -126,18 +126,24 @@ export default function VendingApp() {
     if (!address) return;
 
     try {
+      console.log('📦 [ZIP] ZIP一括ダウンロード開始', { address: address.toLowerCase() });
+
       // 購入履歴を取得
       const { data: purchases, error: purchasesError } = await supabase
         .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
 
+      console.log('📦 [ZIP] 購入履歴取得結果:', { purchases, error: purchasesError });
+
       if (purchasesError) {
-        console.error('購入履歴取得エラー:', purchasesError);
+        console.error('❌ [ZIP] 購入履歴取得エラー:', purchasesError);
         alert('購入履歴の取得に失敗しました');
         return;
       }
 
       // ダウンロード可能な購入のみフィルタ
       const downloadablePurchases = (purchases || []).filter((p: any) => p.has_valid_token);
+
+      console.log('📦 [ZIP] ダウンロード可能な購入:', downloadablePurchases);
 
       if (downloadablePurchases.length === 0) {
         alert('ダウンロード可能な特典がありません');
@@ -152,31 +158,50 @@ export default function VendingApp() {
         .eq('is_consumed', false)
         .gt('expires_at', new Date().toISOString());
 
+      console.log('📦 [ZIP] トークン取得結果:', { tokens, error, count: tokens?.length });
+
       if (error || !tokens || tokens.length === 0) {
-        console.error('トークン取得エラー:', error);
-        alert('ダウンロードトークンの取得に失敗しました');
+        console.error('❌ [ZIP] トークン取得エラー:', error);
+        alert(`ダウンロードトークンの取得に失敗しました\n\n詳細: ${error?.message || 'トークンが見つかりません'}`);
         return;
       }
 
       // ZIPファイル作成開始
+      console.log('📦 [ZIP] ZIPファイル作成開始');
       const zip = new JSZip();
       const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
+      console.log('📦 [ZIP] API URL:', apiUrl);
+
+      let successCount = 0;
+      let failCount = 0;
 
       // 各ファイルをダウンロードしてZIPに追加
       for (const tokenData of tokens) {
         const purchase = downloadablePurchases.find((p: any) => p.purchase_id === tokenData.purchase_id);
-        if (!purchase) continue;
+        if (!purchase) {
+          console.warn('⚠️ [ZIP] 購入情報が見つかりません:', tokenData);
+          continue;
+        }
 
         try {
           const downloadUrl = `${apiUrl}/api/download/${tokenData.token}`;
+          console.log(`📥 [ZIP] ダウンロード中: ${purchase.product_name}`, downloadUrl);
+
           const response = await fetch(downloadUrl);
+          console.log(`📥 [ZIP] レスポンス: ${purchase.product_name}`, {
+            ok: response.ok,
+            status: response.status,
+            contentType: response.headers.get('content-type')
+          });
 
           if (!response.ok) {
-            console.error(`${purchase.product_name}のダウンロードに失敗:`, response.statusText);
+            console.error(`❌ [ZIP] ${purchase.product_name}のダウンロードに失敗:`, response.statusText);
+            failCount++;
             continue;
           }
 
           const blob = await response.blob();
+          console.log(`📦 [ZIP] Blob取得: ${purchase.product_name}`, { size: blob.size, type: blob.type });
 
           // ファイル名とフォルダの決定（拡張子を保持）
           const contentType = response.headers.get('content-type') || '';
@@ -195,14 +220,27 @@ export default function VendingApp() {
             fileName = `${purchase.product_name}${extension}`;
           }
 
+          console.log(`📦 [ZIP] ファイル追加: ${fileName}`);
           zip.file(fileName, blob);
+          successCount++;
         } catch (err) {
-          console.error(`${purchase.product_name}の処理エラー:`, err);
+          console.error(`❌ [ZIP] ${purchase.product_name}の処理エラー:`, err);
+          failCount++;
         }
       }
 
+      console.log('📦 [ZIP] ファイル収集完了', { success: successCount, fail: failCount });
+
+      if (successCount === 0) {
+        alert('すべてのファイルのダウンロードに失敗しました');
+        return;
+      }
+
       // ZIPファイルを生成してダウンロード
+      console.log('📦 [ZIP] ZIP生成開始');
       const zipBlob = await zip.generateAsync({ type: 'blob' });
+      console.log('📦 [ZIP] ZIP生成完了:', { size: zipBlob.size });
+
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -212,10 +250,11 @@ export default function VendingApp() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      alert(`✅ ${tokens.length}個の特典をZIPでダウンロードしました！`);
+      console.log('✅ [ZIP] ZIPダウンロード完了');
+      alert(`✅ ${successCount}個の特典をZIPでダウンロードしました！${failCount > 0 ? `\n\n${failCount}個のファイルはダウンロードに失敗しました。` : ''}`);
     } catch (error) {
-      console.error('ZIP一括ダウンロードエラー:', error);
-      alert('ZIP一括ダウンロードに失敗しました');
+      console.error('❌ [ZIP] ZIP一括ダウンロードエラー:', error);
+      alert(`ZIP一括ダウンロードに失敗しました\n\n${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
 
