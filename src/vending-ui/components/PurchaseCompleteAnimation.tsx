@@ -207,7 +207,7 @@ export default function PurchaseCompleteAnimation({
                 <div style={{ textAlign: "left", paddingLeft: 10 }}>
                   • ダウンロードは<strong>1回限り</strong>です
                   <br />
-                  • ダウンロードURLの有効期限は<strong>15分間</strong>です
+                  • ダウンロードURLの有効期限は<strong>24時間</strong>です
                   <br />
                   • 期限切れの場合は、画面下部の「受け取り履歴」から再発行できます
                 </div>

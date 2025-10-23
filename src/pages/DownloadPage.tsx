@@ -141,7 +141,7 @@ export function DownloadPage() {
           <ul className="text-xs text-yellow-700 space-y-1">
             <li>• ダウンロードリンクは1回限り有効です</li>
             <li>• ダウンロード後、このリンクは無効になります</li>
-            <li>• リンクの有効期限は発行から15分間です</li>
+            <li>• リンクの有効期限は発行から24時間です</li>
             <li>• ダウンロードが完了するまでブラウザを閉じないでください</li>
           </ul>
         </div>
