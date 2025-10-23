@@ -1087,6 +1087,11 @@ export default function AdminDashboard() {
       return localStorage.getItem('reward-bg-image') || '';
     });
 
+    // adManagementDataが更新されたときにeditingAdsを同期
+    useEffect(() => {
+      setEditingAds(adManagementData);
+    }, [adManagementData]);
+
     const handleSave = () => {
       saveAdData(editingAds);
       // 背景画像も保存
@@ -1291,12 +1296,13 @@ export default function AdminDashboard() {
                         if (imageUrl) {
                           updateAd(index, 'src', imageUrl);
                           alert('✅ 画像のアップロードが完了しました！');
-                        } else {
-                          alert('❌ 画像のアップロードに失敗しました。');
                         }
                       } catch (error: any) {
                         console.error('画像アップロードエラー:', error);
                         alert(`❌ 画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                      } finally {
+                        // ファイル入力をリセット（同じファイルを再度選択できるようにする）
+                        e.target.value = '';
                       }
                     }
                   }}
@@ -1400,12 +1406,13 @@ export default function AdminDashboard() {
                     if (imageUrl) {
                       setRewardBgImage(imageUrl);
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
-                    } else {
-                      alert('❌ 背景画像のアップロードに失敗しました。');
                     }
                   } catch (error: any) {
                     console.error('背景画像アップロードエラー:', error);
                     alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                  } finally {
+                    // ファイル入力をリセット
+                    e.target.value = '';
                   }
                 }
               }}
@@ -1747,12 +1754,13 @@ export default function AdminDashboard() {
                     if (imageUrl) {
                       setTipBgImage(imageUrl);
                       alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
-                    } else {
-                      alert('❌ 背景画像のアップロードに失敗しました。');
                     }
                   } catch (error: any) {
                     console.error('TIP背景画像アップロードエラー:', error);
                     alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}`);
+                  } finally {
+                    // ファイル入力をリセット
+                    e.target.value = '';
                   }
                 }
               }}
