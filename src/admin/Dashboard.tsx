@@ -1124,6 +1124,12 @@ export default function AdminDashboard() {
       return localStorage.getItem('reward-bg-image') || '';
     });
 
+    // マウント確認（デバッグ用）
+    useEffect(() => {
+      console.log('✅ RewardUIManagementPage マウント');
+      return () => console.log('❌ RewardUIManagementPage アンマウント');
+    }, []);
+
     const handleSave = () => {
       saveAdData(editingAds);
       // 背景画像も保存
@@ -2208,16 +2214,14 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      {/* ページ切り替え */}
-      {currentPage === "reward-ui-management" ? (
-        <React.Fragment key="reward-ui">
-          <RewardUIManagementPage />
-        </React.Fragment>
-      ) : currentPage === "tip-ui-management" ? (
-        <React.Fragment key="tip-ui">
-          <TipUIManagementPage />
-        </React.Fragment>
-      ) : currentPage === "vending-management" ? (
+      {/* ページ切り替え（CSS表示切替でアンマウント防止） */}
+      <div style={{ display: currentPage === "reward-ui-management" ? "block" : "none" }}>
+        <RewardUIManagementPage />
+      </div>
+      <div style={{ display: currentPage === "tip-ui-management" ? "block" : "none" }}>
+        <TipUIManagementPage />
+      </div>
+      {currentPage === "vending-management" ? (
         <VendingDashboardNew />
       ) : currentPage === "product-management" ? (
         <ProductManager />
