@@ -94,30 +94,43 @@ export default function VendingApp() {
     fetchBalance();
   }, [address]);
 
-  // ダウンロード可能な購入数を取得（ZIP一括ダウンロードボタン表示用）
-  useEffect(() => {
+  // 購入履歴を取得する関数（ZIP一括ダウンロードボタン表示用）
+  const fetchPurchaseHistory = async () => {
     if (!address) {
       setDownloadablePurchasesCount(0);
       return;
     }
 
-    const fetchPurchaseHistory = async () => {
-      try {
-        const { data, error } = await supabase
-          .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
+    try {
+      console.log('🔍 [購入履歴] 取得開始:', { address: address.toLowerCase() });
 
-        if (error) {
-          console.error('購入履歴取得エラー:', error);
-          return;
-        }
+      const { data, error } = await supabase
+        .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
 
-        const count = (data || []).filter((p: any) => p.has_valid_token).length;
-        setDownloadablePurchasesCount(count);
-      } catch (err) {
-        console.error('購入履歴取得エラー:', err);
+      console.log('🔍 [購入履歴] 取得結果:', { data, error, dataLength: data?.length });
+
+      if (error) {
+        console.error('❌ [購入履歴] 取得エラー:', error);
+        return;
       }
-    };
 
+      const downloadable = (data || []).filter((p: any) => p.has_valid_token);
+      const count = downloadable.length;
+
+      console.log('🔍 [購入履歴] ダウンロード可能な購入:', {
+        total: data?.length,
+        downloadable: count,
+        details: downloadable
+      });
+
+      setDownloadablePurchasesCount(count);
+    } catch (err) {
+      console.error('❌ [購入履歴] 取得エラー:', err);
+    }
+  };
+
+  // ダウンロード可能な購入数を取得（ZIP一括ダウンロードボタン表示用）
+  useEffect(() => {
     fetchPurchaseHistory();
   }, [address]);
 
@@ -380,6 +393,9 @@ export default function VendingApp() {
             product,
             downloadUrl
           });
+
+          // 購入履歴を再取得（ZIPボタン表示用）
+          fetchPurchaseHistory();
         } else {
           // ダウンロードURLが生成されなかった
           alert(`受け取りは完了しましたが、ダウンロードURLの生成に失敗しました。管理者にお問い合わせください。`);
