@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAddress, useConnectionStatus } from '@thirdweb-dev/react';
-import JSZip from 'jszip';
 
 interface Purchase {
   purchase_id: string;
@@ -56,6 +55,39 @@ export function MyPurchasesPage() {
     }
   };
 
+  /**
+   * 個別ダウンロード処理
+   */
+  const handleDownload = async (purchaseId: string) => {
+    if (!address) return;
+
+    try {
+      // ダウンロードトークンを取得
+      const { data: tokens, error } = await supabase
+        .from('download_tokens')
+        .select('token')
+        .eq('purchase_id', purchaseId)
+        .eq('is_consumed', false)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1);
+
+      if (error || !tokens || tokens.length === 0) {
+        console.error('トークン取得エラー:', error);
+        alert('ダウンロードトークンの取得に失敗しました');
+        return;
+      }
+
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const downloadUrl = `${apiUrl}/api/download/${tokens[0].token}`;
+
+      // 新しいタブでダウンロード
+      window.open(downloadUrl, '_blank');
+    } catch (error) {
+      console.error('ダウンロードエラー:', error);
+      alert('ダウンロードに失敗しました');
+    }
+  };
+
   const handleRedownload = async (_purchaseId: string, _productName: string) => {
     if (!address) return;
 
@@ -66,96 +98,6 @@ export function MyPurchasesPage() {
     } catch (error) {
       console.error('再ダウンロードエラー:', error);
       alert('再ダウンロードに失敗しました');
-    }
-  };
-
-  /**
-   * 有効なダウンロードトークンをすべて取得してZIPでダウンロード
-   */
-  const handleDownloadAllAsZip = async () => {
-    if (!address) return;
-
-    try {
-      // ダウンロード可能な購入のみフィルタ
-      const downloadablePurchases = purchases.filter(p => p.has_valid_token);
-
-      if (downloadablePurchases.length === 0) {
-        alert('ダウンロード可能な特典がありません');
-        return;
-      }
-
-      // 各購入のダウンロードトークンを取得
-      const { data: tokens, error } = await supabase
-        .from('download_tokens')
-        .select('token, purchase_id')
-        .in('purchase_id', downloadablePurchases.map(p => p.purchase_id))
-        .eq('is_consumed', false)
-        .gt('expires_at', new Date().toISOString());
-
-      if (error || !tokens || tokens.length === 0) {
-        console.error('トークン取得エラー:', error);
-        alert('ダウンロードトークンの取得に失敗しました');
-        return;
-      }
-
-      // ZIPファイル作成開始
-      const zip = new JSZip();
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
-
-      // 各ファイルをダウンロードしてZIPに追加
-      for (const tokenData of tokens) {
-        const purchase = downloadablePurchases.find(p => p.purchase_id === tokenData.purchase_id);
-        if (!purchase) continue;
-
-        try {
-          const downloadUrl = `${apiUrl}/api/download/${tokenData.token}`;
-          const response = await fetch(downloadUrl);
-
-          if (!response.ok) {
-            console.error(`${purchase.product_name}のダウンロードに失敗:`, response.statusText);
-            continue;
-          }
-
-          const blob = await response.blob();
-
-          // ファイル名とフォルダの決定（拡張子を保持）
-          const contentType = response.headers.get('content-type') || '';
-          const contentDisposition = response.headers.get('content-disposition') || '';
-
-          // Content-Dispositionからファイル名を抽出
-          let fileName = purchase.product_name;
-          const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-          if (fileNameMatch && fileNameMatch[1]) {
-            fileName = fileNameMatch[1].replace(/['"]/g, '');
-          } else {
-            // Content-Typeから拡張子を推測
-            const extension = contentType.includes('zip') ? '.zip' :
-                             contentType.includes('pdf') ? '.pdf' :
-                             contentType.includes('image') ? '.jpg' : '';
-            fileName = `${purchase.product_name}${extension}`;
-          }
-
-          zip.file(fileName, blob);
-        } catch (err) {
-          console.error(`${purchase.product_name}の処理エラー:`, err);
-        }
-      }
-
-      // ZIPファイルを生成してダウンロード
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `gifterra-downloads-${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert(`✅ ${tokens.length}個の特典をZIPでダウンロードしました！`);
-    } catch (error) {
-      console.error('ZIP一括ダウンロードエラー:', error);
-      alert('ZIP一括ダウンロードに失敗しました');
     }
   };
 
@@ -245,31 +187,6 @@ export function MyPurchasesPage() {
 
         {!loading && !error && purchases.length > 0 && (
           <>
-            {/* ZIP一括ダウンロードボタン */}
-            {purchases.filter(p => p.has_valid_token).length > 0 && (
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg shadow-lg p-6 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-2">
-                      まとめてダウンロード
-                    </h3>
-                    <p className="text-purple-100 text-sm">
-                      ダウンロード可能な特典 {purchases.filter(p => p.has_valid_token).length} 個をZIPファイルにまとめてダウンロードできます
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleDownloadAllAsZip}
-                    className="bg-white hover:bg-gray-100 text-purple-600 font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                    </svg>
-                    ZIP一括ダウンロード
-                  </button>
-                </div>
-              </div>
-            )}
-
             {purchases.map((purchase) => (
               <div
                 key={purchase.purchase_id}
@@ -290,9 +207,15 @@ export function MyPurchasesPage() {
 
                   <div className="ml-4">
                     {purchase.has_valid_token ? (
-                      <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">
-                        ダウンロード可能
-                      </span>
+                      <button
+                        onClick={() => handleDownload(purchase.purchase_id)}
+                        className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                        </svg>
+                        ダウンロード
+                      </button>
                     ) : (
                       <button
                         onClick={() => handleRedownload(purchase.purchase_id, purchase.product_name)}

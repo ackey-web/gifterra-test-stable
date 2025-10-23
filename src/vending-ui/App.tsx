@@ -11,6 +11,8 @@ import VendingMachineShell from "./components/VendingMachineShell";
 import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
 import PurchaseConfirmDialog from "./components/PurchaseConfirmDialog";
 import PurchaseCompleteAnimation from "./components/PurchaseCompleteAnimation";
+import { supabase } from "../lib/supabase";
+import JSZip from "jszip";
 
 export default function VendingApp() {
   const address = useAddress();
@@ -61,6 +63,9 @@ export default function VendingApp() {
   const [confirmingProduct, setConfirmingProduct] = useState<typeof supabaseProducts[0] | null>(null);
   const [completedPurchase, setCompletedPurchase] = useState<{product: typeof supabaseProducts[0], downloadUrl: string} | null>(null);
 
+  // 購入履歴データ（ZIP一括ダウンロード用）
+  const [downloadablePurchasesCount, setDownloadablePurchasesCount] = useState(0);
+
   // ヘッダー画像を取得（管理画面で設定）
   const headerImage = vendingMachine?.settings?.design?.headerImage;
 
@@ -88,6 +93,131 @@ export default function VendingApp() {
 
     fetchBalance();
   }, [address]);
+
+  // ダウンロード可能な購入数を取得（ZIP一括ダウンロードボタン表示用）
+  useEffect(() => {
+    if (!address) {
+      setDownloadablePurchasesCount(0);
+      return;
+    }
+
+    const fetchPurchaseHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
+
+        if (error) {
+          console.error('購入履歴取得エラー:', error);
+          return;
+        }
+
+        const count = (data || []).filter((p: any) => p.has_valid_token).length;
+        setDownloadablePurchasesCount(count);
+      } catch (err) {
+        console.error('購入履歴取得エラー:', err);
+      }
+    };
+
+    fetchPurchaseHistory();
+  }, [address]);
+
+  // ZIP一括ダウンロード処理
+  const handleDownloadAllAsZip = async () => {
+    if (!address) return;
+
+    try {
+      // 購入履歴を取得
+      const { data: purchases, error: purchasesError } = await supabase
+        .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
+
+      if (purchasesError) {
+        console.error('購入履歴取得エラー:', purchasesError);
+        alert('購入履歴の取得に失敗しました');
+        return;
+      }
+
+      // ダウンロード可能な購入のみフィルタ
+      const downloadablePurchases = (purchases || []).filter((p: any) => p.has_valid_token);
+
+      if (downloadablePurchases.length === 0) {
+        alert('ダウンロード可能な特典がありません');
+        return;
+      }
+
+      // 各購入のダウンロードトークンを取得
+      const { data: tokens, error } = await supabase
+        .from('download_tokens')
+        .select('token, purchase_id')
+        .in('purchase_id', downloadablePurchases.map((p: any) => p.purchase_id))
+        .eq('is_consumed', false)
+        .gt('expires_at', new Date().toISOString());
+
+      if (error || !tokens || tokens.length === 0) {
+        console.error('トークン取得エラー:', error);
+        alert('ダウンロードトークンの取得に失敗しました');
+        return;
+      }
+
+      // ZIPファイル作成開始
+      const zip = new JSZip();
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
+
+      // 各ファイルをダウンロードしてZIPに追加
+      for (const tokenData of tokens) {
+        const purchase = downloadablePurchases.find((p: any) => p.purchase_id === tokenData.purchase_id);
+        if (!purchase) continue;
+
+        try {
+          const downloadUrl = `${apiUrl}/api/download/${tokenData.token}`;
+          const response = await fetch(downloadUrl);
+
+          if (!response.ok) {
+            console.error(`${purchase.product_name}のダウンロードに失敗:`, response.statusText);
+            continue;
+          }
+
+          const blob = await response.blob();
+
+          // ファイル名とフォルダの決定（拡張子を保持）
+          const contentType = response.headers.get('content-type') || '';
+          const contentDisposition = response.headers.get('content-disposition') || '';
+
+          // Content-Dispositionからファイル名を抽出
+          let fileName = purchase.product_name;
+          const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (fileNameMatch && fileNameMatch[1]) {
+            fileName = fileNameMatch[1].replace(/['"]/g, '');
+          } else {
+            // Content-Typeから拡張子を推測
+            const extension = contentType.includes('zip') ? '.zip' :
+                             contentType.includes('pdf') ? '.pdf' :
+                             contentType.includes('image') ? '.jpg' : '';
+            fileName = `${purchase.product_name}${extension}`;
+          }
+
+          zip.file(fileName, blob);
+        } catch (err) {
+          console.error(`${purchase.product_name}の処理エラー:`, err);
+        }
+      }
+
+      // ZIPファイルを生成してダウンロード
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gifterra-downloads-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert(`✅ ${tokens.length}個の特典をZIPでダウンロードしました！`);
+    } catch (error) {
+      console.error('ZIP一括ダウンロードエラー:', error);
+      alert('ZIP一括ダウンロードに失敗しました');
+    }
+  };
 
   const handleProductSelect = (productId: string) => {
     // ウォレット接続チェック
@@ -604,6 +734,29 @@ export default function VendingApp() {
                 <div className="text-center text-sm text-white/30">
                   <p className="mb-2">📦 受け取った特典がここに表示されます</p>
                   <p>上の特典ボタンから受け取ってください</p>
+                </div>
+              )}
+
+              {/* ZIP一括ダウンロードボタン */}
+              {downloadablePurchasesCount > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <button
+                    onClick={handleDownloadAllAsZip}
+                    className="w-full py-3 px-4 rounded-xl font-bold text-white transition-all hover:-translate-y-[1px] active:translate-y-[1px] flex items-center justify-center gap-2"
+                    style={{
+                      background: "linear-gradient(145deg, rgba(139, 92, 246, 0.8), rgba(109, 40, 217, 0.8))",
+                      boxShadow: "0 4px 12px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      border: "1px solid rgba(139, 92, 246, 0.5)",
+                    }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    📦 まとめてZIPダウンロード ({downloadablePurchasesCount}個)
+                  </button>
+                  <p className="text-xs text-white/40 text-center mt-2">
+                    ダウンロード可能な特典をまとめてZIPファイルでダウンロードできます
+                  </p>
                 </div>
               )}
             </div>
