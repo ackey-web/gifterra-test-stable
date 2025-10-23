@@ -1087,16 +1087,17 @@ export default function AdminDashboard() {
 
   // リワードUI管理ページコンポーネント
   const RewardUIManagementPage = () => {
-    const [editingAds, setEditingAds] = useState<AdData[]>(adManagementData);
+    const [editingAds, setEditingAds] = useState<AdData[]>([]);
     const [rewardBgImage, setRewardBgImage] = useState<string>(() => {
       return localStorage.getItem('reward-bg-image') || '';
     });
 
-    // adManagementDataが更新されたときにeditingAdsを同期
+    // 初回マウント時のみadManagementDataからeditingAdsを初期化（無限ループ防止）
     useEffect(() => {
-      console.log('🔄 adManagementData更新:', adManagementData);
+      console.log('🔄 初回マウント: adManagementDataから初期化', adManagementData);
       setEditingAds(adManagementData);
-    }, [adManagementData]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // 空の依存配列で初回のみ実行
 
     // デバッグ: editingAdsの状態を確認
     useEffect(() => {
