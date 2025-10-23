@@ -1812,8 +1812,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      {/* ページ切り替え（CSS表示切替でアンマウント防止） */}
-      <div style={{ display: currentPage === "reward-ui-management" ? "block" : "none" }}>
+      {/* ページ切り替え（条件レンダリング） */}
+      {currentPage === "reward-ui-management" ? (
         <RewardUIManagementPage
           editingAds={editingAds}
           updateAd={updateAd}
@@ -1828,11 +1828,9 @@ export default function AdminDashboard() {
           RewardTokenChargeSection={RewardTokenChargeSection}
           RewardAmountSettingSection={RewardAmountSettingSection}
         />
-      </div>
-      <div style={{ display: currentPage === "tip-ui-management" ? "block" : "none" }}>
+      ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
-      </div>
-      {currentPage === "vending-management" ? (
+      ) : currentPage === "vending-management" ? (
         <VendingDashboardNew />
       ) : currentPage === "product-management" ? (
         <ProductManager />
