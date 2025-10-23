@@ -1,5 +1,5 @@
 // src/admin/Dashboard.tsx
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useAddress, ConnectWallet, useContract, useContractRead } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import {
@@ -42,7 +42,20 @@ type AdData = {
   href: string;
 };
 
-
+interface RewardUIManagementPageProps {
+  editingAds: AdData[];
+  updateAd: (index: number, field: 'src' | 'href', value: string) => void;
+  addAdSlot: () => void;
+  removeAdSlot: (index: number) => void;
+  saveAdData: (ads: AdData[]) => void;
+  previousAdImagesRef: React.MutableRefObject<string[]>;
+  contractBalance: any;
+  contractBalanceError: any;
+  dailyRewardError: any;
+  currentDailyReward: any;
+  RewardTokenChargeSection: () => JSX.Element;
+  RewardAmountSettingSection: () => JSX.Element;
+}
 
 type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "product-management" | "diagnostics" | "tenant-management";
 
@@ -338,8 +351,8 @@ export default function AdminDashboard() {
     ]);
   };
 
-  // 広告データの保存
-  const saveAdData = (ads: AdData[]) => {
+  // 広告データの保存（useCallbackでメモ化）
+  const saveAdData = useCallback((ads: AdData[]) => {
     try {
       localStorage.setItem('gifterra-ads', JSON.stringify({ ads }));
       setAdManagementData(ads);
@@ -348,7 +361,7 @@ export default function AdminDashboard() {
       console.error('Failed to save ad data:', error);
       alert('保存に失敗しました。');
     }
-  };
+  }, []);
 
   // 初期化でデータ読み込み
   useEffect(() => {
@@ -1105,25 +1118,44 @@ export default function AdminDashboard() {
     console.log('📋 editingAds更新:', editingAds);
   }, [editingAds]);
 
-  // 広告データ操作関数（親で定義して再マウント時も保持）
-  const updateAd = (index: number, field: 'src' | 'href', value: string) => {
-    const updated = [...editingAds];
-    updated[index] = { ...updated[index], [field]: value };
-    setEditingAds(updated);
-  };
+  // 広告データ操作関数（useCallbackでメモ化して再マウント時も保持）
+  const updateAd = useCallback((index: number, field: 'src' | 'href', value: string) => {
+    setEditingAds(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }, []);
 
-  const addAdSlot = () => {
-    if (editingAds.length < 3) {
-      setEditingAds([...editingAds, { src: '', href: '' }]);
-    }
-  };
+  const addAdSlot = useCallback(() => {
+    setEditingAds(prev => {
+      if (prev.length < 3) {
+        return [...prev, { src: '', href: '' }];
+      }
+      return prev;
+    });
+  }, []);
 
-  const removeAdSlot = (index: number) => {
-    setEditingAds(editingAds.filter((_, i) => i !== index));
-  };
+  const removeAdSlot = useCallback((index: number) => {
+    setEditingAds(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  // リワードUI管理ページコンポーネント
-  const RewardUIManagementPage = () => {
+  // リワードUI管理ページコンポーネント（React.memoでメモ化して再マウントを防ぐ）
+  const RewardUIManagementPage = React.memo<RewardUIManagementPageProps>((props) => {
+    const {
+      editingAds,
+      updateAd,
+      addAdSlot,
+      removeAdSlot,
+      saveAdData,
+      previousAdImagesRef,
+      contractBalance,
+      contractBalanceError,
+      dailyRewardError,
+      currentDailyReward,
+      RewardTokenChargeSection,
+      RewardAmountSettingSection
+    } = props;
     const [rewardBgImage, setRewardBgImage] = useState<string>(() => {
       return localStorage.getItem('reward-bg-image') || '';
     });
@@ -1587,7 +1619,22 @@ export default function AdminDashboard() {
 
       </div>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // カスタム比較: コンポーネントprops以外が同じなら再レンダリングしない
+    return (
+      prevProps.editingAds === nextProps.editingAds &&
+      prevProps.updateAd === nextProps.updateAd &&
+      prevProps.addAdSlot === nextProps.addAdSlot &&
+      prevProps.removeAdSlot === nextProps.removeAdSlot &&
+      prevProps.saveAdData === nextProps.saveAdData &&
+      prevProps.contractBalance === nextProps.contractBalance &&
+      prevProps.contractBalanceError === nextProps.contractBalanceError &&
+      prevProps.dailyRewardError === nextProps.dailyRewardError &&
+      prevProps.currentDailyReward === nextProps.currentDailyReward
+      // RewardTokenChargeSection と RewardAmountSettingSection は比較しない
+      // （親の再レンダリング時に新しい関数になるが、実質的には同じ）
+    );
+  });
 
   // ---- リワードトークンチャージコンポーネント ----
   const RewardTokenChargeSection = () => {
@@ -2279,7 +2326,20 @@ export default function AdminDashboard() {
       </div>
       {/* ページ切り替え（CSS表示切替でアンマウント防止） */}
       <div style={{ display: currentPage === "reward-ui-management" ? "block" : "none" }}>
-        <RewardUIManagementPage />
+        <RewardUIManagementPage
+          editingAds={editingAds}
+          updateAd={updateAd}
+          addAdSlot={addAdSlot}
+          removeAdSlot={removeAdSlot}
+          saveAdData={saveAdData}
+          previousAdImagesRef={previousAdImagesRef}
+          contractBalance={contractBalance}
+          contractBalanceError={contractBalanceError}
+          dailyRewardError={dailyRewardError}
+          currentDailyReward={currentDailyReward}
+          RewardTokenChargeSection={RewardTokenChargeSection}
+          RewardAmountSettingSection={RewardAmountSettingSection}
+        />
       </div>
       <div style={{ display: currentPage === "tip-ui-management" ? "block" : "none" }}>
         <TipUIManagementPage />
