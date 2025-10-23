@@ -14,7 +14,6 @@ import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
 import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
-import AppShell from "../components/AppShell";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -766,25 +765,22 @@ export default function TipApp() {
 
 
   return (
-    <AppShell
-      backgroundImage={customBgImage}
-      accentColor="#3B82F6"
-      title="💝 Send TIP"
-      subtitle="プロジェクトを応援しよう"
+    <main
+      style={{
+        minHeight: "100vh",
+        background: bgGradient || "#0b1620",
+        backgroundImage: bgGradient ? 'none' : `url(${customBgImage})`,
+        backgroundSize: bgGradient ? "initial" : "cover",
+        backgroundPosition: bgGradient ? "initial" : "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        color: "#fff",
+        display: "grid",
+        gridTemplateRows: "auto 1fr auto",
+        padding: "24px 12px 20px",
+        transition: "background 0.8s ease",
+      }}
     >
-      {/* 動的グラデーションオーバーレイ（感情分析・Tip成功エフェクト用）*/}
-      {bgGradient && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: bgGradient,
-            transition: "background 0.8s ease",
-            zIndex: 5,
-            pointerEvents: "none",
-          }}
-        />
-      )}
       {/* 感情分析オーバーレイ */}
       {sentimentState !== "idle" && (
         <div
@@ -858,16 +854,33 @@ export default function TipApp() {
         }
       `}</style>
 
-      {/* ウォレット接続状態 */}
-      <div style={{
-        textAlign: "center",
-        marginBottom: 16,
-        fontSize: 13,
-        fontWeight: address ? 800 : 500,
-        color: address ? "#22c55e" : "rgba(255,255,255,0.75)"
-      }}>
-        {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
-      </div>
+      {/* タイトル（ロゴなし・モダンフォント） */}
+      <header style={{ textAlign: "center", marginBottom: 16 }}>
+        <h1 style={{
+          fontSize: "clamp(24px, 3vw, 30px)",
+          margin: "0 0 6px",
+          fontWeight: 800,
+          textShadow: "0 2px 12px rgba(0,0,0,0.5)"
+        }}>
+          💝 Send TIP
+        </h1>
+        <p style={{
+          opacity: 0.85,
+          margin: "0 0 8px",
+          fontSize: 14,
+          fontWeight: 500
+        }}>
+          プロジェクトを応援しよう
+        </p>
+        <div style={{
+          fontSize: 13,
+          fontWeight: address ? 800 : 500,
+          color: address ? "#22c55e" : "rgba(255,255,255,0.75)",
+          marginTop: 8
+        }}>
+          {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
+        </div>
+      </header>
 
       <section style={{ 
         display: "grid", 
@@ -1053,17 +1066,21 @@ export default function TipApp() {
               disabled={!canSend}
               title={emergency ? "メンテナンス中（緊急停止）" : undefined}
               style={{
-                height: 'clamp(44px, 8vw, 48px)', // モバイル対応の高さ
-                padding: "0 clamp(16px, 4vw, 24px)",
-                background: canSend ? "#22c55e" : "#3a3f46",
-                color: "#0a0a0a",
-                borderRadius: 10,
-                border: "none",
+                height: 'clamp(44px, 8vw, 48px)',
+                padding: "0 clamp(18px, 4vw, 26px)",
+                background: canSend
+                  ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                  : "rgba(58, 63, 70, 0.8)",
+                color: canSend ? "#fff" : "#9ca3af",
+                borderRadius: 12,
+                border: canSend ? "none" : "1px solid rgba(255,255,255,0.1)",
                 cursor: canSend ? "pointer" : "not-allowed",
                 fontWeight: 800,
                 fontSize: 'clamp(14px, 2.5vw, 16px)',
                 minWidth: 'clamp(120px, 25vw, 140px)',
-                touchAction: 'manipulation' // モバイルタップ改善
+                touchAction: 'manipulation',
+                boxShadow: canSend ? "0 4px 16px rgba(16,185,129,0.3)" : "none",
+                transition: "all 0.2s ease"
               }}
             >
               {emergency ? "メンテナンス中" : txState === "approving" ? "承認中…" : txState === "sending" ? "送信中…" : txState === "mined" ? "確定しました" : "Tipする"}
@@ -1093,12 +1110,35 @@ export default function TipApp() {
           </div>
         )}
 
-        <div style={{ width: "100%", background: "rgba(255,255,255,0.06)", padding: "10px 12px", borderRadius: 12, textAlign: "left", fontSize: 12, lineHeight: 1.35, display: "grid", rowGap: 4 }}>
+        <div style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(10px)",
+          padding: "12px 14px",
+          borderRadius: 16,
+          border: "1px solid rgba(255,255,255,0.12)",
+          textAlign: "left",
+          fontSize: 13,
+          lineHeight: 1.5,
+          display: "grid",
+          rowGap: 6,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
+        }}>
           <div><strong>Address:</strong> {address ?? "—"}</div>
           <div><strong>Chain:</strong> {chain ? `${chain.name} (${chain.chainId})` : "—"}</div>
         </div>
 
-        <div style={{ width: "100%", background: "rgba(255,255,255,.06)", borderRadius: 12, padding: 14, display: "grid", rowGap: 10 }}>
+        <div style={{
+          width: "100%",
+          background: "rgba(255,255,255,.08)",
+          backdropFilter: "blur(10px)",
+          borderRadius: 16,
+          border: "1px solid rgba(255,255,255,0.12)",
+          padding: 16,
+          display: "grid",
+          rowGap: 12,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
+        }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 12, opacity: 0.8 }}>💎 SBTランク</div>
@@ -1185,14 +1225,16 @@ export default function TipApp() {
 
         {/* 貢献熱量パネル */}
         {userHeatData && (
-          <div style={{ 
-            width: "100%", 
-            background: "rgba(255,255,255,.06)", 
-            borderRadius: 12, 
-            padding: 14, 
-            display: "grid", 
-            rowGap: 8,
-            border: "1px solid rgba(255,255,255,.08)"
+          <div style={{
+            width: "100%",
+            background: "rgba(255,255,255,.08)",
+            backdropFilter: "blur(10px)",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.12)",
+            padding: 16,
+            display: "grid",
+            rowGap: 10,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
           }}>
             <div style={{ fontSize: 12, opacity: 0.8, textAlign: "center" }}>🔥 あなたの貢献熱量</div>
             
@@ -1252,6 +1294,6 @@ export default function TipApp() {
       <footer style={{ textAlign: "center", fontSize: 12, opacity: 0.6, marginTop: 6 }}>
         Presented by <strong>METATRON.</strong>
       </footer>
-    </AppShell>
+    </main>
   );
 }
