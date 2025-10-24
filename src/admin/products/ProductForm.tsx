@@ -89,11 +89,7 @@ export function ProductForm({
       if (imageUrl) {
         // 古い画像を削除（差し替えの場合）
         if (previousImageUrlRef.current && previousImageUrlRef.current !== imageUrl) {
-          console.log('🗑️ 古い画像を削除:', previousImageUrlRef.current);
-          const deleted = await deleteFileFromUrl(previousImageUrlRef.current);
-          if (deleted) {
-            console.log('✅ 古い画像を削除しました');
-          }
+          await deleteFileFromUrl(previousImageUrlRef.current);
         }
 
         // 新しい画像を設定
@@ -101,7 +97,6 @@ export function ProductForm({
         setCurrentImageHash(fileHash);
         previousImageUrlRef.current = imageUrl;
         alert('✅ 画像をアップロードしました');
-        console.log('✅ アップロード成功:', imageUrl);
       } else {
         throw new Error('uploadImage returned null');
       }
@@ -135,8 +130,6 @@ export function ProductForm({
 
     setUploadingFile(true);
     try {
-      console.log('📤 配布ファイルアップロード開始:', file.name, file.size);
-
       // ファイルサイズチェック（100MB）
       if (file.size > 100 * 1024 * 1024) {
         alert('❌ ファイルサイズが大きすぎます（最大100MB）');
@@ -147,7 +140,6 @@ export function ProductForm({
 
       // ファイルハッシュを計算して重複チェック
       const fileHash = await calculateFileHash(file);
-      console.log('🔍 ファイルハッシュ:', fileHash);
 
       // 同じファイルが既にアップロードされている場合は警告
       if (currentFileHash === fileHash) {
@@ -176,8 +168,6 @@ export function ProductForm({
         reader.readAsDataURL(file);
       });
 
-      console.log('📦 Base64エンコード完了:', `${(fileBase64.length / 1024 / 1024).toFixed(2)} MB`);
-
       // サーバーサイドAPIでgh-downloads（非公開バケット）にアップロード
       const response = await fetch('/api/upload/content', {
         method: 'POST',
@@ -196,11 +186,9 @@ export function ProductForm({
       }
 
       const data = await response.json();
-      console.log('✅ アップロード成功:', data);
 
       // 古い配布ファイルを削除（差し替えの場合）
       if (previousContentPathRef.current && previousContentPathRef.current !== data.path) {
-        console.log('🗑️ 古い配布ファイルを削除:', previousContentPathRef.current);
         try {
           const deleteResponse = await fetch('/api/delete/content', {
             method: 'POST',
@@ -208,9 +196,7 @@ export function ProductForm({
             body: JSON.stringify({ filePath: previousContentPathRef.current })
           });
 
-          if (deleteResponse.ok) {
-            console.log('✅ 古い配布ファイルを削除しました');
-          } else {
+          if (!deleteResponse.ok) {
             console.warn('⚠️ 古い配布ファイルの削除に失敗しました（続行します）');
           }
         } catch (deleteErr) {
