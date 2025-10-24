@@ -147,9 +147,6 @@ export const getFeatureDescription = (featureKey: string): string => {
  * 現在の権限状態をログ出力（開発用）
  */
 export const debugPermissions = () => {
-  const user = getCurrentUser();
-  const tenant = getCurrentTenant();
-
   const features = ['tip_ui', 'reward_ui', 'vending_ui', 'analytics', 'custom_branding'];
   features.forEach(feature => {
     hasFeatureAccess(feature);
