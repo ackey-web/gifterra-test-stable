@@ -56,8 +56,6 @@ export default function ClaimHistory() {
     setError(null);
 
     try {
-      console.log('📊 受け取り履歴を取得中...', address);
-
       const response = await fetch('/api/user/claim-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +73,6 @@ export default function ClaimHistory() {
       }
 
       const data: ClaimHistoryResponse = await response.json();
-      console.log('✅ 受け取り履歴取得成功:', data);
 
       setClaims(data.claims);
     } catch (err) {

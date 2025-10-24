@@ -42,7 +42,6 @@ export function HubListNew({
         }
       }
 
-      console.log('🔢 [HubListNew] 特典数を更新:', counts);
       setProductCounts(counts);
     };
 
