@@ -58,8 +58,6 @@ export async function deleteFileFromUrl(url: string): Promise<boolean> {
       return false;
     }
 
-    console.log('🗑️ ファイル削除:', { bucket: bucketName, path: filePath });
-
     const { error } = await supabase.storage
       .from(bucketName)
       .remove([filePath]);
@@ -69,7 +67,6 @@ export async function deleteFileFromUrl(url: string): Promise<boolean> {
       return false;
     }
 
-    console.log('✅ ファイル削除成功:', filePath);
     return true;
   } catch (error) {
     console.error('❌ ファイル削除中にエラー:', error);
@@ -95,7 +92,6 @@ export async function deleteFileFromUrl(url: string): Promise<boolean> {
 export async function uploadFile(file: File, kind: UploadKind): Promise<string> {
   try {
     const bucketName = bucketNameForKind(kind);
-    console.log('📤 uploadFile 開始:', { fileName: file.name, size: file.size, kind, bucket: bucketName });
 
     // Supabase クライアントの設定確認
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -106,9 +102,7 @@ export async function uploadFile(file: File, kind: UploadKind): Promise<string> 
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    console.log('📤 アップロード先:', { bucket: bucketName, filePath });
-
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucketName)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -120,14 +114,11 @@ export async function uploadFile(file: File, kind: UploadKind): Promise<string> 
       throw new Error(`Supabase Storage エラー: ${error.message} (bucket: ${bucketName}, kind: ${kind})`);
     }
 
-    console.log('✅ アップロード成功:', data);
-
     // 公開URLを取得
     const { data: publicData } = supabase.storage
       .from(bucketName)
       .getPublicUrl(filePath);
 
-    console.log('✅ 公開URL取得:', publicData.publicUrl);
     return publicData.publicUrl;
   } catch (error) {
     console.error('❌ uploadFile エラー:', error);
@@ -150,8 +141,6 @@ export async function uploadImage(file: File, bucketName: string | BucketKey = '
       ? bucket(bucketName as BucketKey)
       : bucketName;
 
-    console.log('📤 uploadImage 開始:', { fileName: file.name, size: file.size, bucket: actualBucket });
-
     // Supabase クライアントの設定確認
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Supabase環境変数が設定されていません。VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を確認してください。');
@@ -161,9 +150,7 @@ export async function uploadImage(file: File, bucketName: string | BucketKey = '
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    console.log('📤 アップロード先:', { bucket: actualBucket, filePath });
-
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(actualBucket)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -175,14 +162,11 @@ export async function uploadImage(file: File, bucketName: string | BucketKey = '
       throw new Error(`Supabase Storage エラー: ${error.message} (bucket: ${actualBucket})`);
     }
 
-    console.log('✅ アップロード成功:', data);
-
     // 公開URLを取得
     const { data: publicData } = supabase.storage
       .from(actualBucket)
       .getPublicUrl(filePath);
 
-    console.log('✅ 公開URL取得:', publicData.publicUrl);
     return publicData.publicUrl;
   } catch (error) {
     console.error('❌ uploadImage エラー:', error);
