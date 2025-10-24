@@ -54,11 +54,9 @@ export default function DashboardMobile() {
   // データ取得
   const fetchData = async () => {
     if (!address) {
-      console.log("🚫 アドレスが未接続のためデータ取得をスキップ");
       return;
     }
-    
-    console.log("📊 データ取得開始:", { address, contractAddress: CONTRACT_ADDRESS });
+
     setLoading(true);
 
     try {
@@ -70,17 +68,13 @@ export default function DashboardMobile() {
       ];
       
       let provider: ethers.providers.JsonRpcProvider | null = null;
-      let providerUrl = "";
-      
+
       // RPCプロバイダーの接続テスト
       for (const rpcUrl of rpcUrls) {
         try {
-          console.log("🔗 RPC接続テスト:", rpcUrl);
           const testProvider = new ethers.providers.JsonRpcProvider(rpcUrl);
           await testProvider.getBlockNumber(); // 接続テスト
           provider = testProvider;
-          providerUrl = rpcUrl;
-          console.log("✅ RPC接続成功:", rpcUrl);
           break;
         } catch (rpcError) {
           console.warn("⚠️ RPC接続失敗:", rpcUrl, rpcError);
@@ -99,8 +93,6 @@ export default function DashboardMobile() {
         ],
         provider
       );
-      
-      console.log("📄 コントラクト初期化完了:", { contract: CONTRACT_ADDRESS, provider: providerUrl });
 
       // 現在のブロック番号取得
       const currentBlock = await provider.getBlockNumber();
@@ -108,36 +100,23 @@ export default function DashboardMobile() {
       const BLOCK_RANGES = [2000, 5000, 10000]; // 段階的に範囲を拡大
       let fromBlock = Math.max(0, currentBlock - BLOCK_RANGES[0]);
       let selectedRange = BLOCK_RANGES[0];
-      
-      console.log("📊 イベント取得開始:", { 
-        currentBlock, 
-        fromBlock, 
-        range: currentBlock - fromBlock,
-        selectedRange,
-        availableRanges: BLOCK_RANGES,
-        rpcProvider: providerUrl
-      });
 
       // イベント取得（タイムアウトとエラーハンドリングを強化）
       let tipEvents: any[] = [];
       try {
-        console.log("🔍 イベントクエリ実行中...");
         const queryResult = await Promise.race([
           contract.queryFilter("TipSent", fromBlock),
-          new Promise((_, reject) => 
+          new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Event query timeout')), 30000)
           )
         ]) as any[];
         tipEvents = queryResult;
-        console.log("✅ イベント取得成功:", { eventCount: tipEvents.length });
       } catch (eventError) {
         console.error("❌ イベント取得エラー:", eventError);
         // さらに小さい範囲で再試行（最初の範囲よりも小さく）
         const smallerRange = Math.min(selectedRange, 1000);
         const smallerFromBlock = Math.max(0, currentBlock - smallerRange);
-        console.log("🔄 より小さい範囲で再試行:", { smallerRange, smallerFromBlock, originalRange: selectedRange });
         tipEvents = await contract.queryFilter("TipSent", smallerFromBlock) as any[];
-        console.log("✅ 小範囲イベント取得成功:", { eventCount: tipEvents.length });
       }
 
       // イベントが0件の場合は段階的に範囲を拡大
@@ -153,15 +132,13 @@ export default function DashboardMobile() {
         for (let i = 1; i < BLOCK_RANGES.length; i++) {
           const expandedRange = BLOCK_RANGES[i];
           const expandedFromBlock = Math.max(0, currentBlock - expandedRange);
-          console.log(`🔍 範囲を拡大して再検索 (${expandedRange}ブロック)...`);
-          
+
           try {
             const expandedEvents = await contract.queryFilter("TipSent", expandedFromBlock) as any[];
             if (expandedEvents.length > 0) {
               tipEvents = expandedEvents;
               selectedRange = expandedRange;
               fromBlock = expandedFromBlock;
-              console.log("✅ 拡大検索で発見:", { eventCount: tipEvents.length, range: expandedRange });
               break;
             }
           } catch (expandError) {
@@ -180,12 +157,7 @@ export default function DashboardMobile() {
       // 表示用のTipデータ（最新20件のみ詳細処理）
       const tipData: TipItem[] = [];
       const recentEvents = tipEvents.slice(-20); // 最新の20件
-      
-      console.log("🔄 表示用イベント処理開始:", { 
-        eventsToProcess: recentEvents.length,
-        totalEvents: tipEvents.length 
-      });
-      
+
       for (let i = 0; i < recentEvents.length; i++) {
         const event = recentEvents[i];
         try {
@@ -197,10 +169,6 @@ export default function DashboardMobile() {
             timestamp: block.timestamp,
             txHash: event.transactionHash,
           });
-          
-          if ((i + 1) % 5 === 0) {
-            console.log("📊 処理進捗:", `${i + 1}/${recentEvents.length}`);
-          }
         } catch (blockError) {
           console.warn("⚠️ ブロック情報取得失敗:", event.blockNumber, blockError);
         }
@@ -214,36 +182,12 @@ export default function DashboardMobile() {
         timestamp: undefined, // 統計では不要なので省略
         txHash: event.transactionHash,
       }));
-      
-      console.log("📈 統計用データ準備完了:", { 
-        displayData: tipData.length,
-        statisticsData: allTipData.length 
-      });
 
-      console.log("💰 累積Tip額計算開始...");
       // 累積Tip額をイベントから集計
       const total = tipEvents.reduce((sum: bigint, event: any) => {
         return sum + (event.args?.amount || 0n);
       }, 0n);
-      console.log("💰 累積Tip額(イベント集計):", ethers.utils.formatUnits(total, TOKEN.DECIMALS), TOKEN.SYMBOL);
 
-      // 管理者用統計: 全体の累積Tip額とユーザー統計
-      const userStats = new Map<string, bigint>();
-      tipEvents.forEach((event: any) => {
-        const userAddr = event.args?.from?.toLowerCase();
-        const amount = event.args?.amount || 0n;
-        if (userAddr) {
-          userStats.set(userAddr, (userStats.get(userAddr) || 0n) + amount);
-        }
-      });
-      
-      console.log("✅ データ処理完了:", { 
-        tipDataCount: tipData.length, 
-        totalTipsFromEvents: ethers.utils.formatUnits(total, TOKEN.DECIMALS),
-        uniqueUsers: userStats.size,
-        totalEvents: tipEvents.length
-      });
-      
       setTips(tipData.reverse());
       setTotalTips(total);
       
@@ -274,14 +218,7 @@ export default function DashboardMobile() {
 
   // 分析データ計算
   const calculateAnalytics = (tipData: TipItem[]) => {
-    console.log("📊 分析データ計算開始:", {
-      tipDataLength: tipData.length,
-      tipDataSample: tipData.slice(0, 2),
-      currentTimestamp: Date.now() / 1000
-    });
-    
     if (tipData.length === 0) {
-      console.warn("⚠️ 分析用データが空です - デフォルト値を設定");
       setDailyTips(0);
       setWeeklyTips(0);
       setTopSupporters([]);
@@ -315,16 +252,7 @@ export default function DashboardMobile() {
         return estimatedTime >= weekStart;
       }
     }).length;
-    
-    console.log("📅 期間別統計:", {
-      todayStart: new Date(todayStart * 1000).toLocaleString(),
-      weekStart: new Date(weekStart * 1000).toLocaleString(),
-      todayTips,
-      weekTips,
-      tipDataCount: tipData.length,
-      hasTimestamps: tipData.filter(tip => tip.timestamp).length
-    });
-    
+
     setDailyTips(todayTips);
     setWeeklyTips(weekTips);
     
@@ -341,13 +269,7 @@ export default function DashboardMobile() {
       .map(([address, amount]) => ({ address, amount }))
       .sort((a, b) => b.amount > a.amount ? 1 : -1)
       .slice(0, 3);
-    
-    console.log("🌟 サポーター統計:", {
-      totalSupporters: supporterMap.size,
-      topThreeCount: topThree.length,
-      supporterMapEntries: Array.from(supporterMap.entries()).slice(0, 3)
-    });
-    
+
     setTopSupporters(topThree);
     
     // SBTランク分布（モック - 実際の実装では契約から取得）
@@ -359,16 +281,8 @@ export default function DashboardMobile() {
       bloom: Math.max(0, Math.floor(uniqueUsers * 0.12)),
       mythic: Math.max(0, Math.floor(uniqueUsers * 0.03))
     };
-    
-    console.log("🏆 SBTランク分布計算:", {
-      uniqueUsers,
-      distribution: mockDistribution,
-      calculationBase: "uniqueUsers * [0.6, 0.25, 0.12, 0.03]"
-    });
-    
+
     setRankDistribution(mockDistribution);
-    
-    console.log("✅ 分析データ計算完了");
   };
 
   // 緊急停止の読み込み・設定
@@ -384,28 +298,26 @@ export default function DashboardMobile() {
     const newState = !emergency;
     await setEmergencyFlag(newState);
     setEmergency(newState);
-    console.log(`🔄 緊急停止状態変更: ${newState ? 'ON' : 'OFF'}`);
   };
   
   // プレス&ホールド処理関数
   const handleHoldStart = (e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('🫳 ホールド開始');
+
     setIsHolding(true);
     setHoldProgress(0);
-    
+
     // ホールド開始の軽いフィードバック
     if (navigator.vibrate) {
       navigator.vibrate(30);
     }
-    
+
     // プログレス更新タイマーを開始（3秒で100%）
     const timer = setInterval(() => {
       setHoldProgress(prev => {
         const newProgress = prev + (100 / 30); // 100ms間隔で3秒
-        
+
         // 進捗に応じたフィードバック
         if (navigator.vibrate) {
           if (newProgress >= 33 && prev < 33) {
@@ -416,47 +328,41 @@ export default function DashboardMobile() {
             navigator.vibrate([50, 30, 50]);
           }
         }
-        
+
         // 100%に達したら実行
         if (newProgress >= 100) {
-          console.log('✨ ホールド完了!');
-          
           // 完了処理
           setTimeout(() => {
             toggleEmergency();
-            
+
             // 完了後リセット
             setTimeout(() => {
               setHoldProgress(0);
               setIsHolding(false);
             }, 500);
           }, 100);
-          
+
           return 100;
         }
-        
+
         return newProgress;
       });
     }, 100);
-    
+
     setHoldTimer(timer);
   };
 
   const handleHoldEnd = () => {
-    console.log('🔄 ホールド終了:', { holdProgress: holdProgress.toFixed(1), isHolding });
-    
     // タイマークリア
     if (holdTimer) {
       clearInterval(holdTimer);
       setHoldTimer(null);
     }
-    
+
     setIsHolding(false);
-    
+
     // 未完了の場合はプログレスをリセット
     if (holdProgress < 100) {
-      console.log('⚠️ ホールド未完了、リセットします');
-      
       const resetAnimation = () => {
         setHoldProgress(prev => {
           const newProgress = Math.max(0, prev - 10);
@@ -471,13 +377,12 @@ export default function DashboardMobile() {
   };
 
   useEffect(() => {
-    console.log("🔄 useEffect triggered:", { address, hasAddress: !!address });
     if (address) {
       // 少し遅延してデータ取得を実行
       const timer = setTimeout(() => {
         fetchData();
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [address]);
