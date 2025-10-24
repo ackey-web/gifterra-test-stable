@@ -99,13 +99,11 @@ export default function ProductManager() {
 
     setUploadingImage(true);
     try {
-      console.log('📤 画像アップロード開始:', file.name, file.size);
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
         handleChange('imageUrl', imageUrl);
         alert('✅ 画像をアップロードしました');
-        console.log('✅ アップロード成功:', imageUrl);
       } else {
         throw new Error('uploadImage returned null');
       }
@@ -140,8 +138,6 @@ export default function ProductManager() {
 
     setUploadingFile(true);
     try {
-      console.log('📤 配布ファイルアップロード開始:', file.name, file.size);
-
       // 一時的に gh-public バケットにアップロード
       // TODO: 本番環境では gh-downloads（非公開）+ サーバーサイドAPI経由に変更
       const fileUrl = await uploadImage(file, 'gh-public');
@@ -153,7 +149,6 @@ export default function ProductManager() {
 
         handleChange('contentPath', fileName);
         alert('✅ 配布ファイルをアップロードしました');
-        console.log('✅ アップロード成功:', fileUrl);
       } else {
         throw new Error('uploadImage returned null');
       }
@@ -248,7 +243,6 @@ export default function ProductManager() {
       const deletePromises = [];
 
       if (product.content_path) {
-        console.log('🗑️ 配布ファイルを削除:', product.content_path);
         deletePromises.push(
           fetch('/api/delete/content', {
             method: 'POST',
@@ -262,7 +256,6 @@ export default function ProductManager() {
 
       // 画像ファイルも削除（公開バケット）
       if (product.image_url) {
-        console.log('🗑️ 画像ファイルを削除:', product.image_url);
         // 画像は公開バケットなので既存のdeleteFileFromUrl関数を使用
         // ※後でimport追加が必要な場合あり
       }

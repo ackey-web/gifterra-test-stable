@@ -21,8 +21,6 @@ export default function DiagnosticsPage() {
     setTestResult('');
 
     try {
-      console.log('🔍 Supabase 接続テスト開始...');
-
       // products テーブルにアクセス
       const { data, error } = await supabase
         .from('products')
@@ -34,7 +32,6 @@ export default function DiagnosticsPage() {
       }
 
       setTestResult('✅ Supabase 接続成功！products テーブルにアクセスできました。');
-      console.log('✅ Supabase 接続テスト成功:', data);
     } catch (err) {
       console.error('❌ Supabase 接続テスト失敗:', err);
       setTestResult(`❌ 接続失敗: ${err instanceof Error ? err.message : String(err)}`);
@@ -49,8 +46,6 @@ export default function DiagnosticsPage() {
     setTestResult('');
 
     try {
-      console.log('🔍 Storage バケット一覧取得中...');
-
       const { data, error } = await supabase.storage.listBuckets();
 
       if (error) {
@@ -73,7 +68,6 @@ export default function DiagnosticsPage() {
       if (data && data.length > 0) {
         const bucketNames = data.map(b => b.name).join(', ');
         setTestResult(`✅ Storage バケット一覧:\n${bucketNames}`);
-        console.log('✅ Storage バケット:', data);
       } else {
         setTestResult('⚠️ Storage バケットが1つも作成されていません。');
       }
@@ -91,8 +85,6 @@ export default function DiagnosticsPage() {
     setTestResult('');
 
     try {
-      console.log('🔍 ファイルアップロードテスト開始...');
-
       // 小さなテストファイルを作成
       const testContent = 'Supabase Storage Test File';
       const testBlob = new Blob([testContent], { type: 'text/plain' });
@@ -112,8 +104,6 @@ export default function DiagnosticsPage() {
       if (error) {
         throw error;
       }
-
-      console.log('✅ アップロード成功:', data);
 
       // 公開URLを取得
       const { data: publicData } = supabase.storage
@@ -164,8 +154,6 @@ export default function DiagnosticsPage() {
     setTestResult('');
 
     try {
-      console.log('🔍 バケット名探索テスト開始...');
-
       // 実際の運用バケット名を使用
       const commonBucketNames = getAllBucketNames();
 
@@ -180,7 +168,6 @@ export default function DiagnosticsPage() {
 
           if (!error) {
             results.push(`✅ ${bucketName} - 存在する（アクセス可能）`);
-            console.log(`✅ バケット "${bucketName}" 存在確認`);
           } else if (error.message.includes('not found')) {
             results.push(`❌ ${bucketName} - 存在しない`);
           } else {

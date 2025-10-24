@@ -30,7 +30,6 @@ export interface UpdateProductParams extends CreateProductParams {
 export async function createProduct(params: CreateProductParams): Promise<{ success: boolean; error?: string }> {
   try {
     const tenantId = params.tenantId || DEFAULT_TENANT_ID;
-    console.log('🆕 [商品作成] tenant_id:', tenantId, 'name:', params.name);
 
     const productData = {
       tenant_id: tenantId,
@@ -44,8 +43,6 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
       is_unlimited: params.isUnlimited,
       is_active: true,
     };
-
-    console.log('📤 [商品作成] データ:', { tenant_id: productData.tenant_id, name: productData.name });
 
     // サーバーサイドAPIで作成実行（RLSをバイパス）
     const response = await fetch('/api/products/create', {
@@ -64,7 +61,6 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
     }
 
     const data = await response.json();
-    console.log('✅ [商品作成] 成功:', data);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品作成エラー (catch):', err);
@@ -80,7 +76,6 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
 export async function updateProduct(params: UpdateProductParams): Promise<{ success: boolean; error?: string }> {
   try {
     const tenantId = params.tenantId || DEFAULT_TENANT_ID;
-    console.log('🔄 [商品更新] product_id:', params.productId, 'tenant_id:', tenantId, 'name:', params.name);
 
     const updateData = {
       productId: params.productId,
@@ -113,7 +108,6 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
     }
 
     const data = await response.json();
-    console.log('✅ [商品更新] 成功:', data);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品更新エラー (catch):', err);
@@ -129,8 +123,6 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
  */
 export async function deleteProduct(productId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('🗑️ [削除開始] 商品ID:', productId);
-
     // サーバーサイドAPIで削除実行（RLSをバイパス）
     const response = await fetch('/api/delete/product', {
       method: 'POST',
@@ -148,7 +140,6 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
     }
 
     const data = await response.json();
-    console.log('✅ 商品削除完了:', data);
     return { success: true };
   } catch (err) {
     console.error('❌ 商品削除エラー (catch):', err);
