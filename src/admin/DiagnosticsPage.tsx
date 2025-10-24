@@ -22,7 +22,7 @@ export default function DiagnosticsPage() {
 
     try {
       // products テーブルにアクセス
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
         .select('count')
         .limit(1);
@@ -94,7 +94,7 @@ export default function DiagnosticsPage() {
 
       // PUBLIC バケットにアップロード
       const publicBucket = bucket('PUBLIC');
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from(publicBucket)
         .upload(fileName, testFile, {
           cacheControl: '3600',

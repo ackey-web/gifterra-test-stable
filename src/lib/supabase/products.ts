@@ -60,7 +60,7 @@ export async function createProduct(params: CreateProductParams): Promise<{ succ
       };
     }
 
-    const data = await response.json();
+    await response.json();
     return { success: true };
   } catch (err) {
     console.error('❌ 商品作成エラー (catch):', err);
@@ -107,7 +107,7 @@ export async function updateProduct(params: UpdateProductParams): Promise<{ succ
       };
     }
 
-    const data = await response.json();
+    await response.json();
     return { success: true };
   } catch (err) {
     console.error('❌ 商品更新エラー (catch):', err);
@@ -139,7 +139,7 @@ export async function deleteProduct(productId: string): Promise<{ success: boole
       };
     }
 
-    const data = await response.json();
+    await response.json();
     return { success: true };
   } catch (err) {
     console.error('❌ 商品削除エラー (catch):', err);
