@@ -392,16 +392,6 @@ export default function AdminDashboard() {
     (async () => {
       try {
         const fromBlockHex = "0x" + fromBlock.toString(16);
-        
-        console.log("🔍 Fetching tip logs...", {
-          CONTRACT_ADDRESS,
-          fromBlock: fromBlock.toString(),
-          fromBlockHex,
-          TOPIC_TIPPED,
-          primaryRPC: ALCHEMY_RPC || PUBLIC_RPC,
-          period
-        });
-
         const finalFromBlockHex = "0x" + fromBlock.toString(16);
 
         const logRequest = {
@@ -425,14 +415,7 @@ export default function AdminDashboard() {
         items.sort((a, b) =>
           a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0
         );
-        
-        console.log("✅ Processed tip items:", {
-          count: items.length,
-          totalAmount: items.reduce((a, b) => a + b.amount, 0n).toString(),
-          uniqueUsers: new Set(items.map(i => i.from)).size,
-          sample: items.slice(0, 2)
-        });
-        
+
         if (!cancelled) {
           setRawTips(items);
           setIsLoading(false);
@@ -1084,15 +1067,9 @@ export default function AdminDashboard() {
   // adManagementDataが変わったらeditingAdsを更新（初回のみ）
   useEffect(() => {
     if (editingAds.length === 0 && adManagementData.length > 0) {
-      console.log('🔄 広告データ初期化:', adManagementData);
       setEditingAds(adManagementData);
     }
   }, [adManagementData, editingAds.length]);
-
-  // デバッグ: editingAdsの状態を確認
-  useEffect(() => {
-    console.log('📋 editingAds更新:', editingAds);
-  }, [editingAds]);
 
   // 広告データ操作関数（useCallbackでメモ化して再マウント時も保持）
   const updateAd = useCallback((index: number, field: 'src' | 'href', value: string) => {
@@ -1360,28 +1337,20 @@ export default function AdminDashboard() {
               style={{ display: "none" }}
               id="tip-bg-upload"
               onChange={async (e) => {
-                console.log('📁 TIP背景画像選択イベント発火', e.target.files);
                 const file = e.target.files?.[0];
                 if (file) {
-                  console.log('📤 TIP背景画像アップロード開始:', { name: file.name, size: file.size });
                   try {
                     // ファイルハッシュを計算して重複チェック
                     const fileHash = await calculateFileHash(file);
-                    console.log('🔍 ファイルハッシュ:', fileHash);
 
                     // 新しい背景画像をアップロード
                     const imageUrl = await uploadImage(file, 'gh-public');
-                    console.log('✅ TIP背景画像アップロード完了:', imageUrl);
 
                     if (imageUrl) {
                       // 古い背景画像を削除（差し替えの場合）
                       const previousUrl = previousTipBgRef.current;
                       if (previousUrl && previousUrl !== imageUrl) {
-                        console.log('🗑️ 古いTIP背景画像を削除:', previousUrl);
-                        const deleted = await deleteFileFromUrl(previousUrl);
-                        if (deleted) {
-                          console.log('✅ 古いTIP背景画像を削除しました');
-                        }
+                        await deleteFileFromUrl(previousUrl);
                       }
 
                       // 新しい背景画像を設定
@@ -1396,8 +1365,6 @@ export default function AdminDashboard() {
                     // ファイル入力をリセット
                     e.target.value = '';
                   }
-                } else {
-                  console.log('⚠️ TIP背景画像が選択されませんでした');
                 }
               }}
             />
