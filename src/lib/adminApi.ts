@@ -55,7 +55,6 @@ export async function getProducts(
   }
 
   const url = `${API_BASE_URL}/api/admin/products?${params}`;
-  console.log('📦 Fetching products:', url);
 
   const response = await fetch(url);
 
@@ -73,7 +72,6 @@ export async function getProducts(
  */
 export async function saveProduct(productData: ProductData): Promise<ProductRecord> {
   const url = `${API_BASE_URL}/api/admin/products`;
-  console.log('💾 Saving product:', productData);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -104,7 +102,6 @@ export async function updateProduct(
   productData: ProductData
 ): Promise<ProductRecord> {
   const url = `${API_BASE_URL}/api/admin/products/${id}`;
-  console.log('🔄 Updating product:', id);
 
   const response = await fetch(url, {
     method: 'PUT',
@@ -132,7 +129,6 @@ export async function updateProduct(
  */
 export async function deleteProduct(id: string, tenantId: string): Promise<void> {
   const url = `${API_BASE_URL}/api/admin/products/${id}?tenantId=${encodeURIComponent(tenantId)}`;
-  console.log('🗑️ Deleting product:', id);
 
   const response = await fetch(url, {
     method: 'DELETE'
@@ -142,6 +138,4 @@ export async function deleteProduct(id: string, tenantId: string): Promise<void>
     const error: ErrorResponse = await response.json();
     throw new Error(error.error || 'Failed to delete product');
   }
-
-  console.log('✅ Product deleted successfully');
 }

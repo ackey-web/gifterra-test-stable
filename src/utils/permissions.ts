@@ -149,19 +149,11 @@ export const getFeatureDescription = (featureKey: string): string => {
 export const debugPermissions = () => {
   const user = getCurrentUser();
   const tenant = getCurrentTenant();
-  
-  console.group('🔐 GIFTERRA 権限状態');
-  console.log('User:', user);
-  console.log('Tenant:', tenant);
-  console.log('Features:');
-  
+
   const features = ['tip_ui', 'reward_ui', 'vending_ui', 'analytics', 'custom_branding'];
   features.forEach(feature => {
-    const access = hasFeatureAccess(feature);
-    console.log(`  ${feature}: ${access ? '✅' : '❌'}`);
+    hasFeatureAccess(feature);
   });
-  
-  console.groupEnd();
 };
 
 // 開発環境でのみデバッグ情報を出力

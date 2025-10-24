@@ -90,8 +90,6 @@ export default function VendingAppSupabase() {
     setIsPurchasing(true);
 
     try {
-      console.log("🛒 購入開始:", product.name);
-
       // 購入フロー実行（投げ銭トランザクション → API呼び出し）
       const result = await executePurchase({
         id: product.id,
@@ -101,8 +99,6 @@ export default function VendingAppSupabase() {
       }, address);
 
       if (result.success && result.token) {
-        console.log("✅ 購入成功！ダウンロードトークン:", result.token);
-
         // ダウンロードページにリダイレクト
         const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
         const downloadUrl = `${apiUrl}/api/download/${result.token}`;

@@ -82,7 +82,6 @@ async function fetchTipUIKodomiData(
         (h: ContributionHeat) => h.address.toLowerCase() === walletAddress.toLowerCase()
       );
       if (userHeat) {
-        console.log('✅ Tip UI 貢献熱量取得:', userHeat);
         return userHeat;
       }
     } catch (e) {
@@ -91,7 +90,6 @@ async function fetchTipUIKodomiData(
   }
 
   // データがない場合のデフォルト
-  console.log('ℹ️ Tip UI データなし、デフォルト値を使用');
   return {
     address: walletAddress,
     name: walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4),
@@ -142,11 +140,6 @@ async function fetchGiftHubClaimHistory(walletAddress: string) {
       .slice(0, 3)
       .map(([cat]) => cat);
 
-    console.log('✅ GIFT HUB 履歴取得:', {
-      claimCount: data.claims?.length || 0,
-      favoriteCategories
-    });
-
     return {
       claimCount: data.claims?.length || 0,
       totalTipped: totalTipped.toString(),
@@ -185,13 +178,6 @@ function analyzeEngagement(
   if (loyaltyScore >= 800) engagementLevel = 'PREMIUM';
   else if (loyaltyScore >= 400) engagementLevel = 'ACTIVE';
   else engagementLevel = 'CASUAL';
-
-  console.log('📊 エンゲージメント分析:', {
-    tipScore,
-    claimScore,
-    loyaltyScore,
-    engagementLevel
-  });
 
   return {
     engagementLevel,
