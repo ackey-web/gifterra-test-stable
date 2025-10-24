@@ -443,8 +443,6 @@ export default function TipApp() {
         const targetChainId = "0x13882"; // Polygon Amoy
         
         if ((currentChainId || "").toLowerCase() !== targetChainId.toLowerCase()) {
-          console.log("チェーン切り替え要求:", { current: currentChainId, target: targetChainId });
-          
           try {
             await eth.request({
               method: "wallet_switchEthereumChain",
@@ -454,10 +452,9 @@ export default function TipApp() {
             await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (switchError: any) {
             console.error("チェーン切り替えエラー:", switchError);
-            
+
             if (switchError.code === 4902) {
               // ネットワークが存在しない場合は追加
-              console.log("ネットワーク追加要求");
               await eth.request({
                 method: "wallet_addEthereumChain",
                 params: [{
@@ -535,7 +532,6 @@ export default function TipApp() {
       
       try {
         currentAllowance = await tokenContract.allowance(address, CONTRACT_ADDRESS);
-        console.log("Current allowance:", ethers.utils.formatUnits(currentAllowance, TOKEN.DECIMALS), TOKEN.SYMBOL);
       } catch (allowanceError: any) {
         const errorMsg = allowanceError?.message || allowanceError?.data?.message || "Unknown error";
         
@@ -550,18 +546,15 @@ export default function TipApp() {
       }
       
       if (currentAllowance.lt(parsedAmount)) {
-        console.log("Insufficient allowance, requesting approval...");
         setTxState("approving");
-        
+
         // ポリシーに基づく承認額を計算
         const approveAmount = calculateApprovalAmount || ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
-        console.log(`Approval policy: ${approvalPolicy}, Amount: ${ethers.utils.formatUnits(approveAmount, TOKEN.DECIMALS)} ${TOKEN.SYMBOL}`);
         
         // 安全な承認パターン: 0リセット → 新値設定（インデックスエラー対応）
         try {
           const resetTx = await tokenContract.approve(CONTRACT_ADDRESS, 0);
           await resetTx.wait();
-          console.log("Allowance reset to 0");
         } catch (resetError: any) {
           const resetErrorMsg = resetError?.message || resetError?.data?.message || "Unknown error";
           if (resetErrorMsg.includes("state histories haven't been fully indexed yet")) {
@@ -570,13 +563,10 @@ export default function TipApp() {
             console.warn("Reset failed, proceeding with direct approval:", resetError);
           }
         }
-        
+
         try {
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, approveAmount);
-          console.log("Approval transaction sent:", approveTx.hash);
-          
           await approveTx.wait();
-          console.log("Approval confirmed");
         } catch (approveError: any) {
           const approveErrorMsg = approveError?.message || approveError?.data?.message || "Unknown error";
           if (approveErrorMsg.includes("state histories haven't been fully indexed yet")) {
@@ -613,7 +603,6 @@ export default function TipApp() {
         });
         
         receipt = await tx.wait();
-        console.log("Direct ethers success");
       } catch (directError: any) {
         const directErrorMsg = directError?.message || directError?.data?.message || "Unknown error";
         
