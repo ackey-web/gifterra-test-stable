@@ -28,25 +28,9 @@ export default function VendingApp() {
   // Supabase特典データを取得（vendingMachine.idをtenantIdとして使用）
   const tenantId = vendingMachine?.id || "";
 
-  // デバッグログ：tenantIdと製品取得状況を確認
-  console.log('🔍 [GIFT HUB] Debug Info:', {
-    machineId,
-    vendingMachineId: vendingMachine?.id,
-    vendingMachineName: vendingMachine?.name,
-    tenantId,
-    hasVendingMachine: !!vendingMachine
-  });
-
   const { products: supabaseProducts, isLoading: productsLoading } = useSupabaseProducts({
     tenantId,
     isActive: true
-  });
-
-  // 特典取得後のデバッグログ
-  console.log('📦 [GIFT HUB] Products loaded:', {
-    tenantId,
-    productsCount: supabaseProducts.length,
-    products: supabaseProducts.map(p => ({ id: p.id, name: p.name, tenant_id: p.tenant_id }))
   });
 
   // デザイン色（フォールバック）
@@ -102,12 +86,8 @@ export default function VendingApp() {
     }
 
     try {
-      console.log('🔍 [購入履歴] 取得開始:', { address: address.toLowerCase() });
-
       const { data, error } = await supabase
         .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
-
-      console.log('🔍 [購入履歴] 取得結果:', { data, error, dataLength: data?.length });
 
       if (error) {
         console.error('❌ [購入履歴] 取得エラー:', error);
@@ -116,23 +96,6 @@ export default function VendingApp() {
 
       const downloadable = (data || []).filter((p: any) => p.has_valid_token);
       const count = downloadable.length;
-
-      console.log('🔍 [購入履歴] ダウンロード可能な購入:', {
-        total: data?.length,
-        downloadable: count,
-        details: downloadable
-      });
-
-      // 詳細情報を見やすく表示
-      console.log(`📊 [購入履歴] 統計: 全${data?.length}件中、ダウンロード可能${count}件`);
-
-      if (data && data.length > 0) {
-        console.table(data.map((p: any) => ({
-          商品名: p.product_name,
-          有効トークン: p.has_valid_token ? '✅' : '❌',
-          購入日時: new Date(p.purchased_at).toLocaleString('ja-JP')
-        })));
-      }
 
       setDownloadablePurchasesCount(count);
     } catch (err) {
@@ -150,13 +113,9 @@ export default function VendingApp() {
     if (!address) return;
 
     try {
-      console.log('📦 [ZIP] ZIP一括ダウンロード開始', { address: address.toLowerCase() });
-
       // 購入履歴を取得
       const { data: purchases, error: purchasesError } = await supabase
         .rpc('get_user_purchases', { p_buyer: address.toLowerCase() });
-
-      console.log('📦 [ZIP] 購入履歴取得結果:', { purchases, error: purchasesError });
 
       if (purchasesError) {
         console.error('❌ [ZIP] 購入履歴取得エラー:', purchasesError);
@@ -167,8 +126,6 @@ export default function VendingApp() {
       // ダウンロード可能な購入のみフィルタ
       const downloadablePurchases = (purchases || []).filter((p: any) => p.has_valid_token);
 
-      console.log('📦 [ZIP] ダウンロード可能な購入:', downloadablePurchases);
-
       if (downloadablePurchases.length === 0) {
         alert('ダウンロード可能な特典がありません');
         return;
@@ -176,7 +133,6 @@ export default function VendingApp() {
 
       // 各購入のダウンロードトークンを取得
       const purchaseIds = downloadablePurchases.map((p: any) => p.purchase_id);
-      console.log('📦 [ZIP] 検索対象のpurchase_id:', purchaseIds);
 
       const { data: tokens, error } = await supabase
         .from('download_tokens')
@@ -184,8 +140,6 @@ export default function VendingApp() {
         .in('purchase_id', purchaseIds)
         .eq('is_consumed', false)
         .gt('expires_at', new Date().toISOString());
-
-      console.log('📦 [ZIP] トークン取得結果:', { tokens, error, count: tokens?.length });
 
       if (error) {
         console.error('❌ [ZIP] Supabaseエラー:', error);
@@ -204,10 +158,8 @@ export default function VendingApp() {
       }
 
       // ZIPファイル作成開始
-      console.log('📦 [ZIP] ZIPファイル作成開始');
       const zip = new JSZip();
       const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
-      console.log('📦 [ZIP] API URL:', apiUrl);
 
       let successCount = 0;
       let failCount = 0;
@@ -222,14 +174,8 @@ export default function VendingApp() {
 
         try {
           const downloadUrl = `${apiUrl}/api/download/${tokenData.token}`;
-          console.log(`📥 [ZIP] ダウンロード中: ${purchase.product_name}`, downloadUrl);
 
           const response = await fetch(downloadUrl);
-          console.log(`📥 [ZIP] レスポンス: ${purchase.product_name}`, {
-            ok: response.ok,
-            status: response.status,
-            contentType: response.headers.get('content-type')
-          });
 
           if (!response.ok) {
             console.error(`❌ [ZIP] ${purchase.product_name}のダウンロードに失敗:`, response.statusText);
@@ -238,7 +184,6 @@ export default function VendingApp() {
           }
 
           const blob = await response.blob();
-          console.log(`📦 [ZIP] Blob取得: ${purchase.product_name}`, { size: blob.size, type: blob.type });
 
           // ファイル名とフォルダの決定（拡張子を保持）
           const contentType = response.headers.get('content-type') || '';
@@ -257,7 +202,6 @@ export default function VendingApp() {
             fileName = `${purchase.product_name}${extension}`;
           }
 
-          console.log(`📦 [ZIP] ファイル追加: ${fileName}`);
           zip.file(fileName, blob);
           successCount++;
         } catch (err) {
@@ -266,17 +210,13 @@ export default function VendingApp() {
         }
       }
 
-      console.log('📦 [ZIP] ファイル収集完了', { success: successCount, fail: failCount });
-
       if (successCount === 0) {
         alert('すべてのファイルのダウンロードに失敗しました');
         return;
       }
 
       // ZIPファイルを生成してダウンロード
-      console.log('📦 [ZIP] ZIP生成開始');
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      console.log('📦 [ZIP] ZIP生成完了:', { size: zipBlob.size });
 
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
@@ -287,7 +227,6 @@ export default function VendingApp() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('✅ [ZIP] ZIPダウンロード完了');
       alert(`✅ ${successCount}個の特典をZIPでダウンロードしました！${failCount > 0 ? `\n\n${failCount}個のファイルはダウンロードに失敗しました。` : ''}`);
     } catch (error) {
       console.error('❌ [ZIP] ZIP一括ダウンロードエラー:', error);
@@ -353,8 +292,6 @@ export default function VendingApp() {
 
     try {
       // 🔍 診断: トランザクション前の状態をチェック
-      console.log('🔍 [診断] トランザクション前チェック開始');
-
       // トークン残高を確認
       const tokenBalance = await publicClient.readContract({
         address: product.price_token as `0x${string}`,
@@ -373,16 +310,7 @@ export default function VendingApp() {
 
       const priceWei = BigInt(product.price_amount_wei);
       const balanceInTokens = formatUnits(tokenBalance, 18);
-      const allowanceInTokens = formatUnits(allowance, 18);
       const priceInTokens = formatUnits(priceWei, 18);
-
-      console.log('💰 残高確認:', {
-        トークン残高: balanceInTokens,
-        必要額: priceInTokens,
-        Allowance: allowanceInTokens,
-        残高十分: tokenBalance >= priceWei,
-        Allowance十分: allowance >= priceWei
-      });
 
       // 残高不足チェック
       if (tokenBalance < priceWei) {
