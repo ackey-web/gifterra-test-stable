@@ -32,8 +32,6 @@ export async function purchaseProduct(
   publicClient: any
 ): Promise<PurchaseResult> {
   try {
-    console.log('🛒 購入処理開始:', product.name);
-
     const priceWei = BigInt(product.price_amount_wei);
     const tokenAddress = product.price_token as `0x${string}`;
 
@@ -45,12 +43,8 @@ export async function purchaseProduct(
       args: [userAddress as `0x${string}`, CONTRACT_ADDRESS],
     }) as bigint;
 
-    console.log('💰 現在のallowance:', formatUnits(currentAllowance, 18));
-
     // 2. approve（必要な場合のみ）
     if (currentAllowance < priceWei) {
-      console.log('📝 Approve実行中...');
-
       const approveTx = await walletClient.writeContract({
         address: tokenAddress,
         abi: ERC20_MIN_ABI,
@@ -58,22 +52,14 @@ export async function purchaseProduct(
         args: [CONTRACT_ADDRESS, priceWei],
       });
 
-      console.log('⏳ Approve待機中...', approveTx);
-
       const approveReceipt = await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
       if (approveReceipt.status !== 'success') {
         throw new Error('Approveに失敗しました');
       }
-
-      console.log('✅ Approve完了');
-    } else {
-      console.log('✅ Approve済み（スキップ）');
     }
 
     // 3. tip実行
-    console.log('💸 Tip実行中...', formatUnits(priceWei, 18), 'tokens');
-
     const tipTx = await walletClient.writeContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
@@ -81,19 +67,13 @@ export async function purchaseProduct(
       args: [priceWei],
     });
 
-    console.log('⏳ Tip待機中...', tipTx);
-
     const tipReceipt = await publicClient.waitForTransactionReceipt({ hash: tipTx });
 
     if (tipReceipt.status !== 'success') {
       throw new Error('Tipに失敗しました');
     }
 
-    console.log('✅ Tip完了:', tipTx);
-
     // 4. APIに購入初期化を通知
-    console.log('📡 API呼び出し中...');
-
     const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
     const response = await fetch(`${apiUrl}/api/purchase/init`, {
       method: 'POST',
@@ -114,8 +94,6 @@ export async function purchaseProduct(
       console.error('❌ API エラー:', result.error);
       return result;
     }
-
-    console.log('✅ 購入完了！ダウンロードトークン:', result.token);
 
     // ダウンロードURLを構築（トークンから）
     if (result.token) {
