@@ -66,11 +66,8 @@ export function ProductForm({
 
     setUploadingImage(true);
     try {
-      console.log('📤 画像アップロード開始:', file.name, file.size);
-
       // ファイルハッシュを計算して重複チェック
       const fileHash = await calculateFileHash(file);
-      console.log('🔍 ファイルハッシュ:', fileHash);
 
       // 同じファイルが既にアップロードされている場合は警告
       if (currentImageHash === fileHash) {
