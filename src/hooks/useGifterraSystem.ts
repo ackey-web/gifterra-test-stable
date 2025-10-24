@@ -1,7 +1,7 @@
 // src/hooks/useGifterraSystem.ts
 // 一時的に全体をコメントアウト - ABI整備後に有効化
 
-export const useGifterraSystem = (adminAddress?: string | number) => {
+export const useGifterraSystem = (_adminAddress?: string | number) => {
   // モック実装
   return {
     isLoading: false,
