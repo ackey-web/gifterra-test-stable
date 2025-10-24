@@ -37,7 +37,6 @@ const VendingDashboardNew: React.FC = () => {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
-      console.log('✅ GIFT HUB data saved to localStorage:', machines.length, 'machines');
     } catch (error) {
       console.error('❌ Failed to save to localStorage:', error);
       alert('保存に失敗しました。データが大きすぎる可能性があります。');
@@ -108,12 +107,6 @@ const VendingDashboardNew: React.FC = () => {
       setMachines(updated);
 
       // localStorageへの保存はuseEffectで自動的に行われる
-      console.log('✅ [保存] GIFT HUB設定を保存:', {
-        id: selectedMachine.id,
-        name: selectedMachine.name,
-        slug: selectedMachine.slug
-      });
-
       alert(`✅ GIFT HUB「${selectedMachine.name}」の設定を保存しました`);
     } catch (error) {
       console.error('❌ [保存] エラー:', error);
@@ -147,8 +140,6 @@ const VendingDashboardNew: React.FC = () => {
 
   // GIFT HUB削除（関連商品とファイルも削除）
   const handleDeleteMachine = async (machineId: string) => {
-    console.log('🗑️ [GIFT HUB削除] 開始:', machineId);
-
     try {
       // 1. このGIFT HUBに紐づく商品をすべて取得
       const { supabase } = await import('../../lib/supabase');
@@ -163,13 +154,9 @@ const VendingDashboardNew: React.FC = () => {
         return;
       }
 
-      console.log(`📦 削除対象の商品: ${products?.length || 0}件`, products);
-
       // 2. 各商品を削除API経由で削除（ファイルも含む）
       if (products && products.length > 0) {
         const deletePromises = products.map(async (product) => {
-          console.log(`🗑️ 商品削除中: ${product.name} (${product.id})`);
-
           const response = await fetch('/api/delete/product', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -179,13 +166,10 @@ const VendingDashboardNew: React.FC = () => {
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.warn(`⚠️ 商品削除失敗: ${product.name}`, errorData);
-          } else {
-            console.log(`✅ 商品削除成功: ${product.name}`);
           }
         });
 
         await Promise.all(deletePromises);
-        console.log('✅ すべての商品削除完了');
       }
 
       // 3. GIFT HUBのデザイン画像を削除（headerImage, backgroundImage）
@@ -195,24 +179,18 @@ const VendingDashboardNew: React.FC = () => {
 
         // ヘッダー画像を削除
         if (headerImage) {
-          console.log('🗑️ ディスプレイ画像を削除:', headerImage);
           const { deleteFileFromUrl } = await import('../../lib/supabase');
           const deleted = await deleteFileFromUrl(headerImage);
-          if (deleted) {
-            console.log('✅ ディスプレイ画像を削除しました');
-          } else {
+          if (!deleted) {
             console.warn('⚠️ ディスプレイ画像の削除に失敗しました（続行します）');
           }
         }
 
         // 背景画像を削除
         if (backgroundImage) {
-          console.log('🗑️ 背景画像を削除:', backgroundImage);
           const { deleteFileFromUrl } = await import('../../lib/supabase');
           const deleted = await deleteFileFromUrl(backgroundImage);
-          if (deleted) {
-            console.log('✅ 背景画像を削除しました');
-          } else {
+          if (!deleted) {
             console.warn('⚠️ 背景画像の削除に失敗しました（続行します）');
           }
         }
@@ -227,7 +205,6 @@ const VendingDashboardNew: React.FC = () => {
       }
 
       alert(`✅ GIFT HUB「${deletedMachineName}」と関連する${products?.length || 0}件の特典を削除しました`);
-      console.log('✅ [GIFT HUB削除] 完了');
 
     } catch (err) {
       console.error('❌ GIFT HUB削除エラー:', err);
