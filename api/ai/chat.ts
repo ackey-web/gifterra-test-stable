@@ -85,7 +85,9 @@ const SYSTEM_PROMPT = `あなたはGIFTERRAの特典配布サポートAIアシ�
 1. 特典の受け取りに問題が発生したユーザーをサポート
 2. 受け取り履歴を確認し、失敗原因を特定
 3. トランザクションが完了している場合、新しいダウンロードURLを自動発行
-4. 貢献熱量（Kodomi）に基づいておすすめの特典を提案（将来機能）
+4. **貢献熱量（Kodomi）とトークン残高に基づいて最適な特典を提案**
+5. **ランクアップ目前のユーザーには、達成に必要な特典を推奨**
+6. **在庫が少ない特典を優先的に案内**
 
 【対応方針】
 - 親切で丁寧な日本語で対応
@@ -129,7 +131,36 @@ const SYSTEM_PROMPT = `あなたはGIFTERRAの特典配布サポートAIアシ�
 【重要】再ダウンロードURLを案内した後の対応
 - 必ず「この問題は解決しましたか？」と質問してください
 - ユーザーが「はい」「解決した」と答えたら、チャット履歴が自動的に削除されます
-- これにより運営コストの削減に貢献します`;
+- これにより運営コストの削減に貢献します
+
+【スマート提案システム】
+ユーザーが「おすすめは？」「どの特典がいい？」と聞いてきた場合、以下の優先順位で提案してください：
+
+1. **ランクアップ支援（最優先）**
+   - ユーザー情報に「ランクアップチャンス！」と表示されている場合
+   - ランクアップに必要なポイントに最も近い特典を提案
+   - 例: "あと50ポイントでACTIVEランクです！この100 tNHTの特典を受け取ると、ランクアップできますよ！"
+
+2. **在庫緊急性**
+   - 「⚠️ 残りわずか！」マークがついている特典を優先
+   - 在庫3個以下の特典は人気商品として案内
+   - 例: "こちらの特典は残り2個で、とても人気があります！"
+
+3. **残高最適化**
+   - ユーザーの現在のtNHT残高で受け取れる特典のみ提案
+   - 残高が足りない場合は、Faucetで取得できることを案内
+   - 複数の特典を組み合わせて、残高を有効活用する提案も可能
+
+4. **エンゲージメントレベル別**
+   - PREMIUM: 高額特典や限定特典を優先
+   - ACTIVE: バランスの取れた中価格帯の特典
+   - CASUAL: 手軽に受け取れる低価格特典から案内
+
+**提案時の注意点**
+- 必ず「受け取る」という表現を使い、「購入」は使わない
+- 在庫状況とtNHT残高を必ず確認してから提案
+- 1度に1〜3個の特典に絞って提案（多すぎない）
+- 各特典の魅力を簡潔に説明`;
 
 // Function実装: 受け取り履歴取得
 async function getClaimHistory(walletAddress: string) {
@@ -170,7 +201,7 @@ async function getClaimHistory(walletAddress: string) {
         ? '受け取り可能'
         : '処理中',
       hasValidToken: p.download_tokens?.some(
-        t => !t.is_consumed && new Date(t.expires_at) > new Date()
+        (t: any) => !t.is_consumed && new Date(t.expires_at) > new Date()
       )
     }));
 
@@ -317,20 +348,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { walletAddress, message, context, kodomiProfile } = req.body;
+    const { walletAddress, message, context, kodomiProfile, products, userBalance } = req.body;
 
     if (!walletAddress || !message) {
       return res.status(400).json({ error: 'walletAddress と message は必須です' });
     }
 
-    console.log('💬 AI Chat リクエスト:', { walletAddress, context });
+    console.log('💬 AI Chat リクエスト:', { walletAddress, context, productsCount: products?.length });
+
+    // 商品情報を整形
+    const formatProducts = (prods: any[]) => {
+      if (!prods || prods.length === 0) return '現在、利用可能な特典はありません。';
+
+      return prods.map((p, idx) => {
+        const priceInToken = (BigInt(p.price_amount_wei) / BigInt(10 ** 18)).toString();
+        const stockInfo = p.is_unlimited ? '在庫: 無制限' : `在庫: ${p.stock}個${p.stock <= 3 ? ' ⚠️ 残りわずか！' : ''}`;
+        return `${idx + 1}. ${p.name}
+   必要TIP数: ${priceInToken} tNHT
+   ${stockInfo}
+   ${p.description || ''}`;
+      }).join('\n\n');
+    };
+
+    // ランクアップ分析
+    const analyzeRankUpOpportunity = (profile: any) => {
+      if (!profile?.combined?.loyaltyScore) return '';
+
+      const score = profile.combined.loyaltyScore;
+      const currentLevel = profile.combined.engagementLevel;
+
+      if (currentLevel === 'CASUAL' && score >= 350) {
+        const remaining = 400 - score;
+        return `\n\n💡 ランクアップチャンス！あと${remaining}ポイントでACTIVEランクに到達できます！`;
+      } else if (currentLevel === 'ACTIVE' && score >= 750) {
+        const remaining = 800 - score;
+        return `\n\n✨ PREMIUMランクまであと${remaining}ポイント！`;
+      }
+      return '';
+    };
 
     // ユーザーコンテキストを構築
+    const balanceInToken = userBalance ? Math.floor(Number(userBalance)).toString() : '0';
+    const rankUpMessage = analyzeRankUpOpportunity(kodomiProfile);
+
     const userContext = `
 【ユーザー情報】
 ウォレットアドレス: ${walletAddress}
 貢献熱量レベル: ${kodomiProfile?.heatLevel || '不明'}
 エンゲージメント: ${kodomiProfile?.combined?.engagementLevel || '不明'}
+ロイヤリティスコア: ${kodomiProfile?.combined?.loyaltyScore || 0}${rankUpMessage}
+現在のtNHT残高: ${balanceInToken} tNHT
+
+【GIFT HUBで受け取れる特典一覧】
+${formatProducts(products || [])}
 `;
 
     const contextMessage = context === 'CLAIM_FAILED'
