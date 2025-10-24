@@ -15,9 +15,20 @@ interface ChatWindowProps {
   walletAddress: string | undefined;
   autoOpenContext: 'CLAIM_FAILED' | null;
   onClose: () => void;
+  // GIFT HUB商品データ（AIの提案用）
+  products?: Array<{
+    id: string;
+    name: string;
+    price_amount_wei: string;
+    stock: number;
+    is_unlimited: boolean;
+    description?: string | null;
+  }>;
+  // ユーザーのトークン残高（Wei）
+  userBalance?: string;
 }
 
-function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps) {
+function ChatWindow({ walletAddress, autoOpenContext, onClose, products, userBalance }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -221,7 +232,7 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
     setIsLoading(true);
 
     try {
-      // AI APIに送信
+      // AI APIに送信（商品データと残高も含む）
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -229,7 +240,9 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
           walletAddress,
           message: userMessage.content,
           context: autoOpenContext,
-          kodomiProfile: kodomiProfile
+          kodomiProfile: kodomiProfile,
+          products: products || [],
+          userBalance: userBalance || '0'
         })
       });
 
@@ -550,7 +563,21 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
   );
 }
 
-export function GIFTERRAAIAssistant() {
+interface GIFTERRAAIAssistantProps {
+  // GIFT HUB商品データ（AIの提案用）
+  products?: Array<{
+    id: string;
+    name: string;
+    price_amount_wei: string;
+    stock: number;
+    is_unlimited: boolean;
+    description?: string | null;
+  }>;
+  // ユーザーのトークン残高（Wei）
+  userBalance?: string;
+}
+
+export function GIFTERRAAIAssistant({ products, userBalance }: GIFTERRAAIAssistantProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [autoOpenContext, setAutoOpenContext] = useState<'CLAIM_FAILED' | null>(null);
   const address = useAddress();
@@ -632,6 +659,8 @@ export function GIFTERRAAIAssistant() {
           walletAddress={address}
           autoOpenContext={autoOpenContext}
           onClose={handleClose}
+          products={products}
+          userBalance={userBalance}
         />
       )}
     </>

@@ -805,7 +805,10 @@ export default function VendingApp() {
       )}
 
       {/* ===== GIFTERRA AI アシスタント ===== */}
-      <GIFTERRAAIAssistant />
+      <GIFTERRAAIAssistant
+        products={supabaseProducts}
+        userBalance={tnhtBalance}
+      />
 
       {/* ===== 確認ダイアログ ===== */}
       {confirmingProduct && (
