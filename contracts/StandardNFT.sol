@@ -1,6 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+/**
+ * ⚠️ DEPRECATED - DO NOT USE FOR NEW DEPLOYMENTS ⚠️
+ *
+ * このコントラクトは前提条件の誤認に基づいて作成されました。
+ * 特許出願人はプロジェクトオーナー様であるため、特許回避設計は不要でした。
+ *
+ * 【移行先】
+ * - RewardNFT.sol (v1) - 特許整合版の基本実装
+ * - RewardNFT_v2.sol (v2) - 推奨版（SKU型I/F、ガス最適化、後方互換）
+ *
+ * 【廃止理由】
+ * - 誤った前提条件（特許回避の必要性）に基づく設計
+ * - 自動配布機能が実装されていない（本来は必要な機能）
+ * - RewardNFTで正しい実装に置き換え済み
+ *
+ * 【参照】
+ * - contracts/REWARDNFT-DESIGN.md - RewardNFT設計書
+ * - contracts/REWARDNFT-V2-CHANGES.md - v2変更点詳細
+ * - contracts/MIGRATION-GUIDE.md - 移行ガイド
+ *
+ * @deprecated Use RewardNFT_v2.sol instead
+ */
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -10,9 +33,14 @@ import "./interfaces/IERC2981.sol";
 
 /**
  * @title StandardNFT
+ * @notice ⚠️ DEPRECATED - Use RewardNFT_v2.sol instead
  * @notice 通常NFT（譲渡可能）- ギフテラとは完全独立
- * 
- * 【特許回避設計の徹底】
+ *
+ * ⚠️ このコントラクトは廃止予定です ⚠️
+ * 特許回避設計は誤った前提条件に基づいていました。
+ * 正しい実装はRewardNFT_v2.solをご使用ください。
+ *
+ * 【特許回避設計の徹底】（※不要だった設計）
  * ===================
  * このコントラクトは特許請求項1〜3に該当する機能を一切含みません：
  * 
