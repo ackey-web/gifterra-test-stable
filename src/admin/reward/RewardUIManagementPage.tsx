@@ -1,8 +1,7 @@
 // src/admin/reward/RewardUIManagementPage.tsx
 // リワードUI管理ページ - タブ切り替え式（GIFT HUB管理画面と統一）
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { uploadImage, deleteFileFromUrl } from '../../lib/supabase';
-import { calculateFileHash } from '../../utils/fileHash';
 import { TOKEN, CONTRACT_ADDRESS } from '../../contract';
 
 export interface AdData {
@@ -68,9 +67,6 @@ export function RewardUIManagementPage({
     }
 
     try {
-      // ファイルハッシュを計算して重複チェック
-      const fileHash = await calculateFileHash(file);
-
       // 新しい画像をアップロード
       const imageUrl = await uploadImage(file, 'gh-public');
 
@@ -103,9 +99,6 @@ export function RewardUIManagementPage({
     }
 
     try {
-      // ファイルハッシュを計算して重複チェック
-      const fileHash = await calculateFileHash(file);
-
       // 新しい背景画像をアップロード
       const imageUrl = await uploadImage(file, 'gh-public');
 

@@ -25,7 +25,6 @@ import VendingDashboardNew from "./vending/VendingDashboardNew";
 import ProductManager from "./products/ProductManager";
 import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
-import { calculateFileHash } from "../utils/fileHash";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
 
 /* ---------- Types & Helpers ---------- */
@@ -391,7 +390,6 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
-        const fromBlockHex = "0x" + fromBlock.toString(16);
         const finalFromBlockHex = "0x" + fromBlock.toString(16);
 
         const logRequest = {
@@ -1340,9 +1338,6 @@ export default function AdminDashboard() {
                 const file = e.target.files?.[0];
                 if (file) {
                   try {
-                    // ファイルハッシュを計算して重複チェック
-                    const fileHash = await calculateFileHash(file);
-
                     // 新しい背景画像をアップロード
                     const imageUrl = await uploadImage(file, 'gh-public');
 
