@@ -6,7 +6,7 @@ import { polygonAmoy } from "viem/chains";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
 import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 import { purchaseProduct, type Product } from "../lib/purchase";
-import { publicClient, TOKEN, ERC20_MIN_ABI, CONTRACT_ADDRESS } from "../contract";
+import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
 import VendingMachineShell from "./components/VendingMachineShell";
 import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
 import PurchaseConfirmDialog from "./components/PurchaseConfirmDialog";
@@ -298,14 +298,6 @@ export default function VendingApp() {
         abi: ERC20_MIN_ABI,
         functionName: 'balanceOf',
         args: [address as `0x${string}`],
-      }) as bigint;
-
-      // Allowanceを確認
-      const allowance = await publicClient.readContract({
-        address: product.price_token as `0x${string}`,
-        abi: ERC20_MIN_ABI,
-        functionName: 'allowance',
-        args: [address as `0x${string}`, CONTRACT_ADDRESS],
       }) as bigint;
 
       const priceWei = BigInt(product.price_amount_wei);
