@@ -49,12 +49,6 @@ export function RewardUIManagementPage({
   // 以前の背景画像URLを追跡（古い画像削除用）
   const previousRewardBgRef = useRef<string>(localStorage.getItem('reward-bg-image') || '');
 
-  // マウント確認（デバッグ用）
-  useEffect(() => {
-    console.log('✅ RewardUIManagementPage マウント');
-    return () => console.log('❌ RewardUIManagementPage アンマウント');
-  }, []);
-
   const handleSaveDesign = () => {
     saveAdData(editingAds);
     // 背景画像も保存
@@ -68,33 +62,23 @@ export function RewardUIManagementPage({
 
   // 画像アップロードハンドラー（ProductFormと同じパターン）
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    console.log('📁 ファイル選択イベント発火', e.target.files);
     const file = e.target.files?.[0];
     if (!file) {
-      console.log('⚠️ ファイルが選択されませんでした');
       return;
     }
 
-    console.log('📤 アップロード開始:', { name: file.name, size: file.size, type: file.type });
     try {
       // ファイルハッシュを計算して重複チェック
       const fileHash = await calculateFileHash(file);
-      console.log('🔍 ファイルハッシュ:', fileHash);
 
       // 新しい画像をアップロード
-      console.log('📤 uploadImage呼び出し...');
       const imageUrl = await uploadImage(file, 'gh-public');
-      console.log('✅ アップロード完了:', imageUrl);
 
       if (imageUrl) {
         // 古い画像を削除（差し替えの場合）
         const previousUrl = previousAdImagesRef.current[index];
         if (previousUrl && previousUrl !== imageUrl) {
-          console.log('🗑️ 古い広告画像を削除:', previousUrl);
-          const deleted = await deleteFileFromUrl(previousUrl);
-          if (deleted) {
-            console.log('✅ 古い広告画像を削除しました');
-          }
+          await deleteFileFromUrl(previousUrl);
         }
 
         // 新しい画像を設定
@@ -113,32 +97,23 @@ export function RewardUIManagementPage({
 
   // 背景画像アップロードハンドラー
   const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('📁 Reward背景画像選択イベント発火', e.target.files);
     const file = e.target.files?.[0];
     if (!file) {
-      console.log('⚠️ Reward背景画像が選択されませんでした');
       return;
     }
 
-    console.log('📤 Reward背景画像アップロード開始:', { name: file.name, size: file.size });
     try {
       // ファイルハッシュを計算して重複チェック
       const fileHash = await calculateFileHash(file);
-      console.log('🔍 ファイルハッシュ:', fileHash);
 
       // 新しい背景画像をアップロード
       const imageUrl = await uploadImage(file, 'gh-public');
-      console.log('✅ Reward背景画像アップロード完了:', imageUrl);
 
       if (imageUrl) {
         // 古い背景画像を削除（差し替えの場合）
         const previousUrl = previousRewardBgRef.current;
         if (previousUrl && previousUrl !== imageUrl) {
-          console.log('🗑️ 古いReward背景画像を削除:', previousUrl);
-          const deleted = await deleteFileFromUrl(previousUrl);
-          if (deleted) {
-            console.log('✅ 古いReward背景画像を削除しました');
-          }
+          await deleteFileFromUrl(previousUrl);
         }
 
         // 新しい背景画像を設定
