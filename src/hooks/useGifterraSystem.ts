@@ -3,7 +3,6 @@
 
 export const useGifterraSystem = (adminAddress?: string | number) => {
   // モック実装
-  console.log('useGifterraSystem called with:', adminAddress);
   return {
     isLoading: false,
     error: null,

@@ -338,10 +338,6 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
       setIsLoading(true);
       setError(null);
 
-      console.log("🔍 Hook Debug - Loading content for:", { spaceId, machineId });
-      console.log("🗄️ Available Spaces:", Object.keys(MOCK_SPACES));
-      console.log("🏪 Available Machines:", Object.keys(MOCK_MACHINES));
-
       try {
         // 📦 管理画面から作成した自販機を読み込み
         const vendingMachines = loadVendingMachinesFromStorage();
@@ -351,7 +347,6 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
 
         if (vendingMachine) {
           // ✅ 管理画面データが見つかった場合
-          console.log("✅ Vending machine found from admin:", vendingMachine);
           const { machineInfo: adminMachineInfo, contentSet: adminContentSet, vendingMachine: vm } = convertVendingMachineToContent(vendingMachine);
 
           setSpaceInfo({
@@ -377,7 +372,6 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
             : `Space not found: ${spaceId}`;
           throw new Error(errorMsg);
         }
-        console.log("✅ Space found:", space);
         setSpaceInfo(space);
 
         // 🏪 マシン情報取得
@@ -390,8 +384,7 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
             : `Machine not found: ${machineId}`;
           throw new Error(errorMsg);
         }
-        console.log("✅ Machine found:", machine);
-        
+
         // マシンが指定された空間に属しているかチェック
         if (machine.spaceId !== spaceId && spaceId !== "default") {
           console.warn(`Machine ${machineId} belongs to space ${machine.spaceId}, but requested space is ${spaceId}`);
@@ -404,7 +397,6 @@ export const useMetaverseContent = (spaceId: string, machineId: string) => {
           console.error(`❌ Content set not found: ${machine.contentSetId}`);
           throw new Error(`Content set not found: ${machine.contentSetId}`);
         }
-        console.log("✅ Content set found:", content);
         setContentSet(content);
 
       } catch (err) {

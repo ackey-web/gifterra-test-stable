@@ -29,11 +29,8 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
-    console.log('🔄 [useSupabaseProducts] refetch開始:', { tenantId, isActive });
-
     // tenantIdが空の場合は早期リターン（GIFT HUBデータ読み込み中）
     if (!tenantId) {
-      console.log('⏸️ [useSupabaseProducts] tenantId が空のため、クエリをスキップ');
       setIsLoading(false);
       setProducts([]);
       return;
@@ -43,7 +40,6 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
     setError(null);
 
     try {
-      console.log('📦 Fetching products from Supabase:', { tenantId, isActive });
 
       let query = supabase
         .from('products')
@@ -64,7 +60,6 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
         throw new Error(fetchError.message);
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} products from Supabase`, data);
       setProducts(data || []);
 
     } catch (err) {
@@ -72,7 +67,6 @@ export function useSupabaseProducts({ tenantId, isActive = true }: UseSupabasePr
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
-      console.log('✅ [useSupabaseProducts] refetch完了');
     }
   }, [tenantId, isActive]);
 
