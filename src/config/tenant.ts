@@ -84,12 +84,7 @@ export const checkImplementationStatus = () => {
   const completedCount = Object.values(status).filter(Boolean).length;
   const totalCount = Object.keys(status).length;
   const completionPercentage = Math.round((completedCount / totalCount) * 100);
-  
-  console.group('🚀 GIFTERRA マルチテナント実装準備状況');
-  console.log(`進捗: ${completedCount}/${totalCount} (${completionPercentage}%)`);
-  console.log('詳細:', status);
-  console.groupEnd();
-  
+
   return {
     status,
     completedCount,

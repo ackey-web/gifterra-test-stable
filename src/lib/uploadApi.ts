@@ -39,12 +39,6 @@ export async function uploadFileViaAPI(
   bucketType: BucketType
 ): Promise<UploadResponse> {
   try {
-    console.log('📤 uploadFileViaAPI 開始:', {
-      fileName: file.name,
-      size: file.size,
-      bucketType,
-    });
-
     // ファイルをBase64エンコード
     const fileData = await fileToBase64(file);
 
@@ -68,7 +62,6 @@ export async function uploadFileViaAPI(
     }
 
     const result: UploadResponse = await response.json();
-    console.log('✅ uploadFileViaAPI 成功:', result);
 
     return result;
   } catch (error) {
