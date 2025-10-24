@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title GifterraPaySplitter v1
+ * @title GifterraPaySplitter v1.0.1
  * @notice 支払いの受け口 + 分配 + イベント発火を担うコントラクト
  *
  * 【目的】
@@ -34,6 +34,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - Pausable：donate 関数は pause 中に revert
  * - ReentrancyGuard：donate / release 系に適用
  * - 0 金額・不正トークン・自分宛送金などのハードニング
+ *
+ * 【バージョン履歴】
+ * v1.0.1 (最終調整):
+ * - receive() 関数の修正: super.receive() 削除（Solidity仕様違反）
+ *   → pause対応 + イベント発火に変更（pause機能の一貫性確保）
+ * - _getPayeeCount() にガスコスト警告を追加
+ * - OpenZeppelin バージョン依存（totalReleased系）の注記を追加
+ * v1.0.0 (初回リリース):
+ * - 基本機能実装（donateNative/ERC20, releaseAll系, pause機能）
  */
 contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
@@ -101,13 +110,17 @@ contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Owna
     }
 
     /**
-     * @notice ネイティブ通貨のフォールバック受領（イベントなし）
+     * @notice ネイティブ通貨のフォールバック受領
      * @dev 直接送金された場合もPaymentSplitterの残高に追加される
+     *      v1.0.1: pause対応 + イベント発火（sku/traceIdは空）
+     *      理由: pause機能の一貫性を保ち、全ての入金を追跡可能にするため
      */
-    receive() external payable override {
-        // PaymentSplitterのreceiveを呼び出す
-        super.receive();
-        // イベントは emit しない（donateNative経由を推奨）
+    receive() external payable override whenNotPaused nonReentrant {
+        require(msg.value > 0, "Donation amount must be greater than 0");
+
+        // イベント発火（sku と traceId は空）
+        // 直接送金の場合は商品情報がないため、bytes32(0) を使用
+        emit DonationReceived(msg.sender, address(0), msg.value, bytes32(0), bytes32(0));
     }
 
     // ========================================
@@ -206,6 +219,9 @@ contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Owna
     /**
      * @notice 受益者数を取得
      * @dev PaymentSplitter の内部状態から取得
+     * @dev ⚠️ ガスコスト警告：try-catch ループのため、payee数に比例してガスコストが増加
+     *      オンチェーン運用では多用を避け、運用ツールやバックエンドからの限定的呼び出しに留めること
+     *      設計意図：releaseAll() などの管理操作用（頻繁な呼び出しは想定外）
      */
     function _getPayeeCount() internal view returns (uint256) {
         // PaymentSplitter は payee(uint256 index) を提供
@@ -259,6 +275,8 @@ contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Owna
 
     /**
      * @notice コントラクトの基本情報を取得
+     * @dev ⚠️ OpenZeppelin 依存：totalReleased() は OZ v4.7+ で追加された関数
+     *      古いバージョンでは代替として released(payee) を全員分合計する必要がある
      * @return payeeCount 受益者数
      * @return totalShares_ 総シェア数
      * @return nativeBalance ネイティブ通貨残高
@@ -285,6 +303,8 @@ contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Owna
 
     /**
      * @notice 指定 ERC20 トークンの統計情報を取得
+     * @dev ⚠️ OpenZeppelin 依存：totalReleased(token) は OZ v4.7+ で追加された関数
+     *      古いバージョンでは代替として released(token, payee) を全員分合計する必要がある
      * @param token ERC20 トークンアドレス
      * @return tokenBalance トークン残高
      * @return totalTokenReleased 累計トークン分配額
@@ -330,6 +350,6 @@ contract GifterraPaySplitter is PaymentSplitter, Pausable, ReentrancyGuard, Owna
      * @notice バージョン情報
      */
     function version() external pure returns (string memory) {
-        return "GifterraPaySplitter v1.0.0 - Payment Receiver + Distribution + Event Emitter";
+        return "GifterraPaySplitter v1.0.1 - Payment Receiver + Distribution + Event Emitter (Solidity Compliance Update)";
     }
 }
