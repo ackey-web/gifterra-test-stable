@@ -77,7 +77,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
       const cached = getCachedKodomiProfile(walletAddress);
       if (cached) {
         setKodomiProfile(cached);
-        console.log('📊 Kodomi プロファイル（キャッシュ）:', cached);
       }
 
       // バックグラウンドでフル取得
@@ -85,7 +84,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         const full = await getExtendedKodomiProfile(walletAddress);
         if (full) {
           setKodomiProfile(full);
-          console.log('📊 Kodomi プロファイル（完全版）:', full);
         }
       } catch (error) {
         console.warn('⚠️ Kodomi プロファイル取得エラー:', error);
@@ -121,11 +119,9 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
           .slice(-10); // 最新10件のみ保持
 
         if (restored.length > 0) {
-          console.log('💬 チャット履歴を復元:', restored.length, '件（24時間以内、最新10件）');
           setMessages(restored);
           return;
         } else {
-          console.log('🗑️ 24時間以上経過した履歴を削除しました');
           localStorage.removeItem(storageKey);
         }
       } catch (error) {
@@ -159,7 +155,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
       // 最新10件のみ保存してストレージ容量を節約
       const messagesToSave = messages.slice(-10);
       localStorage.setItem(storageKey, JSON.stringify(messagesToSave));
-      console.log('💾 チャット履歴を保存:', messagesToSave.length, '件（最新10件）');
     } catch (error) {
       console.warn('⚠️ チャット履歴の保存に失敗:', error);
     }
@@ -183,8 +178,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
         lastMessage.role === 'user' &&
         (lastMessage.content.match(/はい|解決|大丈夫|ok|オーケー|ありがとう|thanks/i))
       ) {
-        console.log('✅ 問題解決を検出 - チャット履歴削除を提案');
-
         // 少し待ってから削除提案
         setTimeout(() => {
           const confirmed = window.confirm(
@@ -207,7 +200,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
               timestamp: new Date()
             };
             setMessages([greeting]);
-            console.log('🗑️ チャット履歴を削除しました');
           }
         }, 1000);
       }
@@ -230,12 +222,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
 
     try {
       // AI APIに送信
-      console.log('🤖 ギフティAPI呼び出し:', {
-        endpoint: '/api/ai/chat',
-        walletAddress,
-        message: userMessage.content
-      });
-
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,12 +231,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
           context: autoOpenContext,
           kodomiProfile: kodomiProfile
         })
-      });
-
-      console.log('📡 API レスポンス:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
       });
 
       if (!response.ok) {
@@ -268,7 +248,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
       }
 
       const data = await response.json();
-      console.log('✅ API レスポンスデータ:', data);
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -325,8 +304,6 @@ function ChatWindow({ walletAddress, autoOpenContext, onClose }: ChatWindowProps
       timestamp: new Date()
     };
     setMessages([greeting]);
-
-    console.log('🗑️ チャット履歴を削除しました');
   };
 
   return (
@@ -581,8 +558,6 @@ export function GIFTERRAAIAssistant() {
   // 特典受け取り失敗時の自動オープン
   useEffect(() => {
     const handleError = (event: CustomEvent) => {
-      console.log('🚨 GIFTERRA Error イベント受信:', event.detail);
-
       if (event.detail.type === 'CLAIM_FAILED') {
         setAutoOpenContext('CLAIM_FAILED');
         setIsOpen(true);

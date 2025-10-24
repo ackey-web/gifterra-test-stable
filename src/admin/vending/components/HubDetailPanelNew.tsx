@@ -52,13 +52,6 @@ export function HubDetailPanelNew({
   // Supabase商品取得（HUBのIDをtenantIdとして使用）
   const tenantId = machine?.id || 'default';
 
-  console.log('🎯 [HubDetailPanel] 現在のGIFT HUB:', {
-    machineId: machine?.id,
-    machineName: machine?.name,
-    machineSlug: machine?.slug,
-    tenantId
-  });
-
   const { products, isLoading, error, refetch } = useSupabaseProducts({ tenantId, isActive: true });
 
   // 新規商品追加モーダルを開く
@@ -94,8 +87,6 @@ export function HubDetailPanelNew({
   const handleSubmitProduct = async (formData: ProductFormData) => {
     setIsSubmitting(true);
     try {
-      console.log('💾 [特典保存] tenantId:', tenantId, 'formData.id:', formData.id);
-
       if (formData.id) {
         // 更新
         const params = formDataToUpdateParams(formData, tenantId);
@@ -103,7 +94,6 @@ export function HubDetailPanelNew({
           alert('❌ 更新データの変換に失敗しました');
           return;
         }
-        console.log('📝 [特典更新] params:', { productId: params.productId, tenantId: params.tenantId });
         const result = await updateProduct(params);
         if (!result.success) {
           alert(`❌ 更新に失敗しました\n\n${result.error}`);
@@ -113,7 +103,6 @@ export function HubDetailPanelNew({
       } else {
         // 新規作成
         const params = formDataToCreateParams(formData, tenantId);
-        console.log('🆕 [特典作成] params:', { tenantId: params.tenantId, name: params.name });
         const result = await createProduct(params);
         if (!result.success) {
           alert(`❌ 作成に失敗しました\n\n${result.error}`);
@@ -141,17 +130,12 @@ export function HubDetailPanelNew({
 
   // 商品削除
   const handleDeleteProduct = async (productId: string) => {
-    console.log('🗑️ [HubDetailPanel] 削除処理開始:', productId);
-
     if (!confirm('この特典を削除してもよろしいですか？')) {
-      console.log('⚠️ [HubDetailPanel] ユーザーがキャンセルしました');
       return;
     }
 
     try {
-      console.log('📞 [HubDetailPanel] deleteProduct関数を呼び出し...');
       const result = await deleteProduct(productId);
-      console.log('📊 [HubDetailPanel] deleteProduct結果:', result);
 
       if (!result.success) {
         console.error('❌ [HubDetailPanel] 削除失敗:', result.error);
@@ -159,12 +143,10 @@ export function HubDetailPanelNew({
         return;
       }
 
-      console.log('✅ [HubDetailPanel] 削除成功、refetch実行...');
       alert('✅ 特典を削除しました');
 
       // データを再取得
       await refetch();
-      console.log('✅ [HubDetailPanel] refetch完了');
 
       // 特典数をリフレッシュ
       onProductChange?.();
@@ -219,13 +201,11 @@ export function HubDetailPanelNew({
         }
       }
 
-      console.log('📤 ディスプレイ画像アップロード開始:', file.name);
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
         // 古い画像を削除
         if (previousHeaderImageRef.current && previousHeaderImageRef.current !== imageUrl) {
-          console.log('🗑️ 古いディスプレイ画像を削除:', previousHeaderImageRef.current);
           await deleteFileFromUrl(previousHeaderImageRef.current);
         }
 
@@ -233,7 +213,6 @@ export function HubDetailPanelNew({
         setHeaderImageHash(fileHash);
         previousHeaderImageRef.current = imageUrl;
         alert('✅ ディスプレイ画像をアップロードしました');
-        console.log('✅ アップロード成功:', imageUrl);
       } else {
         throw new Error('uploadImage returned null');
       }
@@ -266,13 +245,11 @@ export function HubDetailPanelNew({
         }
       }
 
-      console.log('📤 背景画像アップロード開始:', file.name);
       const imageUrl = await uploadImage(file, 'gh-public');
 
       if (imageUrl) {
         // 古い画像を削除
         if (previousBackgroundImageRef.current && previousBackgroundImageRef.current !== imageUrl) {
-          console.log('🗑️ 古い背景画像を削除:', previousBackgroundImageRef.current);
           await deleteFileFromUrl(previousBackgroundImageRef.current);
         }
 
@@ -280,7 +257,6 @@ export function HubDetailPanelNew({
         setBackgroundImageHash(fileHash);
         previousBackgroundImageRef.current = imageUrl;
         alert('✅ 背景画像をアップロードしました');
-        console.log('✅ アップロード成功:', imageUrl);
       } else {
         throw new Error('uploadImage returned null');
       }
