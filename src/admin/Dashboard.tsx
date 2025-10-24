@@ -307,15 +307,11 @@ export default function AdminDashboard() {
   
   // 広告データの読み込み
   const loadAdData = () => {
-    console.log('📂 広告データ読み込み開始');
     try {
       const saved = localStorage.getItem('gifterra-ads');
-      console.log('📂 localStorage "gifterra-ads":', saved);
       if (saved) {
         const parsed = JSON.parse(saved);
-        console.log('📂 パース結果:', parsed);
         if (parsed.ads && Array.isArray(parsed.ads)) {
-          console.log('✅ 広告データを設定:', parsed.ads);
           setAdManagementData(parsed.ads);
           return;
         }
@@ -324,7 +320,6 @@ export default function AdminDashboard() {
       console.error('❌ Failed to load ad data:', error);
     }
     // デフォルトデータ
-    console.log('📂 デフォルト広告データを設定');
     setAdManagementData([
       { src: "/ads/ad1.png", href: "https://example.com/1" },
       { src: "/ads/ad2.png", href: "https://example.com/2" },
