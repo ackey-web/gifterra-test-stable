@@ -1,6 +1,6 @@
 # Remix でのデプロイガイド
 
-**GifterraFactoryV2 を Remix でデプロイする手順**
+**GifterraFactory を Remix でデプロイする手順**
 
 対応ネットワーク: Polygon Amoy (Testnet) / Polygon Mainnet
 
@@ -62,7 +62,7 @@
 
 ```
 contracts/
-├── GifterraFactoryV2.sol
+├── GifterraFactory.sol
 ├── Gifterra.sol
 ├── RewardNFT_v2.sol
 ├── GifterraPaySplitter.sol
@@ -78,8 +78,8 @@ contracts/
 
 1. 左サイドバーから「Solidity Compiler」タブを選択
 2. Compiler version: `0.8.19` または `0.8.20` を選択
-3. `GifterraFactoryV2.sol` を選択
-4. 「Compile GifterraFactoryV2.sol」ボタンをクリック
+3. `GifterraFactory.sol` を選択
+4. 「Compile GifterraFactory.sol」ボタンをクリック
 
 **エラーが出た場合**:
 - OpenZeppelin のインポートパスを確認
@@ -95,7 +95,7 @@ contracts/
    - Polygon Amoy または Mainnet に接続されていることを確認
 
 3. **Contract 選択**:
-   - ドロップダウンから `GifterraFactoryV2` を選択
+   - ドロップダウンから `GifterraFactory` を選択
 
 4. **コンストラクタ引数入力**:
 
@@ -227,7 +227,7 @@ Factory の `getTenantInfo` 関数を使用：
 | Optimization | Yes, 200 runs |
 
 4. コントラクトコードを貼り付け
-   - GifterraFactoryV2.sol の全コード
+   - GifterraFactory.sol の全コード
    - すべてのインポートを含む（フラット化）
 
 5. Constructor Arguments (ABI-encoded):
@@ -241,7 +241,7 @@ Factory の `getTenantInfo` 関数を使用：
 **フラット化ツール（推奨）**:
 ```bash
 # Hardhat がある場合
-npx hardhat flatten contracts/GifterraFactoryV2.sol > flattened.sol
+npx hardhat flatten contracts/GifterraFactory.sol > flattened.sol
 
 # または Remix の Flattener プラグインを使用
 ```
@@ -360,7 +360,7 @@ npx hardhat flatten contracts/GifterraFactoryV2.sol > flattened.sol
 
 - [ ] MetaMask を Polygon Amoy/Mainnet に接続
 - [ ] テストMATICを取得（テストネットの場合）
-- [ ] GifterraFactoryV2.sol をコンパイル
+- [ ] GifterraFactory.sol をコンパイル
 - [ ] コンストラクタ引数を準備（feeRecipient, deploymentFee）
 - [ ] デプロイ実行
 - [ ] Factory アドレスを記録
@@ -379,4 +379,4 @@ npx hardhat flatten contracts/GifterraFactoryV2.sol > flattened.sol
 ---
 
 **最終更新**: 2025-01-26
-**対応バージョン**: GifterraFactoryV2 v1.0.0
+**対応バージョン**: GifterraFactory v1.0.0

@@ -1,4 +1,4 @@
-# GifterraFactoryV2 デプロイ・運用ガイド
+# GifterraFactory デプロイ・運用ガイド
 
 **マルチテナント SaaS アーキテクチャ完全ガイド**
 
@@ -22,7 +22,7 @@
 
 ## 概要
 
-### GifterraFactoryV2 とは
+### GifterraFactory とは
 
 **マルチテナント対応の Gifterra エコシステム一括デプロイファクトリー**
 
@@ -49,7 +49,7 @@
 
 ```
 運営 (Super Admin)
-  └─ GifterraFactoryV2
+  └─ GifterraFactory
       ├─ Tenant 1: カフェA
       │   ├─ Gifterra (SBT)
       │   ├─ RewardNFT_v2
@@ -93,12 +93,12 @@ async function main() {
   const feeRecipient = process.env.FEE_RECIPIENT || deployer.address;
 
   // Factory デプロイ
-  const GifterraFactoryV2 = await ethers.getContractFactory("GifterraFactoryV2");
-  const factory = await GifterraFactoryV2.deploy(feeRecipient);
+  const GifterraFactory = await ethers.getContractFactory("GifterraFactory");
+  const factory = await GifterraFactory.deploy(feeRecipient);
   await factory.waitForDeployment();
 
   const factoryAddress = await factory.getAddress();
-  console.log("✅ GifterraFactoryV2 deployed to:", factoryAddress);
+  console.log("✅ GifterraFactory deployed to:", factoryAddress);
 
   // 初期設定確認
   const deploymentFee = await factory.deploymentFee();
@@ -696,4 +696,4 @@ console.log("Valid Tenant IDs: 1 to", nextId - 1);
 ---
 
 **最終更新**: 2025-01-26
-**バージョン**: GifterraFactoryV2 v1.0.0
+**バージョン**: GifterraFactory v1.0.0
