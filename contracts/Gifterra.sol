@@ -28,6 +28,7 @@ contract Gifterra is ERC721Enumerable, Ownable {
     IERC20 public rewardToken;
     address public tipWallet;
     uint256 public dailyRewardAmount = 30 * 1e18;
+    uint256 public maxRankLevel = 4; // デフォルト4段階（変更可能）
 
     mapping(address => uint256) public lastClaimed;
     mapping(address => uint256) public totalTips;
@@ -46,6 +47,8 @@ contract Gifterra is ERC721Enumerable, Ownable {
     event Tipped(address indexed from, uint256 amount);
     event NFTMinted(address indexed user, uint256 tokenId, uint256 level);
     event NFTBurned(address indexed user, uint256 tokenId);
+    event MaxRankLevelUpdated(uint256 oldLevel, uint256 newLevel);
+    event RankThresholdUpdated(uint256 indexed level, uint256 amount);
 
     // ========================================
     // コンストラクタ
@@ -71,11 +74,37 @@ contract Gifterra is ERC721Enumerable, Ownable {
         dailyRewardAmount = _amount;
     }
 
-    function setRankThreshold(uint256 level, uint256 amount) external onlyOwner {
-        rankThresholds[level] = amount;
+    /**
+     * @notice ランク数の設定
+     * @dev UI側から動的にランク数を変更可能
+     * @param _maxLevel 最大ランクレベル（1以上）
+     */
+    function setMaxRankLevel(uint256 _maxLevel) external onlyOwner {
+        require(_maxLevel > 0, "Max level must be positive");
+        uint256 oldLevel = maxRankLevel;
+        maxRankLevel = _maxLevel;
+        emit MaxRankLevelUpdated(oldLevel, _maxLevel);
     }
 
+    /**
+     * @notice ランク閾値の設定
+     * @dev UI側から動的に閾値を変更可能
+     * @param level ランクレベル
+     * @param amount 必要な累積投げ銭額
+     */
+    function setRankThreshold(uint256 level, uint256 amount) external onlyOwner {
+        require(level > 0 && level <= maxRankLevel, "Invalid level");
+        rankThresholds[level] = amount;
+        emit RankThresholdUpdated(level, amount);
+    }
+
+    /**
+     * @notice ランクNFTのURI設定
+     * @param level ランクレベル
+     * @param uri NFTのメタデータURI
+     */
     function setNFTRankUri(uint256 level, string calldata uri) external onlyOwner {
+        require(level > 0 && level <= maxRankLevel, "Invalid level");
         rankNFTUris[level] = uri;
     }
 
@@ -150,11 +179,11 @@ contract Gifterra is ERC721Enumerable, Ownable {
 
     /**
      * @notice ランク計算
-     * @dev 累積投げ銭額に基づいてランクを計算（1〜4）
+     * @dev 累積投げ銭額に基づいてランクを計算（1〜maxRankLevel）
      */
     function _calcLevel(uint256 total) internal view returns (uint256) {
         uint256 level = 0;
-        for (uint256 i = 1; i <= 4; i++) {
+        for (uint256 i = 1; i <= maxRankLevel; i++) {
             if (total >= rankThresholds[i]) {
                 level = i;
             }
@@ -179,12 +208,8 @@ contract Gifterra is ERC721Enumerable, Ownable {
      * @notice トークンのレベル取得
      */
     function tokenLevel(uint256 tokenId) public view returns (uint256) {
-        for (uint256 i = 1; i <= 4; i++) {
-            if (keccak256(bytes(rankNFTUris[i])) == keccak256(bytes(tokenURI(tokenId)))) {
-                return i;
-            }
-        }
-        return 0;
+        address owner = ownerOf(tokenId);
+        return userNFTLevel[owner];
     }
 
     // ========================================
@@ -223,9 +248,21 @@ contract Gifterra is ERC721Enumerable, Ownable {
     }
 
     /**
+     * @notice 全ランク情報取得（UI用）
+     * @dev フロントエンドが全ランクの閾値を一度に取得できる
+     */
+    function getAllRankThresholds() external view returns (uint256[] memory) {
+        uint256[] memory thresholds = new uint256[](maxRankLevel);
+        for (uint256 i = 1; i <= maxRankLevel; i++) {
+            thresholds[i - 1] = rankThresholds[i];
+        }
+        return thresholds;
+    }
+
+    /**
      * @notice バージョン情報
      */
     function version() external pure returns (string memory) {
-        return "Gifterra v1.0.0 - Deployed SBT";
+        return "Gifterra v1.1.0 - Variable Rank System";
     }
 }
