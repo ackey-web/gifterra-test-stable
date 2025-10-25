@@ -509,7 +509,8 @@ pnpm distributor:dev
 
 | ドキュメント | 説明 |
 |-------------|------|
-| [FACTORY-DEPLOYMENT-GUIDE.md](./docs/FACTORY-DEPLOYMENT-GUIDE.md) | Factory デプロイ・運用完全ガイド |
+| [remix-deployment-guide.md](./docs/remix-deployment-guide.md) | **Remix でのデプロイガイド（推奨）** |
+| [FACTORY-DEPLOYMENT-GUIDE.md](./docs/FACTORY-DEPLOYMENT-GUIDE.md) | Factory デプロイ・運用完全ガイド（Hardhat/CLI使用） |
 | [ARCHITECTURE-INTERCONNECTIONS.md](./docs/ARCHITECTURE-INTERCONNECTIONS.md) | コントラクト間連携・依存関係詳細 |
 | [indexer-e2e-checklist.md](./docs/indexer-e2e-checklist.md) | Indexer E2E テスト手順 |
 | [README-RandomRewardEngine.md](./contracts/README-RandomRewardEngine.md) | ランダム報酬エンジン使い方 |
