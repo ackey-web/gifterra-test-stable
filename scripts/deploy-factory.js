@@ -6,7 +6,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log("========================================");
-  console.log("GifterraFactoryV2 Deployment");
+  console.log("GifterraFactory Deployment");
   console.log("========================================\n");
 
   console.log("Deploying with account:", deployer.address);
@@ -35,23 +35,23 @@ async function main() {
   console.log("Deployment fee:", ethers.formatEther(deploymentFee), network.name === "polygon" || network.name === "amoy" ? "MATIC" : "ETH");
 
   // Factory デプロイ
-  console.log("\nDeploying GifterraFactoryV2...");
-  const GifterraFactoryV2 = await ethers.getContractFactory("GifterraFactoryV2");
-  const factory = await GifterraFactoryV2.deploy(feeRecipient, deploymentFee);
+  console.log("\nDeploying GifterraFactory...");
+  const GifterraFactory = await ethers.getContractFactory("GifterraFactory");
+  const factory = await GifterraFactory.deploy(feeRecipient, deploymentFee);
 
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
 
-  console.log("✅ GifterraFactoryV2 deployed to:", factoryAddress);
+  console.log("✅ GifterraFactory deployed to:", factoryAddress);
 
   // 初期設定確認
   console.log("\n--- Initial Configuration ---");
-  const deploymentFee = await factory.deploymentFee();
+  const deploymentFeeFromContract = await factory.deploymentFee();
   const totalTenants = await factory.totalTenants();
   const activeTenants = await factory.activeTenants();
   const nextTenantId = await factory.nextTenantId();
 
-  console.log("Deployment Fee:", ethers.formatEther(deploymentFee), "ETH");
+  console.log("Deployment Fee:", ethers.formatEther(deploymentFeeFromContract), network.name === "polygon" || network.name === "amoy" ? "MATIC" : "ETH");
   console.log("Total Tenants:", totalTenants.toString());
   console.log("Active Tenants:", activeTenants.toString());
   console.log("Next Tenant ID:", nextTenantId.toString());

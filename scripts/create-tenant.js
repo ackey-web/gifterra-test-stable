@@ -39,7 +39,7 @@ async function main() {
   console.log("  Tip Wallet:", tipWalletAddress);
 
   // Factory コントラクト接続
-  const factory = await ethers.getContractAt("GifterraFactoryV2", factoryAddress);
+  const factory = await ethers.getContractAt("GifterraFactory", factoryAddress);
 
   // デプロイ手数料確認
   const deploymentFee = await factory.deploymentFee();

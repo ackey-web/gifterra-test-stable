@@ -11,7 +11,7 @@ import "./JourneyPass.sol";
 import "./RandomRewardEngine.sol";
 
 /**
- * @title GifterraFactoryV2
+ * @title GifterraFactory
  * @notice マルチテナント対応Gifterraシステムファクトリー
  *
  * 【設計思想】
@@ -33,8 +33,10 @@ import "./RandomRewardEngine.sol";
  * - Testnet: Polygon Amoy
  * - Mainnet: Polygon Mainnet
  * - 推奨デプロイ手数料: 10 MATIC（約$9 @ $0.9/MATIC）
+ *
+ * @dev 本コントラクトが初回リリース版（V1相当）
  */
-contract GifterraFactoryV2 is AccessControl, ReentrancyGuard, Pausable {
+contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
 
     // ========================================
     // ロール定義

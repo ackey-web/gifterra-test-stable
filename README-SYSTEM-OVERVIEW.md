@@ -54,7 +54,7 @@ Gifterra は、実店舗やオンラインサービス向けの **Web3 ロイヤ
 └──────────────────────┬───────────────────────────────────────┘
                        │
           ┌────────────▼────────────┐
-          │  GifterraFactoryV2      │  マルチテナントファクトリー
+          │  GifterraFactory      │  マルチテナントファクトリー
           │  (コントラクトデプロイ)  │
           └────────────┬────────────┘
                        │
@@ -86,7 +86,7 @@ Gifterra は、実店舗やオンラインサービス向けの **Web3 ロイヤ
 
 ## コントラクト一覧
 
-### 1. GifterraFactoryV2 (ファクトリー)
+### 1. GifterraFactory (ファクトリー)
 
 **役割**: マルチテナント管理・一括デプロイ
 
@@ -97,7 +97,7 @@ Gifterra は、実店舗やオンラインサービス向けの **Web3 ロイヤ
 
 **ドキュメント**: [FACTORY-DEPLOYMENT-GUIDE.md](./docs/FACTORY-DEPLOYMENT-GUIDE.md)
 
-**コントラクト**: [GifterraFactoryV2.sol](./contracts/GifterraFactoryV2.sol)
+**コントラクト**: [GifterraFactory.sol](./contracts/GifterraFactory.sol)
 
 ---
 
@@ -379,7 +379,7 @@ pnpm distributor:dev
 ```
 gifterra-test-stable-4/
 ├── contracts/                      # Solidityコントラクト
-│   ├── GifterraFactoryV2.sol       # マルチテナントファクトリー
+│   ├── GifterraFactory.sol       # マルチテナントファクトリー
 │   ├── Gifterra.sol                # SBT (投げ銭・ランク)
 │   ├── RewardNFT_v2.sol            # SKUベースNFT配布
 │   ├── GifterraPaySplitter.sol     # 支払い受付・分配
