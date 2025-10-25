@@ -10,6 +10,11 @@ async function main() {
   console.log("========================================\n");
 
   console.log("Creating tenant with account:", deployer.address);
+  console.log("Network:", network.name);
+
+  // ネットワーク判定
+  const isPolygon = network.name === "polygon" || network.name === "amoy";
+  const nativeToken = isPolygon ? "MATIC" : "ETH";
 
   // 環境変数から設定取得
   const factoryAddress = process.env.FACTORY_ADDRESS;
@@ -26,7 +31,7 @@ async function main() {
     throw new Error("REWARD_TOKEN_ADDRESS is required");
   }
 
-  console.log("Configuration:");
+  console.log("\nConfiguration:");
   console.log("  Factory Address:", factoryAddress);
   console.log("  Tenant Name:", tenantName);
   console.log("  Tenant Admin:", tenantAdmin);
@@ -38,10 +43,10 @@ async function main() {
 
   // デプロイ手数料確認
   const deploymentFee = await factory.deploymentFee();
-  console.log("\nDeployment Fee:", ethers.formatEther(deploymentFee), "ETH");
+  console.log("\nDeployment Fee:", ethers.formatEther(deploymentFee), nativeToken);
 
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("Your Balance:", ethers.formatEther(balance), "ETH");
+  console.log("Your Balance:", ethers.formatEther(balance), nativeToken);
 
   if (balance < deploymentFee) {
     throw new Error("Insufficient balance for deployment fee");

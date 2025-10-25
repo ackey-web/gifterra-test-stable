@@ -28,6 +28,11 @@ import "./RandomRewardEngine.sol";
  *
  * 【特許対応】
  * 特許出願人による実装。各テナントが自動配布機能を利用可能。
+ *
+ * 【ネットワーク対応】
+ * - Testnet: Polygon Amoy
+ * - Mainnet: Polygon Mainnet
+ * - 推奨デプロイ手数料: 10 MATIC（約$9 @ $0.9/MATIC）
  */
 contract GifterraFactoryV2 is AccessControl, ReentrancyGuard, Pausable {
 
@@ -106,15 +111,27 @@ contract GifterraFactoryV2 is AccessControl, ReentrancyGuard, Pausable {
     // コンストラクタ
     // ========================================
 
-    constructor(address _feeRecipient) {
+    /**
+     * @notice Factory デプロイ
+     * @param _feeRecipient 手数料受取アドレス
+     * @param _deploymentFee テナント作成手数料（wei単位）
+     *
+     * 【推奨設定】
+     * Polygon Amoy (Testnet): 10 MATIC = 10 * 10^18 wei
+     * Polygon Mainnet: 10 MATIC = 10 * 10^18 wei
+     *
+     * 例：ethers.parseEther("10") で 10 MATIC
+     */
+    constructor(address _feeRecipient, uint256 _deploymentFee) {
         require(_feeRecipient != address(0), "Invalid fee recipient");
+        require(_deploymentFee > 0, "Fee must be positive");
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(SUPER_ADMIN_ROLE, msg.sender);
         _grantRole(OPERATOR_ROLE, msg.sender);
 
         feeRecipient = _feeRecipient;
-        deploymentFee = 0.1 ether;  // デフォルト手数料
+        deploymentFee = _deploymentFee;
 
         // デフォルトランク閾値設定
         defaultRankThresholds.push(0);

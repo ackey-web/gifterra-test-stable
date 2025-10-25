@@ -11,16 +11,33 @@ async function main() {
 
   console.log("Deploying with account:", deployer.address);
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("Account balance:", ethers.formatEther(balance), "ETH\n");
+  console.log("Account balance:", ethers.formatEther(balance), network.name === "polygon" || network.name === "amoy" ? "MATIC" : "ETH");
+  console.log("Network:", network.name, "\n");
 
   // 手数料受取アドレス（環境変数または deployer）
   const feeRecipient = process.env.FEE_RECIPIENT || deployer.address;
   console.log("Fee recipient:", feeRecipient);
 
+  // デプロイ手数料設定（環境変数またはネットワーク別デフォルト）
+  let deploymentFee;
+  if (process.env.DEPLOYMENT_FEE) {
+    deploymentFee = ethers.parseEther(process.env.DEPLOYMENT_FEE);
+  } else {
+    // ネットワーク別デフォルト設定
+    if (network.name === "polygon" || network.name === "amoy") {
+      deploymentFee = ethers.parseEther("10");  // 10 MATIC
+      console.log("Using Polygon default fee: 10 MATIC");
+    } else {
+      deploymentFee = ethers.parseEther("0.1");  // 0.1 ETH
+      console.log("Using Ethereum default fee: 0.1 ETH");
+    }
+  }
+  console.log("Deployment fee:", ethers.formatEther(deploymentFee), network.name === "polygon" || network.name === "amoy" ? "MATIC" : "ETH");
+
   // Factory デプロイ
   console.log("\nDeploying GifterraFactoryV2...");
   const GifterraFactoryV2 = await ethers.getContractFactory("GifterraFactoryV2");
-  const factory = await GifterraFactoryV2.deploy(feeRecipient);
+  const factory = await GifterraFactoryV2.deploy(feeRecipient, deploymentFee);
 
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
@@ -91,8 +108,9 @@ async function main() {
   console.log("Verification Command");
   console.log("========================================");
   console.log(
-    `npx hardhat verify --network ${network.name} ${factoryAddress} ${feeRecipient}`
+    `npx hardhat verify --network ${network.name} ${factoryAddress} "${feeRecipient}" "${deploymentFee.toString()}"`
   );
+  console.log("\nNote: deploymentFee is in wei (e.g., 10000000000000000000 = 10 MATIC)");
 
   console.log("\n========================================");
   console.log("Next Steps");
