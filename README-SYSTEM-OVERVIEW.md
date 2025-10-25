@@ -2,6 +2,8 @@
 
 **マルチテナント対応 Web3 ロイヤリティ＆リワードプラットフォーム**
 
+**対応ネットワーク**: Polygon Amoy (Testnet) / Polygon Mainnet
+
 ---
 
 ## 目次
@@ -429,7 +431,8 @@ gifterra-test-stable-4/
 - Node.js v18+
 - pnpm
 - Hardhat
-- Infura/Alchemy API Key（Sepolia テストネット）
+- Polygon RPC（Alchemy, Infura, QuickNode 等）
+- MetaMask に Polygon Amoy/Mainnet 追加済み
 
 ### 1. インストール
 
@@ -442,22 +445,33 @@ pnpm install
 ```bash
 # .env 設定
 export FEE_RECIPIENT=0x...
-export SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+export AMOY_RPC_URL=https://polygon-amoy.g.alchemy.com/v2/YOUR_KEY
 export PRIVATE_KEY=0x...
 
-# デプロイ
-npx hardhat run scripts/deploy-factory.js --network sepolia
+# デプロイ（Polygon Amoy）
+npx hardhat run scripts/deploy-factory.js --network amoy
+
+# デプロイ（Polygon Mainnet）
+npx hardhat run scripts/deploy-factory.js --network polygon
 ```
+
+**推奨ガス代**:
+- Factory デプロイ: 約 $0.10-0.50
+- テナント作成: 約 $0.50-3.00
 
 ### 3. テナント作成
 
 ```bash
 export FACTORY_ADDRESS=0x...
 export TENANT_NAME="Test Cafe"
-export REWARD_TOKEN_ADDRESS=0x...  # ERC20トークン
+export REWARD_TOKEN_ADDRESS=0x...  # Polygon上のERC20トークン
 export TIP_WALLET_ADDRESS=0x...
 
-npx hardhat run scripts/create-tenant.js --network sepolia
+# Polygon Amoy
+npx hardhat run scripts/create-tenant.js --network amoy
+
+# Polygon Mainnet
+npx hardhat run scripts/create-tenant.js --network polygon
 ```
 
 ### 4. Indexer 起動

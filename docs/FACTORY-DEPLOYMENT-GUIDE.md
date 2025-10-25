@@ -2,6 +2,8 @@
 
 **マルチテナント SaaS アーキテクチャ完全ガイド**
 
+**対応ネットワーク**: Polygon Amoy (Testnet) / Polygon Mainnet
+
 ---
 
 ## 目次
@@ -123,19 +125,34 @@ main()
 #### 1.2 実行
 
 ```bash
-# テストネット（Sepolia）
-npx hardhat run scripts/deploy-factory.js --network sepolia
+# テストネット（Polygon Amoy）
+npx hardhat run scripts/deploy-factory.js --network amoy
+
+# メインネット（Polygon Mainnet）
+npx hardhat run scripts/deploy-factory.js --network polygon
 
 # ローカル（Anvil/Hardhat）
 npx hardhat run scripts/deploy-factory.js --network localhost
 ```
 
+**推奨ガス代（Polygon）**:
+- Factory デプロイ: 約 $0.10-0.50（~2M gas @ 100 Gwei, MATIC $0.9）
+- テナント作成: 約 $0.50-3.00（~8M gas @ 100 Gwei, MATIC $0.9）
+
 #### 1.3 コントラクト検証
 
 ```bash
-npx hardhat verify --network sepolia \
+# Polygon Amoy
+npx hardhat verify --network amoy \
   0x... \  # Factory アドレス
-  0x...    # Fee Recipient アドレス
+  "0x..." \  # Fee Recipient アドレス
+  "10000000000000000000"  # Deployment Fee (10 MATIC in wei)
+
+# Polygon Mainnet
+npx hardhat verify --network polygon \
+  0x... \
+  "0x..." \
+  "10000000000000000000"
 ```
 
 ---
@@ -144,11 +161,14 @@ npx hardhat verify --network sepolia \
 
 #### 2.1 デプロイ手数料設定（オプション）
 
-デフォルトは `0.1 ETH`。変更する場合：
+デフォルトは `10 MATIC`（Polygon Amoy/Mainnet）。変更する場合：
 
 ```javascript
-// 手数料を 0.05 ETH に変更
-await factory.setDeploymentFee(ethers.parseEther("0.05"));
+// 手数料を 20 MATIC に変更
+await factory.setDeploymentFee(ethers.parseEther("20"));
+
+// 手数料を 5 MATIC に変更
+await factory.setDeploymentFee(ethers.parseEther("5"));
 ```
 
 #### 2.2 オペレーター追加（オプション）
@@ -169,9 +189,9 @@ await factory.grantRole(OPERATOR_ROLE, "0x...オペレーターアドレス");
 カフェA 側で準備するもの：
 
 1. **管理者ウォレット** (`0xCafeAdmin`)
-2. **報酬トークンアドレス** (`0xRewardToken`) - ERC20トークン
+2. **報酬トークンアドレス** (`0xRewardToken`) - ERC20トークン（Polygon上）
 3. **投げ銭受取ウォレット** (`0xCafeTipWallet`)
-4. **デプロイ手数料** (例: 0.1 ETH)
+4. **デプロイ手数料** (例: 10 MATIC ≈ $9)
 
 #### Step 2: テナント作成実行
 
@@ -180,9 +200,9 @@ await factory.grantRole(OPERATOR_ROLE, "0x...オペレーターアドレス");
 const tx = await factory.createTenant(
   "カフェA Gifterra System",        // tenantName
   "0xCafeAdmin",                    // admin
-  "0xRewardToken",                  // rewardTokenAddress
+  "0xRewardToken",                  // rewardTokenAddress (Polygon上のERC20)
   "0xCafeTipWallet",                // tipWalletAddress
-  { value: ethers.parseEther("0.1") }  // デプロイ手数料
+  { value: ethers.parseEther("10") }  // デプロイ手数料（10 MATIC）
 );
 
 const receipt = await tx.wait();
