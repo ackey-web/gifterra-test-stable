@@ -21,26 +21,28 @@ import { getNetworkEnv } from "./tokens";
  * - バッチトランザクション
  * - セッションキー
  */
-export const smartWalletConfig: SmartWalletConfig = {
-  // Chain設定
-  chain: getActiveChain(),
+function getSmartWalletConfig(): SmartWalletConfig {
+  return {
+    // Chain設定
+    chain: getActiveChain(),
 
-  // Factory Address (thirdwebのFactory Contract)
-  factoryAddress: import.meta.env.VITE_SMART_WALLET_FACTORY || "",
+    // Factory Address (thirdwebのFactory Contract)
+    factoryAddress: import.meta.env.VITE_SMART_WALLET_FACTORY || "",
 
-  // ガスレス設定
-  gasless: true,
+    // ガスレス設定
+    gasless: true,
 
-  // Paymasterの設定
-  // factoryInfo: {
-  //   createAccount: async (factory, owner) => {
-  //     return factory.createAccount(owner);
-  //   },
-  //   getAccountAddress: async (factory, owner) => {
-  //     return factory.getAddress(owner);
-  //   },
-  // },
-};
+    // Paymasterの設定
+    // factoryInfo: {
+    //   createAccount: async (factory, owner) => {
+    //     return factory.createAccount(owner);
+    //   },
+    //   getAccountAddress: async (factory, owner) => {
+    //     return factory.getAddress(owner);
+    //   },
+    // },
+  };
+}
 
 /**
  * サポートするウォレット一覧
@@ -54,7 +56,7 @@ export const supportedWallets = [
   // メイン: スマートウォレット
   // ===================================
   SmartWallet({
-    ...smartWalletConfig,
+    ...getSmartWalletConfig(),
     personalWallets: [
       // Embedded Wallet（メール/SNSログイン）
       EmbeddedWallet({
