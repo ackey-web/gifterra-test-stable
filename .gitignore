@@ -29,3 +29,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+node_modules/
+.vercel/
+dist/
+.cache/
