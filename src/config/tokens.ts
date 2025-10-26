@@ -56,6 +56,12 @@ export function getNetworkEnv(): NetworkEnv {
  * トークンマスターデータ
  *
  * 新しいトークンを追加する場合はここに定義を追加してください。
+ *
+ * ⚠️ 環境変数での上書き:
+ * - VITE_NHT_TESTNET_ADDRESS: NHTテストネットアドレス
+ * - VITE_NHT_MAINNET_ADDRESS: NHTメインネットアドレス
+ * - VITE_JPYC_TESTNET_ADDRESS: JPYCテストネットアドレス
+ * - VITE_JPYC_MAINNET_ADDRESS: JPYCメインネットアドレス
  */
 export const TOKEN_MASTER_DATA: Record<TokenId, TokenConfig> = {
   /**
@@ -71,8 +77,8 @@ export const TOKEN_MASTER_DATA: Record<TokenId, TokenConfig> = {
     decimals: 18,
     category: 'utility', // ユーティリティトークン：Reward配布可能
     addresses: {
-      testnet: '0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea', // Polygon Amoy tNHT
-      mainnet: '0x0000000000000000000000000000000000000000', // TODO: メインネットNHTアドレス
+      testnet: import.meta.env.VITE_NHT_TESTNET_ADDRESS || '0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea', // Polygon Amoy tNHT
+      mainnet: import.meta.env.VITE_NHT_MAINNET_ADDRESS || '0x0000000000000000000000000000000000000000', // TODO: メインネットNHTアドレス
     },
     icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM4MjQ3ZTMiLz4KPHN2ZyB4PSI2IiB5PSI2IiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01aDNWOGg0djRoM2wtNSA1eiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg==',
     description: 'Gifterraプラットフォームのユーティリティトークン',
@@ -83,6 +89,10 @@ export const TOKEN_MASTER_DATA: Record<TokenId, TokenConfig> = {
    * - 電子決済手段として発行される日本円ステーブルコイン
    * - 1 JPYC = 1 JPY
    * - 決済トークン（資産価値あり、Reward配布不可）
+   *
+   * ⚠️ 環境変数での上書き対応:
+   * VITE_JPYC_TESTNET_ADDRESS - JPYCテストネットアドレス
+   * VITE_JPYC_MAINNET_ADDRESS - JPYCメインネットアドレス（電子決済手段）
    */
   JPYC: {
     id: 'JPYC',
@@ -91,8 +101,8 @@ export const TOKEN_MASTER_DATA: Record<TokenId, TokenConfig> = {
     decimals: 18,
     category: 'payment', // 決済トークン：資産価値あり、TIP/購入のみ
     addresses: {
-      testnet: '0x0000000000000000000000000000000000000000', // TODO: JPYC testnetアドレス
-      mainnet: '0x0000000000000000000000000000000000000000', // TODO: JPYC mainnetアドレス
+      testnet: import.meta.env.VITE_JPYC_TESTNET_ADDRESS || '0x0000000000000000000000000000000000000000', // TODO: JPYC testnetアドレス
+      mainnet: import.meta.env.VITE_JPYC_MAINNET_ADDRESS || '0x0000000000000000000000000000000000000000', // TODO: JPYC mainnetアドレス（電子決済手段）
     },
     description: '日本円ステーブルコイン（1 JPYC = 1 JPY）',
   },
