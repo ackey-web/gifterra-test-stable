@@ -3,7 +3,6 @@
 
 import {
   MetaMaskWallet,
-  WalletConnect,
   CoinbaseWallet,
   SmartWallet,
   EmbeddedWallet,
@@ -52,32 +51,15 @@ function getSmartWalletConfig(): SmartWalletConfig {
  * 2. 外部ウォレット直接接続 - 上級者向け、自己管理
  */
 export const supportedWallets = [
-  // ===================================
-  // メイン: スマートウォレット（一時的に無効化中）
-  // ===================================
-  // new SmartWallet({
-  //   ...getSmartWalletConfig(),
-  //   personalWallets: [
-  //     // Embedded Wallet（メール/SNSログイン）
-  //     EmbeddedWallet,
-  //
-  //     // MetaMask（スマートウォレット経由）
-  //     MetaMaskWallet,
-  //
-  //     // WalletConnect（スマートウォレット経由）
-  //     WalletConnect,
-  //   ],
-  // }),
-
-  // ===================================
-  // サブ: 外部ウォレット直接接続
-  // ===================================
-  // MetaMask直接接続（上級者向け）
-  new MetaMaskWallet(),
+  // MetaMask（直接接続）
+  MetaMaskWallet,
 
   // Coinbase Wallet
-  new CoinbaseWallet(),
-].filter((wallet) => wallet !== undefined) as any[];
+  CoinbaseWallet,
+
+  // Embedded Wallet
+  EmbeddedWallet,
+];
 
 /**
  * ガススポンサーシップのルール設定
