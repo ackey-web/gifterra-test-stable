@@ -53,21 +53,21 @@ function getSmartWalletConfig(): SmartWalletConfig {
  */
 export const supportedWallets = [
   // ===================================
-  // メイン: スマートウォレット
+  // メイン: スマートウォレット（一時的に無効化中）
   // ===================================
-  new SmartWallet({
-    ...getSmartWalletConfig(),
-    personalWallets: [
-      // Embedded Wallet（メール/SNSログイン）
-      EmbeddedWallet,
-
-      // MetaMask（スマートウォレット経由）
-      MetaMaskWallet,
-
-      // WalletConnect（スマートウォレット経由）
-      WalletConnect,
-    ],
-  }),
+  // new SmartWallet({
+  //   ...getSmartWalletConfig(),
+  //   personalWallets: [
+  //     // Embedded Wallet（メール/SNSログイン）
+  //     EmbeddedWallet,
+  //
+  //     // MetaMask（スマートウォレット経由）
+  //     MetaMaskWallet,
+  //
+  //     // WalletConnect（スマートウォレット経由）
+  //     WalletConnect,
+  //   ],
+  // }),
 
   // ===================================
   // サブ: 外部ウォレット直接接続
@@ -75,14 +75,9 @@ export const supportedWallets = [
   // MetaMask直接接続（上級者向け）
   new MetaMaskWallet(),
 
-  // WalletConnect直接接続
-  new WalletConnect({
-    projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
-  }),
-
   // Coinbase Wallet
   new CoinbaseWallet(),
-];
+].filter((wallet) => wallet !== undefined) as any[];
 
 /**
  * ガススポンサーシップのルール設定
