@@ -10,11 +10,12 @@ import { CONTRACT_ADDRESS, TOKEN } from '../../contract';
    開発環境用デバッグスーパーアドミン設定
 
    開発・テスト段階では運営側がフルアクセス可能
-   本番環境では無効化される
+   VITE_ENABLE_ADMIN_WHITELIST=true で本番でも有効化可能
 ========================================= */
 const DEV_MODE = import.meta.env.DEV || import.meta.env.MODE === 'development';
+const ADMIN_WHITELIST_ENABLED = DEV_MODE || import.meta.env.VITE_ENABLE_ADMIN_WHITELIST === 'true';
 
-// 開発環境でのみ有効なスーパーアドミンアドレス
+// スーパーアドミンアドレス（ホワイトリスト）
 const DEV_SUPER_ADMIN_ADDRESSES = [
   '0x66f1274ad5d042b7571c2efa943370dbcd3459ab', // METATRON管理者
   // 開発チームのアドレスを追加可能
@@ -134,7 +135,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const { contract: paymentSplitterContract } = useContract(tenant.contracts.paymentSplitter);
 
   /* ================= 開発環境スーパーアドミンチェック ================ */
-  const isDevSuperAdmin = DEV_MODE && address ?
+  const isDevSuperAdmin = ADMIN_WHITELIST_ENABLED && address ?
     DEV_SUPER_ADMIN_ADDRESSES.some(
       adminAddr => adminAddr.toLowerCase() === address.toLowerCase()
     ) : false;
@@ -157,9 +158,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setIsCheckingOwner(true);
     setOwnerError(null);
 
-    // 開発環境のスーパーアドミンは全権限を持つ
+    // スーパーアドミンは全権限を持つ
     if (isDevSuperAdmin) {
-      console.log('🔧 DEV MODE: Super Admin Access Granted', address);
+      console.log('🔧 SUPER ADMIN: Full Access Granted', address);
+      console.log('   Whitelist Enabled:', ADMIN_WHITELIST_ENABLED);
+      console.log('   Dev Mode:', DEV_MODE);
       setOwnerStatus({
         gifterra: true,
         rewardEngine: true,
