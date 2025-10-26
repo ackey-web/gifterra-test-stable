@@ -1,10 +1,10 @@
 // src/admin/contexts/TenantContext.tsx
 // テナントオーナー認証とコントラクトアクセス管理
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useAddress, useContract } from '@thirdweb-dev/react';
 import { CONTRACT_ADDRESS, TOKEN } from '../../contract';
-import { ethers } from 'ethers';
 
 /* =========================================
    開発環境用デバッグスーパーアドミン設定
@@ -59,19 +59,6 @@ const DEFAULT_TENANT: TenantConfig = {
     paymentSplitter: '0x0000000000000000000000000000000000000000', // PLACEHOLDER
   }
 };
-
-/* =========================================
-   オーナー権限チェック用の最小ABI
-========================================= */
-const OWNER_ABI = [
-  {
-    inputs: [],
-    name: "owner",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
 
 /* =========================================
    テナントコンテキストの型定義

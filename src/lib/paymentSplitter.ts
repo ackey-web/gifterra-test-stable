@@ -294,10 +294,8 @@ export async function withdrawRevenue(
  * @returns 受取人と配分比率
  */
 export async function getPaymentSplitInfo(
-  paymentSplitterAddress: string
+  _paymentSplitterAddress: string
 ): Promise<{ payees: string[]; shares: bigint[] }> {
-  const client = getPublicClient();
-
   try {
     // payeesとsharesを取得（GifterraPaySplitterはシンプルなので直接読み取り）
     // TODO: コントラクトの実装に応じて調整が必要

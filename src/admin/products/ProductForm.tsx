@@ -1,6 +1,8 @@
 // src/admin/products/ProductForm.tsx
 // 商品作成・編集用の再利用可能なフォームコンポーネント
 import React, { useState, useRef } from 'react';
+import { createPublicClient, http } from 'viem';
+import { polygonAmoy } from 'viem/chains';
 import { uploadImage, deleteFileFromUrl } from '../../lib/supabase';
 import { calculateFileHash } from '../../utils/fileHash';
 import type { PaymentSplit } from '../../lib/royalty';
@@ -76,15 +78,13 @@ export function ProductForm({
   const [manualCreatorShare, setManualCreatorShare] = useState(10); // 10% デフォルト
   const [splitMode, setSplitMode] = useState<'none' | 'auto' | 'manual'>('none');
 
-  const publicClient = usePublicClient();
-
   const handleChange = (field: keyof ProductFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   // EIP-2981自動検出
   const handleAutoDetectRoyalty = async () => {
-    if (!formData.nftAddress || !publicClient) {
+    if (!formData.nftAddress) {
       alert('⚠️ NFTアドレスを入力してください');
       return;
     }
@@ -92,6 +92,12 @@ export function ProductForm({
     setDetectingRoyalty(true);
     try {
       console.log('🔍 EIP-2981 Royalty検出中...', formData.nftAddress);
+
+      // publicClientを作成
+      const publicClient = createPublicClient({
+        chain: polygonAmoy,
+        transport: http(),
+      });
 
       // 仮の販売価格で検出（100 tNHT）
       const testSalePrice = BigInt('100000000000000000000'); // 100 * 10^18

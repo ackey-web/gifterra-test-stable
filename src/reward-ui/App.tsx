@@ -8,7 +8,7 @@ import {
   useContractRead,
 } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
-import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
 import { rewardSuccessConfetti } from "../utils/confetti";

@@ -7,7 +7,7 @@ import {
   useContract,
   useContractWrite,
 } from "@thirdweb-dev/react";
-import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
 import { utils as ethersUtils, ethers } from "ethers";
 import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
@@ -19,8 +19,6 @@ import {
   getAvailableTokens,
   getTokenConfig,
   formatTokenSymbol,
-  formatTokenAmount,
-  toTokenWei
 } from "../config/tokens";
 
 /* ---------------- 貢献熱量分析 ---------------- */

@@ -7,7 +7,6 @@ import {
   getAvailableTokens,
   formatTokenSymbol,
   getNetworkEnv,
-  TOKEN_MASTER_DATA
 } from '../../../config/tokens';
 
 interface TokenSelectorProps {
@@ -225,10 +224,7 @@ export function TokenSelector({
             選択中のトークン ({selectedTokens.length}個):
           </p>
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-            {selectedTokens.map(id => {
-              const config = TOKEN_MASTER_DATA[id];
-              return formatTokenSymbol(id);
-            }).join(' / ')}
+            {selectedTokens.map(id => formatTokenSymbol(id)).join(' / ')}
           </p>
         </div>
       )}

@@ -15,7 +15,7 @@ import {
   type ProductRevenue,
 } from '../../lib/paymentSplitter';
 import { useTenant } from '../contexts/TenantContext';
-import { getAvailableTokens, type TokenId } from '../../config/tokens';
+import { getAvailableTokens } from '../../config/tokens';
 
 export default function RevenueManagement() {
   const address = useAddress();

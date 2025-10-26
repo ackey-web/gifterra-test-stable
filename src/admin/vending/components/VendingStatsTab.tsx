@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import type { VendingMachine } from '../../../types/vending';
-import type { PurchaseHistoryItem } from '../../../lib/purchaseHistory';
 import {
   calculateVendingStatsSummary,
   calculateProductStats,
@@ -39,7 +38,6 @@ interface VendingStatsTabProps {
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export function VendingStatsTab({ machine }: VendingStatsTabProps) {
-  const [purchases, setPurchases] = useState<PurchaseHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [summary, setSummary] = useState<VendingStatsSummary | null>(null);
@@ -60,8 +58,6 @@ export function VendingStatsTab({ machine }: VendingStatsTabProps) {
         1000, // 大量のデータを取得
         0
       );
-
-      setPurchases(purchaseData);
 
       // 統計計算
       const summaryData = calculateVendingStatsSummary(purchaseData);
@@ -271,7 +267,7 @@ export function VendingStatsTab({ machine }: VendingStatsTabProps) {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {tokenPieData.map((entry, index) => (
+                  {tokenPieData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

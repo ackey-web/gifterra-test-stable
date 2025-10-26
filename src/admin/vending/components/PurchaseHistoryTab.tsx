@@ -9,10 +9,9 @@ import {
   calculatePurchaseStats,
   type PurchaseHistoryItem,
   type PurchaseFilter,
-  type PurchaseStatus,
 } from '../../../lib/purchaseHistory';
 import type { VendingMachine } from '../../../types/vending';
-import { getAvailableTokens, type TokenId } from '../../../config/tokens';
+import { getAvailableTokens } from '../../../config/tokens';
 
 interface PurchaseHistoryTabProps {
   machine: VendingMachine;

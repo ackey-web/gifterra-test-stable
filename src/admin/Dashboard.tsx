@@ -257,7 +257,7 @@ function LoadingOverlay({ period }: { period?: Period }) {
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
   // テナントコンテキスト（オーナー権限確認）
-  const { tenant, isOwner, ownerStatus, isCheckingOwner, isDevSuperAdmin, devMode } = useTenant();
+  const { tenant, isOwner, ownerStatus, isDevSuperAdmin, devMode } = useTenant();
 
   const address = useAddress();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
