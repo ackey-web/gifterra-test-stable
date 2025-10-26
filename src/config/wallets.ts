@@ -55,11 +55,11 @@ export const supportedWallets = [
   // ===================================
   // メイン: スマートウォレット
   // ===================================
-  SmartWallet({
+  new SmartWallet({
     ...getSmartWalletConfig(),
     personalWallets: [
       // Embedded Wallet（メール/SNSログイン）
-      EmbeddedWallet({
+      new EmbeddedWallet({
         recommended: true, // デフォルトとして推奨
         auth: {
           options: [
@@ -73,12 +73,12 @@ export const supportedWallets = [
       }),
 
       // MetaMask（スマートウォレット経由）
-      MetaMaskWallet({
+      new MetaMaskWallet({
         recommended: false,
       }),
 
       // WalletConnect（スマートウォレット経由）
-      WalletConnect({
+      new WalletConnect({
         projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
         recommended: false,
       }),
@@ -89,15 +89,15 @@ export const supportedWallets = [
   // サブ: 外部ウォレット直接接続
   // ===================================
   // MetaMask直接接続（上級者向け）
-  MetaMaskWallet(),
+  new MetaMaskWallet(),
 
   // WalletConnect直接接続
-  WalletConnect({
+  new WalletConnect({
     projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
   }),
 
   // Coinbase Wallet
-  CoinbaseWallet(),
+  new CoinbaseWallet(),
 ];
 
 /**
