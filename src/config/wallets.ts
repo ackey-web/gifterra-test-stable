@@ -59,29 +59,13 @@ export const supportedWallets = [
     ...getSmartWalletConfig(),
     personalWallets: [
       // Embedded Wallet（メール/SNSログイン）
-      new EmbeddedWallet({
-        recommended: true, // デフォルトとして推奨
-        auth: {
-          options: [
-            "email",    // メール認証
-            "google",   // Googleログイン
-            "discord",  // Discordログイン
-            // "facebook", // Facebookログイン（オプション）
-            // "apple",    // Appleログイン（オプション）
-          ],
-        },
-      }),
+      EmbeddedWallet,
 
       // MetaMask（スマートウォレット経由）
-      new MetaMaskWallet({
-        recommended: false,
-      }),
+      MetaMaskWallet,
 
       // WalletConnect（スマートウォレット経由）
-      new WalletConnect({
-        projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
-        recommended: false,
-      }),
+      WalletConnect,
     ],
   }),
 
