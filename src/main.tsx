@@ -13,6 +13,7 @@ import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { TenantProvider } from "./admin/contexts/TenantContext";
+import { supportedWallets, getActiveChain } from "./config/wallets";
 
 // =============================
 // Polygon Amoy Testnet 定義 (ThirdWeb v4互換)
@@ -25,7 +26,7 @@ const polygonAmoy = {
   shortName: "amoy",
   nativeCurrency: {
     name: "MATIC",
-    symbol: "MATIC", 
+    symbol: "MATIC",
     decimals: 18,
   },
   rpc: [
@@ -101,6 +102,7 @@ root.render(
       clientId={import.meta.env.VITE_THIRDWEB_CLIENT_ID || "779fcfff75c8b7ed91ea029f8783fd8e"}
       supportedChains={[polygonAmoy]}
       activeChain={polygonAmoy}
+      supportedWallets={supportedWallets}
       dAppMeta={{
         name: "Gifterra",
         description: "Web3 Community Rewards Platform",
