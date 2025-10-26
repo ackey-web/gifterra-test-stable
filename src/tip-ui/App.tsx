@@ -14,6 +14,14 @@ import { saveTxMessage } from "../lib/annotations_tx";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
 import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
+import type { TokenId } from "../config/tokens";
+import {
+  getAvailableTokens,
+  getTokenConfig,
+  formatTokenSymbol,
+  formatTokenAmount,
+  toTokenWei
+} from "../config/tokens";
 
 /* ---------------- 貢献熱量分析 ---------------- */
 interface UserHeatData {
@@ -84,6 +92,8 @@ const EMOTION_LABELS = {
   negative: "💙 静かな応援",
 };
 
+type AdminTabType = 'settings' | 'ranks';
+
 export default function TipApp() {
   const address = useAddress();
   const chain = useChain();
@@ -93,6 +103,11 @@ export default function TipApp() {
   const [customBgImage] = useState<string>(() => {
     return localStorage.getItem('tip-bg-image') || '/ads/ui-wallpeaper.png';
   });
+
+  // 管理者モード
+  const [isOwner, setIsOwner] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminActiveTab, setAdminActiveTab] = useState<AdminTabType>('settings');
 
   // コントラクトデータ（手動管理）
   const [userInfoRaw, setUserInfoRaw] = useState<any>(null);
@@ -186,28 +201,64 @@ export default function TipApp() {
   }, [totalTips, nextThreshold, currentLevel, nextLevel]);
 
   const [amount, setAmount] = useState("10");
+
+  // マルチトークン対応：ユーザーが選択したトークン
+  const [selectedTokenId, setSelectedTokenId] = useState<TokenId>('NHT');
+  const selectedTokenConfig = useMemo(() => getTokenConfig(selectedTokenId), [selectedTokenId]);
+
   const parsedAmount = useMemo(() => {
     try {
       if (!amount || Number(amount) <= 0) return null;
-      return ethersUtils.parseUnits(amount, TOKEN.DECIMALS);
+      return ethersUtils.parseUnits(amount, selectedTokenConfig.decimals);
     } catch {
       return null;
     }
-  }, [amount]);
+  }, [amount, selectedTokenConfig.decimals]);
 
   const [displayName, setDisplayName] = useState("");
   const [message, setMessage] = useState("");
-  const [tokenKey, setTokenKey] = useState<"PRIMARY">("PRIMARY");
 
   // 承認ポリシー関連の状態管理
   const [approvalPolicy, setApprovalPolicy] = useState<"exact" | "toNextRank" | "fixedCap">("toNextRank");
   const [rankThresholds, setRankThresholds] = useState<bigint[]>([]);
+
+  // 管理者用のランク設定状態
+  const [maxRankLevel, setMaxRankLevel] = useState<number>(4);
+  const [rankThresholdInputs, setRankThresholdInputs] = useState<Record<number, string>>({});
+  const [rankURIInputs, setRankURIInputs] = useState<Record<number, string>>({});
+  const [isLoadingRankConfig, setIsLoadingRankConfig] = useState(false);
+
+  // オーナー確認
+  useEffect(() => {
+    const checkOwner = async () => {
+      if (!contract || !address) {
+        setIsOwner(false);
+        return;
+      }
+      try {
+        const owner = await contract.call("owner");
+        setIsOwner(owner.toLowerCase() === address.toLowerCase());
+      } catch (error) {
+        console.warn("オーナー確認エラー:", error);
+        setIsOwner(false);
+      }
+    };
+    checkOwner();
+  }, [contract, address]);
 
   // ランク閾値の取得
   useEffect(() => {
     const fetchRankThresholds = async () => {
       if (!contract) return;
       try {
+        // maxRankLevelを取得
+        try {
+          const maxLevel = await contract.call("maxRankLevel");
+          setMaxRankLevel(Number(maxLevel));
+        } catch {
+          setMaxRankLevel(4); // デフォルト
+        }
+
         const thresholds: bigint[] = [];
         for (let i = 1; i <= 4; i++) {
           try {
@@ -244,11 +295,11 @@ export default function TipApp() {
           const remainingAmount = ethersUtils.parseUnits(remainingToNextRank.toString(), 0);
           return remainingAmount.gt(parsedAmount) ? remainingAmount : parsedAmount;
         }
-        return ethersUtils.parseUnits("100000", TOKEN.DECIMALS); // 最高ランク到達後のデフォルト
+        return ethersUtils.parseUnits("100000", selectedTokenConfig.decimals); // 最高ランク到達後のデフォルト
       }
-      
+
       case "fixedCap":
-        return ethersUtils.parseUnits("1000000", TOKEN.DECIMALS);
+        return ethersUtils.parseUnits("1000000", selectedTokenConfig.decimals);
       
       default:
         return parsedAmount;
@@ -327,7 +378,7 @@ export default function TipApp() {
   const [isLoadingHeat, setIsLoadingHeat] = useState(false);
 
   // カウントアップアニメーション
-  const totalTipsNumber = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
+  const totalTipsNumber = Number(fmtUnits(totalTips, selectedTokenConfig.decimals));
   const { value: animatedTips, start: startCountUp } = useCountUp({
     end: totalTipsNumber,
     duration: 1500,
@@ -342,7 +393,7 @@ export default function TipApp() {
     setIsLoadingHeat(true);
     try {
       // AI分析システムと統一された熱量計算を使用
-      const tipAmount = Number(fmtUnits(totalTips, TOKEN.DECIMALS));
+      const tipAmount = Number(fmtUnits(totalTips, selectedTokenConfig.decimals));
 
       // AI分析ロジックと統一した計算方法
       // Tipスコア（0-400）: tipAmount / 10で正規化
@@ -396,7 +447,13 @@ export default function TipApp() {
       return;
     }
 
-    if (!address || !parsedAmount || tokenKey !== "PRIMARY") return;
+    if (!address || !parsedAmount) return;
+
+    // トークンアドレスが設定されているか確認
+    if (selectedTokenConfig.currentAddress === '0x0000000000000000000000000000000000000000') {
+      alert(`❌ ${selectedTokenConfig.symbol} はまだ設定されていません。\n\n別のトークンを選択してください。`);
+      return;
+    }
 
     const dn = displayName.trim().slice(0, 32);
     const msg = message.trim().slice(0, hasProfile ? 120 : 40);
@@ -523,13 +580,13 @@ export default function TipApp() {
       const directContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI as any, signer);
       
       // ERC20承認チェック（インデックスエラー対応）
-      const tokenContract = new ethers.Contract(TOKEN.ADDRESS, [
+      const tokenContract = new ethers.Contract(selectedTokenConfig.currentAddress, [
         "function allowance(address owner, address spender) view returns (uint256)",
         "function approve(address spender, uint256 amount) returns (bool)"
       ], signer);
-      
+
       let currentAllowance: ethers.BigNumber;
-      
+
       try {
         currentAllowance = await tokenContract.allowance(address, CONTRACT_ADDRESS);
       } catch (allowanceError: any) {
@@ -549,7 +606,7 @@ export default function TipApp() {
         setTxState("approving");
 
         // ポリシーに基づく承認額を計算
-        const approveAmount = calculateApprovalAmount || ethers.utils.parseUnits("1000000", TOKEN.DECIMALS);
+        const approveAmount = calculateApprovalAmount || ethers.utils.parseUnits("1000000", selectedTokenConfig.decimals);
         
         // 安全な承認パターン: 0リセット → 新値設定（インデックスエラー対応）
         try {
@@ -670,20 +727,20 @@ export default function TipApp() {
       setMessage("");
 
       const amt = (args as any)?.amount ?? (args as any)?.value ?? (Array.isArray(args) ? (args as any)[1] : undefined);
-      const pretty = fmtUnits(BigInt(amt?.toString?.() ?? "0"), TOKEN.DECIMALS);
-      
+      const pretty = fmtUnits(BigInt(amt?.toString?.() ?? "0"), selectedTokenConfig.decimals);
+
       // 🎉 Tip成功エフェクト
       // 1. コンフェッティ（紙吹雪）
       tipSuccessConfetti().catch(console.warn);
-      
+
       // 2. オーラ／背景エフェクト
       setBgGradient("linear-gradient(135deg, #667eea 0%, #764ba2 100%)");
       setTimeout(() => setBgGradient(""), 3000);
-      
+
       // 3. カウントアップアニメーション（少し遅らせて開始）
       setTimeout(() => startCountUp(), 600);
-      
-      alert(`Tipを贈りました💝 (+${pretty} ${TOKEN.SYMBOL})`);
+
+      alert(`Tipを贈りました💝 (+${pretty} ${selectedTokenConfig.symbol})`);
 
       // Tip成功後に感情分析（非同期・独立実行）
       if (msg) {
@@ -728,7 +785,7 @@ export default function TipApp() {
       } else if (errorMsg.includes("insufficient funds") || errorCode === -32000) {
         userMessage = `💰 ガス代不足エラー\n\nMATICが不足しています:\n• Polygon Amoy testnet用のMATICが必要\n• 最低 0.01 MATIC以上を推奨\n\n🚰 Faucetから無料でMATICを取得:\nhttps://faucet.polygon.technology/`;
       } else if (errorMsg.includes("insufficient balance") || errorMsg.includes("transfer amount exceeds balance")) {
-        userMessage = `🏳 残高不足エラー\n\n${TOKEN.SYMBOL}の残高が不足しています:\n• Tip額: ${amount} ${TOKEN.SYMBOL}\n• 現在の残高を確認してください\n\n💡 Tip額を調整して再度お試しください`;
+        userMessage = `🏳 残高不足エラー\n\n${selectedTokenConfig.symbol}の残高が不足しています:\n• Tip額: ${amount} ${selectedTokenConfig.symbol}\n• 現在の残高を確認してください\n\n💡 Tip額を調整して再度お試しください`;
       } else if (errorMsg.includes("user rejected") || errorCode === 4001) {
         userMessage = `🚫 ユーザーキャンセル\n\nトランザクションがキャンセルされました\n再度お試しいただけます`;
       } else if (errorMsg.includes("execution reverted")) {
@@ -750,8 +807,117 @@ export default function TipApp() {
     }
   };
 
-  const canSend = !!address && !!parsedAmount && tokenKey === "PRIMARY" && !isTipping && !emergency && txState === "idle";
+  const canSend = !!address && !!parsedAmount && !isTipping && !emergency && txState === "idle";
 
+  /* ================= 管理者機能：ランク設定 ================ */
+  const loadRankConfig = async () => {
+    if (!contract) return;
+    setIsLoadingRankConfig(true);
+    try {
+      // maxRankLevelを取得
+      const maxLevel = await contract.call("maxRankLevel");
+      setMaxRankLevel(Number(maxLevel));
+
+      // 各ランクの閾値を取得
+      const thresholdInputs: Record<number, string> = {};
+      for (let i = 1; i <= Number(maxLevel); i++) {
+        try {
+          const threshold = await contract.call("rankThresholds", [i]);
+          thresholdInputs[i] = ethersUtils.formatUnits(BigInt(threshold).toString(), selectedTokenConfig.decimals);
+        } catch {
+          thresholdInputs[i] = "";
+        }
+      }
+      setRankThresholdInputs(thresholdInputs);
+
+      // 各ランクのURIを取得
+      const uriInputs: Record<number, string> = {};
+      for (let i = 1; i <= Number(maxLevel); i++) {
+        try {
+          const uri = await contract.call("rankNFTUris", [i]);
+          uriInputs[i] = uri || "";
+        } catch {
+          uriInputs[i] = "";
+        }
+      }
+      setRankURIInputs(uriInputs);
+    } catch (error) {
+      console.error("ランク設定の読み込みエラー:", error);
+      alert("ランク設定の読み込みに失敗しました");
+    } finally {
+      setIsLoadingRankConfig(false);
+    }
+  };
+
+  const handleSetMaxRankLevel = async () => {
+    if (!contract || !isOwner) return;
+
+    const newLevel = prompt("新しいランク数を入力してください（1-20）:", maxRankLevel.toString());
+    if (!newLevel) return;
+
+    const level = parseInt(newLevel);
+    if (isNaN(level) || level < 1 || level > 20) {
+      alert("❌ 1〜20の範囲で入力してください");
+      return;
+    }
+
+    try {
+      const tx = await contract.call("setMaxRankLevel", [level]);
+      await tx.wait?.();
+      setMaxRankLevel(level);
+      alert(`✅ ランク数を ${level} に変更しました`);
+      await loadRankConfig();
+    } catch (error: any) {
+      console.error("setMaxRankLevel error:", error);
+      alert(`❌ ランク数の変更に失敗しました\n${error?.message || error}`);
+    }
+  };
+
+  const handleSetRankThreshold = async (rank: number) => {
+    if (!contract || !isOwner) return;
+
+    const value = rankThresholdInputs[rank];
+    if (!value) {
+      alert("❌ 閾値を入力してください");
+      return;
+    }
+
+    try {
+      const amountWei = ethersUtils.parseUnits(value, selectedTokenConfig.decimals);
+      const tx = await contract.call("setRankThreshold", [rank, amountWei.toString()]);
+      await tx.wait?.();
+      alert(`✅ ランク${rank}の閾値を ${value} ${selectedTokenConfig.symbol} に設定しました`);
+    } catch (error: any) {
+      console.error("setRankThreshold error:", error);
+      alert(`❌ 閾値の設定に失敗しました\n${error?.message || error}`);
+    }
+  };
+
+  const handleSetNFTRankUri = async (rank: number) => {
+    if (!contract || !isOwner) return;
+
+    const uri = rankURIInputs[rank];
+    if (!uri) {
+      alert("❌ URIを入力してください");
+      return;
+    }
+
+    try {
+      const tx = await contract.call("setNFTRankUri", [rank, uri]);
+      await tx.wait?.();
+      alert(`✅ ランク${rank}のNFT URIを設定しました`);
+    } catch (error: any) {
+      console.error("setNFTRankUri error:", error);
+      alert(`❌ NFT URIの設定に失敗しました\n${error?.message || error}`);
+    }
+  };
+
+  // 管理画面を開いたときにランク設定をロード
+  useEffect(() => {
+    if (showAdminPanel && isOwner) {
+      loadRankConfig();
+    }
+  }, [showAdminPanel, isOwner]);
 
   return (
     <main
@@ -869,7 +1035,289 @@ export default function TipApp() {
         }}>
           {address ? `接続済み: ${address.slice(0, 6)}...${address.slice(-4)}` : "ウォレット未接続"}
         </div>
+
+        {/* 管理者モード切替ボタン */}
+        {isOwner && (
+          <button
+            onClick={() => setShowAdminPanel(!showAdminPanel)}
+            style={{
+              marginTop: 12,
+              padding: "8px 16px",
+              background: showAdminPanel ? "#10B981" : "#3B82F6",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            {showAdminPanel ? "🔒 管理画面を閉じる" : "⚙️ 管理画面"}
+          </button>
+        )}
       </header>
+
+      {/* 管理者パネル */}
+      {showAdminPanel && isOwner && (
+        <div style={{
+          width: "min(95vw, 900px)",
+          margin: "0 auto 24px",
+          background: "rgba(255,255,255,.03)",
+          borderRadius: 12,
+          overflow: "hidden",
+          boxShadow: "0 0 20px rgba(59, 130, 246, 0.1)"
+        }}>
+          {/* ヘッダー */}
+          <div style={{
+            padding: 20,
+            borderBottom: "1px solid rgba(255,255,255,.1)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#fff" }}>
+              ⚙️ TIP管理画面
+            </h2>
+          </div>
+
+          {/* タブナビゲーション */}
+          <div style={{
+            padding: "0 20px",
+            borderBottom: "1px solid rgba(255,255,255,.1)",
+            display: "flex",
+            gap: 4
+          }}>
+            <button
+              onClick={() => setAdminActiveTab('settings')}
+              style={{
+                padding: "12px 24px",
+                background: adminActiveTab === 'settings' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                color: adminActiveTab === 'settings' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+                border: 'none',
+                borderBottom: adminActiveTab === 'settings' ? '2px solid #3B82F6' : '2px solid transparent',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⚙️ Settings
+            </button>
+            <button
+              onClick={() => setAdminActiveTab('ranks')}
+              style={{
+                padding: "12px 24px",
+                background: adminActiveTab === 'ranks' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                color: adminActiveTab === 'ranks' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+                border: 'none',
+                borderBottom: adminActiveTab === 'ranks' ? '2px solid #3B82F6' : '2px solid transparent',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              🏆 Rank Settings
+            </button>
+          </div>
+
+          {/* タブコンテンツ */}
+          <div style={{
+            padding: 20,
+            color: "#fff",
+            minHeight: 300,
+            maxHeight: 600,
+            overflowY: "auto"
+          }}>
+            {adminActiveTab === 'settings' && (
+              <div>
+                <h3 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>
+                  基本設定
+                </h3>
+                <p style={{ margin: 0, opacity: 0.6 }}>
+                  基本設定項目は今後追加予定です
+                </p>
+              </div>
+            )}
+
+            {adminActiveTab === 'ranks' && (
+              <div>
+                <h3 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>
+                  ランク設定
+                </h3>
+
+                {isLoadingRankConfig ? (
+                  <div style={{ textAlign: "center", padding: 40 }}>
+                    <p style={{ margin: 0, fontSize: 16 }}>⏳ 読み込み中...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* ランク数設定 */}
+                    <div style={{
+                      marginBottom: 32,
+                      padding: 20,
+                      background: "rgba(255,255,255,.05)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,.1)"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div>
+                          <h4 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 600 }}>
+                            ランク数設定
+                          </h4>
+                          <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>
+                            現在のランク数: <strong style={{ color: "#3B82F6" }}>{maxRankLevel}</strong> 段階
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleSetMaxRankLevel}
+                          style={{
+                            padding: "10px 20px",
+                            background: "#3B82F6",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          変更
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ランク別設定 */}
+                    <div style={{ marginBottom: 20 }}>
+                      <h4 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 600 }}>
+                        各ランクの設定
+                      </h4>
+
+                      <div style={{ display: "grid", gap: 16 }}>
+                        {Array.from({ length: maxRankLevel }, (_, i) => i + 1).map((rank) => (
+                          <div
+                            key={rank}
+                            style={{
+                              padding: 16,
+                              background: "rgba(255,255,255,.05)",
+                              borderRadius: 8,
+                              border: "1px solid rgba(255,255,255,.1)"
+                            }}
+                          >
+                            <div style={{ marginBottom: 12 }}>
+                              <h5 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#10B981" }}>
+                                {RANK_LABELS[rank]?.icon || "⭐"} ランク {rank}: {RANK_LABELS[rank]?.label || `Rank ${rank}`}
+                              </h5>
+                            </div>
+
+                            {/* 閾値設定 */}
+                            <div style={{ marginBottom: 12 }}>
+                              <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, opacity: 0.8 }}>
+                                必要累積TIP額 ({selectedTokenConfig.symbol})
+                              </label>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <input
+                                  type="text"
+                                  value={rankThresholdInputs[rank] || ""}
+                                  onChange={(e) => setRankThresholdInputs({ ...rankThresholdInputs, [rank]: e.target.value })}
+                                  placeholder="例: 100"
+                                  style={{
+                                    flex: 1,
+                                    padding: "10px 14px",
+                                    background: "rgba(255,255,255,0.05)",
+                                    border: "1px solid rgba(255,255,255,0.2)",
+                                    borderRadius: 6,
+                                    color: "#fff",
+                                    fontSize: 14
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleSetRankThreshold(rank)}
+                                  style={{
+                                    padding: "10px 16px",
+                                    background: "#10B981",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 6,
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    cursor: "pointer"
+                                  }}
+                                >
+                                  設定
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* NFT URI設定 */}
+                            <div>
+                              <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, opacity: 0.8 }}>
+                                NFT メタデータ URI
+                              </label>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <input
+                                  type="text"
+                                  value={rankURIInputs[rank] || ""}
+                                  onChange={(e) => setRankURIInputs({ ...rankURIInputs, [rank]: e.target.value })}
+                                  placeholder="例: ipfs://..."
+                                  style={{
+                                    flex: 1,
+                                    padding: "10px 14px",
+                                    background: "rgba(255,255,255,0.05)",
+                                    border: "1px solid rgba(255,255,255,0.2)",
+                                    borderRadius: 6,
+                                    color: "#fff",
+                                    fontSize: 14
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleSetNFTRankUri(rank)}
+                                  style={{
+                                    padding: "10px 16px",
+                                    background: "#8B5CF6",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 6,
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    cursor: "pointer"
+                                  }}
+                                >
+                                  設定
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 現在の設定確認 */}
+                    <div style={{
+                      marginTop: 24,
+                      padding: 16,
+                      background: "rgba(16, 185, 129, 0.1)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      borderRadius: 8
+                    }}>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 600, color: "#10B981" }}>
+                        ℹ️ 設定のヒント
+                      </h4>
+                      <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.6, opacity: 0.9 }}>
+                        <li>各ランクの閾値は累積TIP額で判定されます</li>
+                        <li>ランク数は1〜20まで設定可能です</li>
+                        <li>NFT URIはIPFS、Arweave、HTTPSなどが使用できます</li>
+                        <li>設定後、ユーザーのランクは自動的に更新されます</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <section style={{ 
         display: "grid", 
@@ -896,8 +1344,8 @@ export default function TipApp() {
             justifyContent: "center",
             width: "100%"
           }}>
-          <ConnectWallet 
-            theme="dark" 
+          <ConnectWallet
+            theme="dark"
             modalTitle="ウォレット接続"
             modalTitleIconUrl=""
             style={{
@@ -905,23 +1353,32 @@ export default function TipApp() {
               fontSize: 'clamp(14px, 2vw, 16px)'
             }}
           />
-            <select 
-              value={tokenKey} 
-              onChange={() => setTokenKey("PRIMARY")} 
-              style={{ 
-                height: 'clamp(44px, 8vw, 48px)', 
-                borderRadius: 10, 
-                border: "1px solid #334155", 
-                background: "#0f1a24", 
-                color: "#fff", 
-                padding: "0 12px", 
+            {/* マルチトークン選択ドロップダウン */}
+            <select
+              value={selectedTokenId}
+              onChange={(e) => setSelectedTokenId(e.target.value as TokenId)}
+              style={{
+                height: 'clamp(44px, 8vw, 48px)',
+                borderRadius: 10,
+                border: "1px solid #334155",
+                background: "#0f1a24",
+                color: "#fff",
+                padding: "0 12px",
                 fontWeight: 700,
                 fontSize: 'clamp(14px, 2vw, 16px)',
                 minWidth: 'clamp(80px, 15vw, 100px)'
               }}
             >
-              <option value="PRIMARY">{TOKEN.SYMBOL}</option>
-              <option value="DISABLED" disabled>JPYC（近日予定）</option>
+              {getAvailableTokens(false).map(token => (
+                <option
+                  key={token.id}
+                  value={token.id}
+                  disabled={token.currentAddress === '0x0000000000000000000000000000000000000000'}
+                >
+                  {formatTokenSymbol(token.id, true)}
+                  {token.currentAddress === '0x0000000000000000000000000000000000000000' ? ' (未設定)' : ''}
+                </option>
+              ))}
             </select>
           </div>
           
@@ -959,11 +1416,11 @@ export default function TipApp() {
                   textAlign: "right"
                 }} 
               />
-              <span style={{ 
-                opacity: 0.8, 
-                fontSize: '12px', 
-                paddingRight: 12 
-              }}>{TOKEN.SYMBOL}</span>
+              <span style={{
+                opacity: 0.8,
+                fontSize: '12px',
+                paddingRight: 12
+              }}>{selectedTokenConfig.symbol}</span>
             </div>
             
             {/* 承認ポリシー選択 */}
@@ -999,7 +1456,7 @@ export default function TipApp() {
               textAlign: "center",
               marginTop: -8
             }}>
-              💡 承認予定額: {ethersUtils.formatUnits(calculateApprovalAmount, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
+              💡 承認予定額: {ethersUtils.formatUnits(calculateApprovalAmount, selectedTokenConfig.decimals)} {selectedTokenConfig.symbol}
               <br />
               <span style={{ fontSize: 10, opacity: 0.8 }}>承認上限はトークン使用許可の最大額です</span>
             </div>
@@ -1138,7 +1595,7 @@ export default function TipApp() {
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 12, opacity: 0.8 }}>累積ギフト</div>
               <div style={{ fontWeight: 800, transition: "all 0.3s ease" }}>
-                {animatedTips > 0 ? animatedTips.toFixed(4) : fmtUnits(totalTips, TOKEN.DECIMALS)} {TOKEN.SYMBOL}
+                {animatedTips > 0 ? animatedTips.toFixed(4) : fmtUnits(totalTips, selectedTokenConfig.decimals)} {selectedTokenConfig.symbol}
               </div>
             </div>
           </div>
@@ -1162,7 +1619,7 @@ export default function TipApp() {
               次のランク: <strong>{RANK_LABELS[nextLevel]?.icon} {RANK_LABELS[nextLevel]?.label ?? "—"}</strong>
             </div>
             <div>
-              あと <strong>{fmtUnits(nextThreshold > totalTips ? nextThreshold - totalTips : 0n, TOKEN.DECIMALS)} {TOKEN.SYMBOL}</strong>
+              あと <strong>{fmtUnits(nextThreshold > totalTips ? nextThreshold - totalTips : 0n, selectedTokenConfig.decimals)} {selectedTokenConfig.symbol}</strong>
             </div>
           </div>
         </div>

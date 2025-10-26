@@ -8,6 +8,10 @@ import { createProduct, updateProduct, deleteProduct, formDataToCreateParams, fo
 import { uploadImage, deleteFileFromUrl } from '../../../lib/supabase';
 import { generateSlug } from '../../../utils/slugGenerator';
 import { calculateFileHash } from '../../../utils/fileHash';
+import type { TokenId } from '../../../config/tokens';
+import { getAvailableTokens, formatTokenSymbol } from '../../../config/tokens';
+import { PurchaseHistoryTab } from './PurchaseHistoryTab';
+import { VendingStatsTab } from './VendingStatsTab';
 
 interface HubDetailPanelNewProps {
   machine: VendingMachine | null;
@@ -17,7 +21,7 @@ interface HubDetailPanelNewProps {
   onProductChange?: () => void; // 特典追加/削除時のコールバック
 }
 
-type TabType = 'settings' | 'design' | 'products' | 'preview';
+type TabType = 'settings' | 'design' | 'products' | 'purchases' | 'stats' | 'preview';
 
 const REDIRECT_TAB_KEY = 'vending_redirect_tab';
 
@@ -31,7 +35,7 @@ export function HubDetailPanelNew({
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     // リダイレクト用に保存されたタブがあればそれを使用
     const savedTab = localStorage.getItem(REDIRECT_TAB_KEY);
-    if (savedTab && ['settings', 'design', 'products', 'preview'].includes(savedTab)) {
+    if (savedTab && ['settings', 'design', 'products', 'purchases', 'stats', 'preview'].includes(savedTab)) {
       localStorage.removeItem(REDIRECT_TAB_KEY);
       return savedTab as TabType;
     }
@@ -450,6 +454,44 @@ export function HubDetailPanelNew({
           📦 Products
         </button>
         <button
+          onClick={() => setActiveTab('purchases')}
+          role="tab"
+          aria-selected={activeTab === 'purchases'}
+          aria-controls="purchases-panel"
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'purchases' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'purchases' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            border: 'none',
+            borderBottom: activeTab === 'purchases' ? '2px solid #3B82F6' : '2px solid transparent',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          📊 Purchase History
+        </button>
+        <button
+          onClick={() => setActiveTab('stats')}
+          role="tab"
+          aria-selected={activeTab === 'stats'}
+          aria-controls="stats-panel"
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'stats' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'stats' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            border: 'none',
+            borderBottom: activeTab === 'stats' ? '2px solid #3B82F6' : '2px solid transparent',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          📈 Statistics
+        </button>
+        <button
           onClick={() => window.open(`/content?machine=${machine.slug}`, '_blank')}
           role="button"
           style={{
@@ -585,15 +627,20 @@ export function HubDetailPanelNew({
               </p>
             </div>
 
-            {/* 使用トークン選択 */}
+            {/* 受け入れトークン選択 */}
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
-                使用トークン
+                受け入れトークン
               </label>
               <select
-                value={machine.settings.tokenSymbol || 'tNHT'}
+                value={machine.settings.acceptedToken || 'NHT'}
                 onChange={(e) => onUpdateMachine?.({
-                  settings: { ...machine.settings, tokenSymbol: e.target.value as 'tNHT' | 'JPYC' }
+                  settings: {
+                    ...machine.settings,
+                    acceptedToken: e.target.value as TokenId,
+                    // 後方互換性のため tokenSymbol も更新
+                    tokenSymbol: e.target.value === 'NHT' ? 'tNHT' : (e.target.value as 'tNHT' | 'JPYC')
+                  }
                 })}
                 style={{
                   width: '100%',
@@ -606,12 +653,135 @@ export function HubDetailPanelNew({
                   cursor: 'pointer'
                 }}
               >
-                <option value="tNHT" style={{ background: '#1a1a2e', color: '#fff' }}>tNHT (Testnet)</option>
-                <option value="JPYC" disabled style={{ background: '#1a1a2e', color: '#6B7280' }}>JPYC (近日予定)</option>
+                {getAvailableTokens(false).map(token => (
+                  <option
+                    key={token.id}
+                    value={token.id}
+                    disabled={token.currentAddress === '0x0000000000000000000000000000000000000000'}
+                    style={{ background: '#1a1a2e', color: token.currentAddress === '0x0000000000000000000000000000000000000000' ? '#6B7280' : '#fff' }}
+                  >
+                    {formatTokenSymbol(token.id, true)}
+                    {token.currentAddress === '0x0000000000000000000000000000000000000000' ? ' (未設定)' : ''}
+                  </option>
+                ))}
               </select>
               <p style={{ margin: '8px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                このGIFT HUBでチップに使用するトークンを選択してください
+                このGIFT HUBで受け入れる決済トークンを選択してください
               </p>
+            </div>
+
+            {/* PaymentSplitter設定セクション */}
+            <div style={{
+              marginTop: 32,
+              paddingTop: 24,
+              borderTop: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <h4 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+                💰 収益管理設定
+              </h4>
+
+              {/* PaymentSplitterアドレス */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                  PaymentSplitter アドレス
+                </label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                  <input
+                    type="text"
+                    value={machine.settings.paymentSplitterAddress || ''}
+                    onChange={(e) => onUpdateMachine?.({
+                      settings: {
+                        ...machine.settings,
+                        paymentSplitterAddress: e.target.value
+                      }
+                    })}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 6,
+                      color: '#fff',
+                      fontSize: 13,
+                      fontFamily: 'monospace'
+                    }}
+                    placeholder="0x..."
+                  />
+                  <a
+                    href={`https://amoy.polygonscan.com/address/${machine.settings.paymentSplitterAddress || ''}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '10px 16px',
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      border: '1px solid rgba(59, 130, 246, 0.4)',
+                      borderRadius: 6,
+                      color: '#3B82F6',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: machine.settings.paymentSplitterAddress ? 'pointer' : 'not-allowed',
+                      opacity: machine.settings.paymentSplitterAddress ? 1 : 0.5,
+                      pointerEvents: machine.settings.paymentSplitterAddress ? 'auto' : 'none'
+                    }}
+                  >
+                    🔍 確認
+                  </a>
+                </div>
+                <p style={{ margin: '8px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                  商品販売時の収益分配に使用されるPaymentSplitterコントラクトのアドレス
+                </p>
+                {!machine.settings.paymentSplitterAddress && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: 12,
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    color: '#f59e0b'
+                  }}>
+                    ⚠️ PaymentSplitterが未設定です。商品販売の収益分配が行われません。
+                  </div>
+                )}
+              </div>
+
+              {/* 収益管理へのリンク */}
+              {machine.settings.paymentSplitterAddress && (
+                <div style={{
+                  padding: 16,
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: 8
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#10b981' }}>
+                    💡 収益確認・出金
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
+                    PaymentSplitterの収益を確認・出金するには、Admin Dashboardの「💰 収益管理」タブをご利用ください。
+                  </div>
+                  <button
+                    onClick={() => {
+                      // TODO: Admin Dashboardの収益管理タブに遷移
+                      alert('Admin Dashboardの「💰 収益管理」タブを開いてください');
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#10b981',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    収益管理を開く →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -914,6 +1084,16 @@ export function HubDetailPanelNew({
               </div>
             )}
           </div>
+        )}
+
+        {/* 購入履歴タブ */}
+        {activeTab === 'purchases' && machine && (
+          <PurchaseHistoryTab machine={machine} />
+        )}
+
+        {/* 統計ダッシュボードタブ */}
+        {activeTab === 'stats' && machine && (
+          <VendingStatsTab machine={machine} />
         )}
       </div>
 

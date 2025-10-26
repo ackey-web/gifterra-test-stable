@@ -12,6 +12,8 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI, TOKEN } from "../contract";
 import { useEmergency } from "../lib/emergency";
 import { AdCarousel } from "../components/AdCarousel";
 import { rewardSuccessConfetti } from "../utils/confetti";
+import type { TokenId } from "../config/tokens";
+import { getTokenConfig } from "../config/tokens";
 
 /* ---------- 安全イベントパーサ（修正版） ---------- */
 function getEventArgsFromReceipt(
@@ -45,6 +47,11 @@ export default function App() {
   const address = useAddress();
   const chain = useChain();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
+
+  // Rewardトークン設定（ユーティリティトークン限定）
+  // TODO: 将来的にTenantContextから取得
+  const rewardTokenId: TokenId = 'NHT'; // デフォルトはNHT（ユーティリティトークン）
+  const rewardTokenConfig = useMemo(() => getTokenConfig(rewardTokenId), [rewardTokenId]);
 
   // 背景画像をlocalStorageから取得（管理画面で設定可能）
   const [customBgImage] = useState<string>(() => {
@@ -86,9 +93,9 @@ export default function App() {
       return "ネットワーク未接続";
     }
     return dailyRewardRaw !== undefined
-      ? `${Number(dailyRewardRaw) / 1e18} ${TOKEN.SYMBOL}/day`
+      ? `${Number(dailyRewardRaw) / Math.pow(10, rewardTokenConfig.decimals)} ${rewardTokenConfig.symbol}/day`
       : "loading...";
-  }, [dailyRewardRaw, dailyRewardError, isCorrectChain]);
+  }, [dailyRewardRaw, dailyRewardError, isCorrectChain, rewardTokenConfig]);
 
   // ★ ダッシュボードと同期するローカル緊急停止フラグのみ使用
   const isMaintenance = useEmergency();
@@ -161,19 +168,19 @@ export default function App() {
       // wallet_watchAssetサポート確認
       const supportsWatchAsset = typeof eth.request === 'function';
       if (!supportsWatchAsset) {
-        alert(`⚠️ お使いのウォレットはトークン自動追加に対応していません。\n\n手動でトークンを追加してください:\nアドレス: ${TOKEN.ADDRESS}\nシンボル: ${TOKEN.SYMBOL}`);
+        alert(`⚠️ お使いのウォレットはトークン自動追加に対応していません。\n\n手動でトークンを追加してください:\nアドレス: ${rewardTokenConfig.currentAddress}\nシンボル: ${rewardTokenConfig.symbol}`);
         return;
       }
-      
+
       // モバイルでは画像なしでトークン追加を試行
       const tokenParams = {
         type: "ERC20",
         options: {
-          address: TOKEN.ADDRESS,
-          symbol: TOKEN.SYMBOL,
-          decimals: TOKEN.DECIMALS,
+          address: rewardTokenConfig.currentAddress,
+          symbol: rewardTokenConfig.symbol,
+          decimals: rewardTokenConfig.decimals,
           // モバイルでは画像を省略（安定性向上）
-          ...(isMobileDevice ? {} : { image: TOKEN.ICON })
+          ...(isMobileDevice ? {} : { image: rewardTokenConfig.icon || undefined })
         },
       };
 
@@ -181,9 +188,9 @@ export default function App() {
         method: "wallet_watchAsset",
         params: tokenParams,
       });
-      
+
       if (wasAdded) {
-        alert(`✅ ${TOKEN.SYMBOL} をウォレットに追加しました！`);
+        alert(`✅ ${rewardTokenConfig.symbol} をウォレットに追加しました！`);
       } else {
         alert("ℹ️ 追加はキャンセルされました。");
       }
@@ -202,7 +209,7 @@ export default function App() {
       } else if (e?.message?.includes('User rejected')) {
         errorMessage = "ℹ️ ユーザーによって拒否されました。";
       } else {
-        errorMessage += `\n\n手動でトークンを追加してください:\nアドレス: ${TOKEN.ADDRESS}\nシンボル: ${TOKEN.SYMBOL}`;
+        errorMessage += `\n\n手動でトークンを追加してください:\nアドレス: ${rewardTokenConfig.currentAddress}\nシンボル: ${rewardTokenConfig.symbol}`;
       }
       
       alert(errorMessage);
@@ -626,7 +633,7 @@ export default function App() {
           {showAddToken && (
             <div style={{ display: "grid", justifyItems: "center" }}>
               <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
-                💡 初めて {TOKEN.SYMBOL} を受け取る方はこちら
+                💡 初めて {rewardTokenConfig.symbol} を受け取る方はこちら
               </div>
               <button
                 onClick={addTokenToWallet}
@@ -643,7 +650,7 @@ export default function App() {
                   transition: "all 0.2s ease"
                 }}
               >
-                {TOKEN.SYMBOL} をウォレットに追加 🪙
+                {rewardTokenConfig.symbol} をウォレットに追加 🪙
               </button>
             </div>
           )}

@@ -3,6 +3,14 @@
 import React, { useState, useRef } from 'react';
 import { uploadImage, deleteFileFromUrl } from '../../lib/supabase';
 import { calculateFileHash } from '../../utils/fileHash';
+import type { PaymentSplit } from '../../lib/royalty';
+import {
+  getRoyaltyInfo,
+  createPaymentSplit,
+  createManualPaymentSplit,
+  validatePaymentSplit,
+  formatPaymentSplit,
+} from '../../lib/royalty';
 
 export interface ProductFormData {
   id?: string;
@@ -14,6 +22,9 @@ export interface ProductFormData {
   contentPath: string;
   imageUrl: string;
   updatedAt?: string;
+  // PaymentSplitter統合
+  paymentSplit?: PaymentSplit | null;
+  nftAddress?: string; // EIP-2981検出用
 }
 
 interface ProductFormProps {
@@ -22,6 +33,7 @@ interface ProductFormProps {
   onCancel: () => void;
   isSubmitting?: boolean;
   tokenSymbol?: 'tNHT' | 'JPYC'; // 使用するトークン
+  tenantOwnerAddress?: string; // テナントオーナーアドレス（収益分配用）
 }
 
 const DEFAULT_FORM_DATA: ProductFormData = {
@@ -31,7 +43,9 @@ const DEFAULT_FORM_DATA: ProductFormData = {
   stock: 0,
   isUnlimited: true,
   contentPath: '',
-  imageUrl: ''
+  imageUrl: '',
+  paymentSplit: null,
+  nftAddress: '',
 };
 
 export function ProductForm({
@@ -39,7 +53,8 @@ export function ProductForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
-  tokenSymbol = 'tNHT'
+  tokenSymbol = 'tNHT',
+  tenantOwnerAddress = '0x0000000000000000000000000000000000000000', // デフォルト値
 }: ProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>(
     initialData || DEFAULT_FORM_DATA
@@ -55,8 +70,118 @@ export function ProductForm({
   const previousImageUrlRef = useRef<string | null>(initialData?.imageUrl || null);
   const previousContentPathRef = useRef<string | null>(initialData?.contentPath || null);
 
+  // PaymentSplit関連の状態
+  const [detectingRoyalty, setDetectingRoyalty] = useState(false);
+  const [manualCreatorAddress, setManualCreatorAddress] = useState('');
+  const [manualCreatorShare, setManualCreatorShare] = useState(10); // 10% デフォルト
+  const [splitMode, setSplitMode] = useState<'none' | 'auto' | 'manual'>('none');
+
+  const publicClient = usePublicClient();
+
   const handleChange = (field: keyof ProductFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // EIP-2981自動検出
+  const handleAutoDetectRoyalty = async () => {
+    if (!formData.nftAddress || !publicClient) {
+      alert('⚠️ NFTアドレスを入力してください');
+      return;
+    }
+
+    setDetectingRoyalty(true);
+    try {
+      console.log('🔍 EIP-2981 Royalty検出中...', formData.nftAddress);
+
+      // 仮の販売価格で検出（100 tNHT）
+      const testSalePrice = BigInt('100000000000000000000'); // 100 * 10^18
+      const royaltyInfo = await getRoyaltyInfo(
+        formData.nftAddress,
+        0n, // tokenId = 0 (コレクション全体のデフォルト)
+        testSalePrice,
+        publicClient
+      );
+
+      if (!royaltyInfo) {
+        alert(
+          '⚠️ EIP-2981をサポートしていません\n\n' +
+          'このNFTコントラクトはEIP-2981 Royalty Standardに対応していません。\n' +
+          '手動で収益分配設定を行ってください。'
+        );
+        return;
+      }
+
+      // PaymentSplit生成
+      const split = createPaymentSplit(royaltyInfo, tenantOwnerAddress);
+
+      console.log('✅ EIP-2981検出成功:', split);
+
+      handleChange('paymentSplit', split);
+      setSplitMode('auto');
+
+      const percentage = (royaltyInfo.royaltyBasisPoints / 100).toFixed(1);
+      alert(
+        `✅ ロイヤリティ情報を検出しました\n\n` +
+        `クリエイター: ${royaltyInfo.receiver.slice(0, 6)}...${royaltyInfo.receiver.slice(-4)}\n` +
+        `ロイヤリティ: ${percentage}%\n\n` +
+        `収益分配設定を自動生成しました。`
+      );
+
+    } catch (error) {
+      console.error('❌ EIP-2981検出エラー:', error);
+      alert(
+        `❌ ロイヤリティ情報の取得に失敗しました\n\n` +
+        `${error instanceof Error ? error.message : String(error)}\n\n` +
+        `手動で収益分配設定を行ってください。`
+      );
+    } finally {
+      setDetectingRoyalty(false);
+    }
+  };
+
+  // 手動で収益分配設定を作成
+  const handleManualSplit = () => {
+    if (!manualCreatorAddress) {
+      alert('⚠️ クリエイターアドレスを入力してください');
+      return;
+    }
+
+    if (manualCreatorShare < 0 || manualCreatorShare > 100) {
+      alert('⚠️ クリエイターシェアは0〜100%の範囲で入力してください');
+      return;
+    }
+
+    try {
+      const split = createManualPaymentSplit(
+        manualCreatorAddress,
+        tenantOwnerAddress,
+        manualCreatorShare * 100 // % → basis points (10000分率)
+      );
+
+      if (!validatePaymentSplit(split)) {
+        throw new Error('Invalid payment split configuration');
+      }
+
+      handleChange('paymentSplit', split);
+      setSplitMode('manual');
+
+      alert(
+        `✅ 手動収益分配設定を作成しました\n\n` +
+        formatPaymentSplit(split)
+      );
+    } catch (error) {
+      console.error('❌ 手動設定エラー:', error);
+      alert(`❌ 収益分配設定の作成に失敗しました\n\n${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  // 収益分配設定をリセット（テナントオーナー100%）
+  const handleResetSplit = () => {
+    handleChange('paymentSplit', null);
+    setSplitMode('none');
+    setManualCreatorAddress('');
+    setManualCreatorShare(10);
+    alert('✅ 収益分配設定をリセットしました（テナントオーナー100%）');
   };
 
   // 画像アップロード
@@ -238,6 +363,12 @@ export function ProductForm({
       if (!confirmed) return;
     }
 
+    // PaymentSplit検証
+    if (formData.paymentSplit && !validatePaymentSplit(formData.paymentSplit)) {
+      alert('❌ 収益分配設定が不正です。設定を確認してください。');
+      return;
+    }
+
     await onSubmit(formData);
   };
 
@@ -361,6 +492,128 @@ export function ProductForm({
               <p className="text-xs text-green-600 mt-1">✅ パス: {formData.contentPath}</p>
             ) : (
               <p className="text-xs text-gray-500 mt-1">⚠️ ファイル未設定（保存時に警告が表示されます）</p>
+            )}
+          </div>
+
+          {/* 収益分配設定セクション */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-bold text-gray-800 mb-3">💰 収益分配設定</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              この商品がNFTの場合、クリエイターとテナントオーナーで収益を分配できます。<br />
+              設定しない場合はテナントオーナーが100%受け取ります。
+            </p>
+
+            {/* 現在の設定を表示 */}
+            {formData.paymentSplit && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
+                <p className="text-sm font-semibold text-blue-900">現在の設定:</p>
+                <p className="text-sm text-blue-800 mt-1">{formatPaymentSplit(formData.paymentSplit)}</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  ソース: {formData.paymentSplit.royalty_source === 'EIP2981' ? 'EIP-2981自動検出' : '手動設定'}
+                </p>
+              </div>
+            )}
+
+            {/* タブ切り替え */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setSplitMode('none')}
+                className={`px-3 py-1 rounded text-sm ${
+                  splitMode === 'none' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                なし（100%オーナー）
+              </button>
+              <button
+                onClick={() => setSplitMode('auto')}
+                className={`px-3 py-1 rounded text-sm ${
+                  splitMode === 'auto' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                自動検出（EIP-2981）
+              </button>
+              <button
+                onClick={() => setSplitMode('manual')}
+                className={`px-3 py-1 rounded text-sm ${
+                  splitMode === 'manual' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                手動設定
+              </button>
+            </div>
+
+            {/* 自動検出モード */}
+            {splitMode === 'auto' && (
+              <div className="bg-gray-50 border border-gray-200 rounded p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">NFTコントラクトアドレス</label>
+                <input
+                  type="text"
+                  value={formData.nftAddress || ''}
+                  onChange={(e) => handleChange('nftAddress', e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
+                  placeholder="0x..."
+                />
+                <button
+                  onClick={handleAutoDetectRoyalty}
+                  disabled={detectingRoyalty || !formData.nftAddress}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {detectingRoyalty ? '🔍 検出中...' : '🔍 EIP-2981ロイヤリティを自動検出'}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  EIP-2981対応NFTコントラクトからロイヤリティ情報を自動取得します
+                </p>
+              </div>
+            )}
+
+            {/* 手動設定モード */}
+            {splitMode === 'manual' && (
+              <div className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">クリエイターアドレス</label>
+                  <input
+                    type="text"
+                    value={manualCreatorAddress}
+                    onChange={(e) => setManualCreatorAddress(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="0x..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    クリエイターシェア（%）
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={manualCreatorShare}
+                    onChange={(e) => setManualCreatorShare(parseInt(e.target.value) || 0)}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    テナントオーナーシェア: {100 - manualCreatorShare}%
+                  </p>
+                </div>
+                <button
+                  onClick={handleManualSplit}
+                  disabled={!manualCreatorAddress}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                >
+                  ✓ 手動設定を適用
+                </button>
+              </div>
+            )}
+
+            {/* リセットボタン */}
+            {formData.paymentSplit && (
+              <button
+                onClick={handleResetSplit}
+                className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 mt-3"
+              >
+                ✕ 収益分配設定をリセット
+              </button>
             )}
           </div>
         </div>

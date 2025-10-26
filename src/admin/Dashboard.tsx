@@ -26,6 +26,8 @@ import ProductManager from "./products/ProductManager";
 import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
+import RevenueManagement from "./revenue/RevenueManagement";
+import { useTenant, RequireOwner } from "./contexts/TenantContext";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -37,7 +39,7 @@ type TipItem = {
   txHash?: string;
 };
 
-type PageType = "dashboard" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "product-management" | "diagnostics" | "tenant-management";
+type PageType = "dashboard" | "revenue-management" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "product-management" | "diagnostics" | "tenant-management";
 
 // 🚀 将来のマルチテナント実装準備
 // - tenant-management: テナント管理（スーパーアドミン専用）
@@ -254,10 +256,9 @@ function LoadingOverlay({ period }: { period?: Period }) {
 
 /* ---------- Component ---------- */
 export default function AdminDashboard() {
-  // 🚀 マルチテナント実装準備: 現在のユーザー・テナント情報
-  // const currentUser = getCurrentUser();
-  // const currentTenant = getCurrentTenant();
-  // const isMultiTenantMode = process.env.REACT_APP_MULTI_TENANT === 'true';
+  // テナントコンテキスト（オーナー権限確認）
+  const { tenant, isOwner, ownerStatus, isCheckingOwner, isDevSuperAdmin, devMode } = useTenant();
+
   const address = useAddress();
   const { contract } = useContract(CONTRACT_ADDRESS, CONTRACT_ABI);
   
@@ -1523,7 +1524,8 @@ export default function AdminDashboard() {
   /* ---------- 画面 ---------- */
 
   return (
-    <main
+    <RequireOwner>
+      <main
       style={{
         minHeight: "100vh",
         background: "#0b1620",
@@ -1539,18 +1541,100 @@ export default function AdminDashboard() {
         style={{
           width: "min(1120px, 96vw)",
           margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 12,
           padding: "16px 0 24px 0",
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
-        <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-          GIFTERRA admin : Dashboard
-        </h1>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+          marginBottom: 12
+        }}>
+          <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
+            GIFTERRA admin : Dashboard
+          </h1>
+        </div>
+
+        {/* テナント情報とオーナー権限表示 */}
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 16,
+          flexWrap: "wrap",
+          fontSize: 13
+        }}>
+          {/* 開発モード警告 */}
+          {devMode && isDevSuperAdmin && (
+            <div style={{
+              padding: "6px 12px",
+              background: "rgba(245, 158, 11, 0.2)",
+              border: "2px solid rgba(245, 158, 11, 0.5)",
+              borderRadius: 6,
+              fontWeight: 700,
+              animation: "pulse 2s ease-in-out infinite"
+            }}>
+              🔧 DEV MODE: Super Admin Access
+            </div>
+          )}
+
+          <div style={{
+            padding: "6px 12px",
+            background: "rgba(59, 130, 246, 0.1)",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            borderRadius: 6
+          }}>
+            <span style={{ opacity: 0.7 }}>テナント: </span>
+            <strong>{tenant.name}</strong>
+          </div>
+
+          <div style={{
+            padding: "6px 12px",
+            background: isOwner ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
+            border: `1px solid ${isOwner ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+            borderRadius: 6
+          }}>
+            <span style={{ opacity: 0.7 }}>権限: </span>
+            <strong>
+              {isDevSuperAdmin ? "🔧 デバッグ管理者" : isOwner ? "✅ オーナー" : "❌ 非オーナー"}
+            </strong>
+          </div>
+
+          {isOwner && (
+            <div style={{
+              padding: "6px 12px",
+              background: "rgba(139, 92, 246, 0.1)",
+              border: "1px solid rgba(139, 92, 246, 0.3)",
+              borderRadius: 6,
+              fontSize: 11
+            }}>
+              <span style={{ opacity: 0.7 }}>コントラクト権限: </span>
+              {ownerStatus.gifterra && <span title="Gifterra">🎁 </span>}
+              {ownerStatus.rewardEngine && <span title="RewardEngine">⚙️ </span>}
+              {ownerStatus.flagNFT && <span title="FlagNFT">🚩 </span>}
+              {ownerStatus.rewardToken && <span title="RewardToken">🪙 </span>}
+              {ownerStatus.tipManager && <span title="TipManager">💝 </span>}
+            </div>
+          )}
+        </div>
+
+        {/* 開発モード注意書き */}
+        {devMode && isDevSuperAdmin && (
+          <div style={{
+            marginTop: 12,
+            padding: "8px 16px",
+            background: "rgba(245, 158, 11, 0.1)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: 6,
+            fontSize: 12,
+            textAlign: "center",
+            opacity: 0.8
+          }}>
+            ⚠️ 開発環境モード：全コントラクトへのフルアクセスが許可されています。本番環境では無効化されます。
+          </div>
+        )}
       </header>
 
       {/* ナビゲーションボタン */}
@@ -1622,6 +1706,21 @@ export default function AdminDashboard() {
           }}
         >
           🏪 GIFT HUB管理
+        </button>
+        <button
+          onClick={() => setCurrentPage("revenue-management")}
+          style={{
+            background: currentPage === "revenue-management" ? "#0891b2" : "#374151",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 16px",
+            fontWeight: 700,
+            cursor: "pointer",
+            fontSize: 14,
+          }}
+        >
+          💰 収益管理
         </button>
         {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
         {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
@@ -1785,6 +1884,8 @@ export default function AdminDashboard() {
           RewardTokenChargeSection={RewardTokenChargeSection}
           RewardAmountSettingSection={RewardAmountSettingSection}
         />
+      ) : currentPage === "revenue-management" ? (
+        <RevenueManagement />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (
@@ -2501,6 +2602,15 @@ export default function AdminDashboard() {
       </footer>
 
       {isLoading && <LoadingOverlay period={period} />}
+
+      {/* 開発モード用のCSS */}
+      {devMode && <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.02); }
+        }
+      `}</style>}
     </main>
+    </RequireOwner>
   );
 }

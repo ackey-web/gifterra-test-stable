@@ -414,3 +414,74 @@ export const ERC20_MIN_ABI = [
     type: "function",
   },
 ] as const;
+
+/* =========================================
+   ✅ PaymentSplitter ABI
+   📝 GifterraPaySplitter v1.0.1 対応
+   🎯 GIFT HUB購入時の収益分配に使用
+========================================= */
+export const PAYMENT_SPLITTER_ABI = [
+  // donateERC20 - ERC20トークンでの支払い受け口
+  {
+    inputs: [
+      { internalType: "address", name: "token", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "bytes32", name: "sku", type: "bytes32" },
+      { internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "donateERC20",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // donateNative - ネイティブ通貨での支払い受け口
+  {
+    inputs: [
+      { internalType: "bytes32", name: "sku", type: "bytes32" },
+      { internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "donateNative",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  // DonationReceived イベント
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "payer", type: "address" },
+      { indexed: true, internalType: "address", name: "token", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+      { indexed: true, internalType: "bytes32", name: "sku", type: "bytes32" },
+      { indexed: false, internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "DonationReceived",
+    type: "event",
+  },
+  // releaseAllERC20 - 全受益者へのERC20分配
+  {
+    inputs: [
+      { internalType: "contract IERC20", name: "token", type: "address" },
+    ],
+    name: "releaseAllERC20",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // releaseAll - 全受益者へのネイティブ通貨分配
+  {
+    inputs: [],
+    name: "releaseAll",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // owner - コントラクトオーナー取得
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;

@@ -1,12 +1,13 @@
 // src/vending-ui/App.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 import { formatUnits, createWalletClient, custom } from "viem";
 import { polygonAmoy } from "viem/chains";
 import { useMetaverseContent } from "../hooks/useMetaverseContent";
 import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 import { purchaseProduct, type Product } from "../lib/purchase";
-import { publicClient, TOKEN, ERC20_MIN_ABI } from "../contract";
+import { publicClient, ERC20_MIN_ABI } from "../contract";
+import { getTokenConfig, type TokenId } from "../config/tokens";
 import VendingMachineShell from "./components/VendingMachineShell";
 import { GIFTERRAAIAssistant } from "../components/GIFTERRAAIAssistant";
 import PurchaseConfirmDialog from "./components/PurchaseConfirmDialog";
@@ -37,9 +38,16 @@ export default function VendingApp() {
   const primaryColor = vendingMachine?.settings?.design?.primaryColor || "#8B5CF6";
   const secondaryColor = vendingMachine?.settings?.design?.secondaryColor || "#3B82F6";
 
+  // HUBの受け入れトークン設定を取得
+  const acceptedTokenId: TokenId = useMemo(() => {
+    return vendingMachine?.settings?.acceptedToken || 'NHT';
+  }, [vendingMachine]);
+
+  const tokenConfig = useMemo(() => getTokenConfig(acceptedTokenId), [acceptedTokenId]);
+
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [purchasedProducts, setPurchasedProducts] = useState<Array<{id: string, name: string, downloadUrl: string}>>([]);
-  const [tnhtBalance, setTnhtBalance] = useState("0");
+  const [tokenBalance, setTokenBalance] = useState("0");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
@@ -53,30 +61,31 @@ export default function VendingApp() {
   // ヘッダー画像を取得（管理画面で設定）
   const headerImage = vendingMachine?.settings?.design?.headerImage;
 
-  // tNHT残高を取得
+  // トークン残高を取得（HUBの設定に基づく）
   useEffect(() => {
-    if (!address) {
-      setTnhtBalance("0");
+    if (!address || !tokenConfig.currentAddress) {
+      setTokenBalance("0");
       return;
     }
 
     const fetchBalance = async () => {
       try {
         const balance = await publicClient.readContract({
-          address: TOKEN.ADDRESS,
+          address: tokenConfig.currentAddress as `0x${string}`,
           abi: ERC20_MIN_ABI,
           functionName: "balanceOf",
           args: [address as `0x${string}`],
         });
-        const formatted = formatUnits(balance, TOKEN.DECIMALS);
-        setTnhtBalance(Math.floor(Number(formatted)).toString());
+        const formatted = formatUnits(balance, tokenConfig.decimals);
+        setTokenBalance(Math.floor(Number(formatted)).toString());
       } catch (err) {
-        setTnhtBalance("0");
+        console.error('❌ トークン残高取得エラー:', err);
+        setTokenBalance("0");
       }
     };
 
     fetchBalance();
-  }, [address]);
+  }, [address, tokenConfig]);
 
   // 購入履歴を取得する関数（ZIP一括ダウンロードボタン表示用）
   const fetchPurchaseHistory = async () => {
@@ -306,7 +315,7 @@ export default function VendingApp() {
 
       // 残高不足チェック
       if (tokenBalance < priceWei) {
-        alert(`❌ トークン残高不足\n\n必要: ${priceInTokens} tNHT\n現在: ${balanceInTokens} tNHT\n\n公式Faucetでトークンを取得してください。`);
+        alert(`❌ トークン残高不足\n\n必要: ${priceInTokens} ${tokenConfig.symbol}\n現在: ${balanceInTokens} ${tokenConfig.symbol}\n\n公式Faucetでトークンを取得してください。`);
         setIsPurchasing(false);
         setSelectedProducts((prev) => prev.filter((id) => id !== productId));
         return;
@@ -510,7 +519,7 @@ export default function VendingApp() {
               }
 
               // Wei → トークン単位に変換
-              const priceInTokens = formatUnits(BigInt(product.price_amount_wei), TOKEN.DECIMALS);
+              const priceInTokens = formatUnits(BigInt(product.price_amount_wei), tokenConfig.decimals);
               const price = `${Math.floor(Number(priceInTokens))} ${tokenSymbol}`;
               const isSelected = selectedProducts.includes(product.id);
 
@@ -660,7 +669,7 @@ export default function VendingApp() {
               <div className="relative flex items-center gap-2">
                 <div className="text-xs font-bold text-emerald-300/80">残高</div>
                 <div className="text-base font-black text-emerald-200 tracking-wide" style={{ textShadow: "0 0 25px rgba(16,185,129,0.8), 0 2px 6px rgba(0,0,0,0.5)" }}>
-                  {tnhtBalance} {vendingMachine?.settings?.tokenSymbol || 'tNHT'}
+                  {tokenBalance} {tokenConfig.symbol}
                 </div>
               </div>
             </div>
@@ -807,7 +816,7 @@ export default function VendingApp() {
       {/* ===== GIFTERRA AI アシスタント ===== */}
       <GIFTERRAAIAssistant
         products={supabaseProducts}
-        userBalance={tnhtBalance}
+        userBalance={tokenBalance}
       />
 
       {/* ===== 確認ダイアログ ===== */}

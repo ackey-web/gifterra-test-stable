@@ -12,6 +12,7 @@ import { DownloadPage } from "./pages/DownloadPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
+import { TenantProvider } from "./admin/contexts/TenantContext";
 
 // =============================
 // Polygon Amoy Testnet 定義 (ThirdWeb v4互換)
@@ -118,9 +119,13 @@ root.render(
       ) : wantsClaimHistory ? (
         <ClaimHistory />
       ) : wantsAdminMobile ? (
-        <AdminDashboardMobile />
+        <TenantProvider>
+          <AdminDashboardMobile />
+        </TenantProvider>
       ) : wantsAdmin ? (
-        <AdminDashboard />
+        <TenantProvider>
+          <AdminDashboard />
+        </TenantProvider>
       ) : wantsTip ? (
         <TipApp />
       ) : wantsContent ? (

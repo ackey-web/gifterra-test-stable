@@ -277,8 +277,8 @@ npx hardhat flatten contracts/GifterraFactory.sol > flattened.sol
 
 **解決策**:
 1. **既存トークンを使用**: Polygon 上の既存ERC20トークン
-   - 例: USDC (Polygon): `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`
    - 例: Wrapped MATIC: `0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270`
+   - ⚠️ 注意: ステーブルコイン（JPYC等の電子決済手段を除く）は暗号資産交換業登録が必要なため、利用前に法務確認が必要です
 
 2. **独自トークンをデプロイ**: Remix で ERC20 トークンを先にデプロイ
    ```solidity

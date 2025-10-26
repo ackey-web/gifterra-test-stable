@@ -94,6 +94,8 @@ export default function PurchaseCompleteAnimation({
         <div
           style={{
             marginBottom: 30,
+            display: "flex",
+            justifyContent: "center",
             animation: animationPhase === "zoom" ? "zoomIn 1s ease-out" : "bounce 2s ease-in-out infinite"
           }}
         >

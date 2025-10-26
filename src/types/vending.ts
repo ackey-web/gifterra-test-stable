@@ -1,4 +1,5 @@
 // 自販機システムの型定義
+import type { TokenId } from '../config/tokens';
 
 export type ProductType = 'NFT' | 'SBT' | 'GLB' | 'FBX' | 'VRM' | 'MP3' | 'MP4' | 'PNG' | 'JPG' | 'PDF' | 'ZIP' | 'GLTF' | 'WAV' | 'OBJ';
 
@@ -56,7 +57,14 @@ export interface VendingMachineSettings {
     end: string;   // HH:MM format
   };
   customCss?: string;
-  tokenSymbol?: 'tNHT' | 'JPYC'; // 使用するトークンの種類
+
+  // トークン設定（GIFT HUBごとに受け入れるトークンを設定）
+  tokenSymbol?: 'tNHT' | 'JPYC'; // [DEPRECATED] 後方互換性のため残す
+  acceptedToken?: TokenId;       // 受け入れるトークン（例: 'NHT', 'JPYC'）
+
+  // 収益管理設定
+  paymentSplitterAddress?: string; // PaymentSplitterコントラクトアドレス
+
   // デザインカスタマイズ設定
   design?: {
     headerImage?: string;        // ヘッダー画像URL（自販機上部）

@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { uploadImage, deleteFileFromUrl } from '../../lib/supabase';
 import { TOKEN, CONTRACT_ADDRESS } from '../../contract';
+import { RewardDistributionHistoryTab } from './components/RewardDistributionHistoryTab';
 
 export interface AdData {
   src: string;
@@ -24,7 +25,7 @@ export interface RewardUIManagementPageProps {
   RewardAmountSettingSection: () => JSX.Element;
 }
 
-type TabType = 'contract' | 'design';
+type TabType = 'contract' | 'design' | 'distribution-history';
 
 export function RewardUIManagementPage({
   editingAds,
@@ -242,6 +243,24 @@ export function RewardUIManagementPage({
           }}
         >
           🎨 Design Settings
+        </button>
+        <button
+          onClick={() => setActiveTab('distribution-history')}
+          role="tab"
+          aria-selected={activeTab === 'distribution-history'}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'distribution-history' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'distribution-history' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            border: 'none',
+            borderBottom: activeTab === 'distribution-history' ? '2px solid #3B82F6' : '2px solid transparent',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          🎁 Distribution History
         </button>
       </div>
 
@@ -526,6 +545,11 @@ export function RewardUIManagementPage({
               </button>
             </div>
           </div>
+        )}
+
+        {/* Distribution History タブ */}
+        {activeTab === 'distribution-history' && (
+          <RewardDistributionHistoryTab />
         )}
       </div>
     </div>
