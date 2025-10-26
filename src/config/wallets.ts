@@ -2,11 +2,11 @@
 // ハイブリッドウォレット設定: スマートウォレット + 外部ウォレット
 
 import {
-  metamaskWallet,
-  walletConnect,
-  coinbaseWallet,
-  smartWallet,
-  embeddedWallet,
+  MetaMaskWallet,
+  WalletConnect,
+  CoinbaseWallet,
+  SmartWallet,
+  EmbeddedWallet,
   type SmartWalletConfig,
 } from "@thirdweb-dev/wallets";
 import { PolygonAmoyTestnet, Polygon } from "@thirdweb-dev/chains";
@@ -22,6 +22,9 @@ import { getNetworkEnv } from "./tokens";
  * - セッションキー
  */
 export const smartWalletConfig: SmartWalletConfig = {
+  // Chain設定
+  chain: getActiveChain(),
+
   // Factory Address (thirdwebのFactory Contract)
   factoryAddress: import.meta.env.VITE_SMART_WALLET_FACTORY || "",
 
@@ -50,11 +53,11 @@ export const supportedWallets = [
   // ===================================
   // メイン: スマートウォレット
   // ===================================
-  smartWallet({
+  SmartWallet({
     ...smartWalletConfig,
     personalWallets: [
       // Embedded Wallet（メール/SNSログイン）
-      embeddedWallet({
+      EmbeddedWallet({
         recommended: true, // デフォルトとして推奨
         auth: {
           options: [
@@ -68,12 +71,12 @@ export const supportedWallets = [
       }),
 
       // MetaMask（スマートウォレット経由）
-      metamaskWallet({
+      MetaMaskWallet({
         recommended: false,
       }),
 
       // WalletConnect（スマートウォレット経由）
-      walletConnect({
+      WalletConnect({
         projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
         recommended: false,
       }),
@@ -84,15 +87,15 @@ export const supportedWallets = [
   // サブ: 外部ウォレット直接接続
   // ===================================
   // MetaMask直接接続（上級者向け）
-  metamaskWallet(),
+  MetaMaskWallet(),
 
   // WalletConnect直接接続
-  walletConnect({
+  WalletConnect({
     projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "",
   }),
 
   // Coinbase Wallet
-  coinbaseWallet(),
+  CoinbaseWallet(),
 ];
 
 /**

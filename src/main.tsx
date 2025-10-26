@@ -13,7 +13,7 @@ import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { TenantProvider } from "./admin/contexts/TenantContext";
-import { supportedWallets, getActiveChain } from "./config/wallets";
+import { supportedWallets } from "./config/wallets";
 
 // =============================
 // Polygon Amoy Testnet 定義 (ThirdWeb v4互換)
