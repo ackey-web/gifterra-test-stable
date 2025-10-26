@@ -124,15 +124,36 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
 }
 
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
-  // 🔧 履歴表示優先: Public RPCを最初に試行してAlchemyをフォールバックに
+  // 🔧 本番環境とCORS対策: Alchemyを優先、Public RPCをフォールバックに
+  const IS_PRODUCTION = !(import.meta as any)?.env?.DEV;
+
+  // 本番環境ではAlchemyを優先（CORS回避）
+  if (IS_PRODUCTION && ALCHEMY_RPC) {
+    try {
+      const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
+      return result;
+    } catch (alchemyError: any) {
+      console.warn("⚠️ Alchemy RPC failed, trying Public RPC:", alchemyError.message);
+      // Public RPCにフォールバック
+      try {
+        const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
+        return result;
+      } catch (error: any) {
+        console.error("❌ All RPC endpoints failed");
+        throw error;
+      }
+    }
+  }
+
+  // 開発環境では履歴表示優先: Public RPCを最初に試行
   try {
     const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
     return result;
   } catch (publicError: any) {
     console.warn("⚠️ Public RPC failed, trying Alchemy:", publicError.message);
   }
-  
-  // Fallback to Alchemy (if configured and if Public RPC failed)
+
+  // Fallback to Alchemy (if configured)
   if (ALCHEMY_RPC) {
     try {
       const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
@@ -142,7 +163,7 @@ async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
       throw error;
     }
   }
-  
+
   console.error("❌ All RPC endpoints failed");
   throw new Error("All RPC endpoints failed");
 }
@@ -156,6 +177,61 @@ async function getBlockTimestamp(num: number): Promise<number> {
     false,
   ]);
   return block?.timestamp ? parseInt(block.timestamp, 16) : 0;
+}
+
+/* ---------- Alchemy Free Tier対応: eth_getLogsを10ブロックずつに分割 ---------- */
+const ALCHEMY_FREE_TIER_BLOCK_LIMIT = 10;
+
+async function getLogsInChunks(
+  address: string,
+  fromBlock: number,
+  toBlock: number,
+  topics: string[]
+): Promise<any[]> {
+  const allLogs: any[] = [];
+  const blockRange = toBlock - fromBlock;
+
+  // 10ブロック以下ならそのままリクエスト
+  if (blockRange <= ALCHEMY_FREE_TIER_BLOCK_LIMIT) {
+    const logRequest = {
+      address,
+      fromBlock: "0x" + fromBlock.toString(16),
+      toBlock: "0x" + toBlock.toString(16),
+      topics,
+    };
+    return await rpc("eth_getLogs", [logRequest]);
+  }
+
+  // 10ブロックずつに分割してリクエスト
+  console.log(`📦 Splitting eth_getLogs into chunks (${Math.ceil(blockRange / ALCHEMY_FREE_TIER_BLOCK_LIMIT)} requests)...`);
+
+  for (let start = fromBlock; start <= toBlock; start += ALCHEMY_FREE_TIER_BLOCK_LIMIT) {
+    const end = Math.min(start + ALCHEMY_FREE_TIER_BLOCK_LIMIT - 1, toBlock);
+
+    const logRequest = {
+      address,
+      fromBlock: "0x" + start.toString(16),
+      toBlock: "0x" + end.toString(16),
+      topics,
+    };
+
+    try {
+      const logs = await rpc<any[]>("eth_getLogs", [logRequest]);
+      allLogs.push(...logs);
+      console.log(`  ✓ Fetched blocks ${start} - ${end} (${logs.length} logs)`);
+    } catch (error: any) {
+      console.error(`  ❌ Failed to fetch blocks ${start} - ${end}:`, error.message);
+      // 1つのチャンクが失敗しても続行
+    }
+
+    // レート制限対策: 各リクエスト間に小さな遅延を入れる
+    if (start + ALCHEMY_FREE_TIER_BLOCK_LIMIT <= toBlock) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  console.log(`✅ Total logs fetched: ${allLogs.length}`);
+  return allLogs;
 }
 
 /* ---------- Lookback ---------- */
@@ -391,16 +467,16 @@ export default function AdminDashboard() {
     setIsLoading(true);
     (async () => {
       try {
-        const finalFromBlockHex = "0x" + fromBlock.toString(16);
+        // 最新ブロック番号を取得（Alchemy Free Tier対応）
+        const latestBlock = await getLatestBlockNumber();
 
-        const logRequest = {
-          address: CONTRACT_ADDRESS,
-          fromBlock: finalFromBlockHex,
-          toBlock: "latest",
-          topics: [TOPIC_TIPPED],
-        };
-        
-                const logs: any[] = await rpc("eth_getLogs", [logRequest]);
+        // 10ブロックずつに分割してログを取得
+        const logs: any[] = await getLogsInChunks(
+          CONTRACT_ADDRESS,
+          fromBlock,
+          latestBlock,
+          [TOPIC_TIPPED]
+        );
 
         const items: TipItem[] = logs.map((log) => {
           const topic1: string = log.topics?.[1] || "0x";
