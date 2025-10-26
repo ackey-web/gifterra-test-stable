@@ -150,6 +150,13 @@ export const publicClient = createPublicClient({
 export const READ_ABI = [
   {
     inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "dailyRewardAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
@@ -372,6 +379,13 @@ export const MANAGER_ABI = [
    ✅ ERC20 最小ABI
 ========================================= */
 export const ERC20_MIN_ABI = [
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "address", name: "owner", type: "address" }],
     name: "balanceOf",
