@@ -52,13 +52,34 @@ function getSmartWalletConfig(): SmartWalletConfig {
  */
 export const supportedWallets = [
   // MetaMask（直接接続）
-  MetaMaskWallet,
+  {
+    id: "metamask",
+    meta: {
+      name: "MetaMask",
+      iconURL: "ipfs://QmZZHcw7zcXursywnLDAyY6Hfxzqop5GKgwoq8NB9jjrkN/metamask.svg",
+    },
+    create: (options?: any) => new MetaMaskWallet(options),
+  },
 
   // Coinbase Wallet
-  CoinbaseWallet,
+  {
+    id: "coinbase",
+    meta: {
+      name: "Coinbase Wallet",
+      iconURL: "ipfs://QmcJBHopbwfJcLqJpX2xEufSS84aLbF7bHavYhaXUcrLaH/coinbase.svg",
+    },
+    create: (options?: any) => new CoinbaseWallet(options),
+  },
 
   // Embedded Wallet
-  EmbeddedWallet,
+  {
+    id: "embedded",
+    meta: {
+      name: "Email Wallet",
+      iconURL: "ipfs://QmeAJVqn17aDNQhjEU3kcWVZCFBrfta8LzaDGkS8Egdiyk/embedded.svg",
+    },
+    create: (options?: any) => new EmbeddedWallet(options),
+  },
 ];
 
 /**
