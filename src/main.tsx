@@ -11,6 +11,8 @@ import AdminDashboardMobile from "./admin/DashboardMobile";
 import { DownloadPage } from "./pages/DownloadPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
+import { UserProfilePage } from "./pages/UserProfile";
+import { SuperAdminPage } from "./pages/SuperAdmin";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { TenantProvider } from "./admin/contexts/TenantContext";
 import { supportedWallets } from "./config/wallets";
@@ -74,6 +76,8 @@ const wantsAdminMobile = path.includes("/admin-mobile");
 const wantsDownload = path.includes("/download") || uiParam === "download";
 const wantsPurchases = path.includes("/my-purchases") || uiParam === "purchases";
 const wantsClaimHistory = path.includes("/claim-history") || uiParam === "claim-history";
+const wantsUserProfile = path.includes("/user/") || uiParam === "user";
+const wantsSuperAdmin = path.includes("/super-admin") || uiParam === "super-admin";
 
 // Admin アクセス時のデバイス判定による自動リダイレクト
 if (wantsAdmin && !wantsAdminMobile && getDeviceType() === 'mobile') {
@@ -120,6 +124,10 @@ root.render(
         <MyPurchasesPage />
       ) : wantsClaimHistory ? (
         <ClaimHistory />
+      ) : wantsUserProfile ? (
+        <UserProfilePage />
+      ) : wantsSuperAdmin ? (
+        <SuperAdminPage />
       ) : wantsAdminMobile ? (
         <TenantProvider>
           <AdminDashboardMobile />
