@@ -1343,6 +1343,16 @@ export default function AdminDashboard() {
   };
 
   // ---- Tip UI管理ページ ----
+  // ランク情報の定義
+  type RankInfo = { label: string; icon: string };
+  const RANK_LABELS: Record<number, RankInfo> = {
+    0: { label: "Unranked", icon: "—" },
+    1: { label: "Seed Supporter", icon: "🌱" },
+    2: { label: "Grow Supporter", icon: "🌿" },
+    3: { label: "Bloom Supporter", icon: "🌸" },
+    4: { label: "Mythic Patron", icon: "🌈" },
+  };
+
   const TipUIManagementPage = () => {
     const [tipBgImage, setTipBgImage] = useState<string>(() => {
       return localStorage.getItem('tip-bg-image') || '';
@@ -1350,6 +1360,12 @@ export default function AdminDashboard() {
 
     // 以前の背景画像URLを追跡（古い画像削除用）
     const previousTipBgRef = useRef<string>(localStorage.getItem('tip-bg-image') || '');
+
+    // ランク設定用のstate
+    const [maxRankLevel, setMaxRankLevel] = useState<number>(4);
+    const [isLoadingRankConfig, setIsLoadingRankConfig] = useState(false);
+    const [rankThresholdInputs, setRankThresholdInputs] = useState<Record<number, string>>({});
+    const [rankURIInputs, setRankURIInputs] = useState<Record<number, string>>({});
 
     const handleSaveTipBg = () => {
       if (tipBgImage) {
@@ -1359,6 +1375,110 @@ export default function AdminDashboard() {
       }
       alert('✅ TIP UI背景画像の設定を保存しました！');
     };
+
+    // ランク設定をロード
+    const loadRankConfig = async () => {
+      if (!contract) return;
+      setIsLoadingRankConfig(true);
+      try {
+        const maxLevel = await contract.call("maxRankLevel");
+        setMaxRankLevel(Number(maxLevel));
+
+        const thresholdInputs: Record<number, string> = {};
+        for (let i = 1; i <= Number(maxLevel); i++) {
+          try {
+            const threshold = await contract.call("rankThresholds", [i]);
+            thresholdInputs[i] = ethersUtils.formatUnits(BigInt(threshold).toString(), TOKEN.DECIMALS);
+          } catch {
+            thresholdInputs[i] = "";
+          }
+        }
+        setRankThresholdInputs(thresholdInputs);
+
+        const uriInputs: Record<number, string> = {};
+        for (let i = 1; i <= Number(maxLevel); i++) {
+          try {
+            const uri = await contract.call("rankNFTUris", [i]);
+            uriInputs[i] = uri || "";
+          } catch {
+            uriInputs[i] = "";
+          }
+        }
+        setRankURIInputs(uriInputs);
+      } catch (error) {
+        console.error("ランク設定の読み込みエラー:", error);
+      } finally {
+        setIsLoadingRankConfig(false);
+      }
+    };
+
+    // ランク数変更
+    const handleSetMaxRankLevel = async () => {
+      if (!contract) return;
+      const newLevel = prompt("新しいランク数を入力してください（1-20）:", maxRankLevel.toString());
+      if (!newLevel) return;
+
+      const level = parseInt(newLevel);
+      if (isNaN(level) || level < 1 || level > 20) {
+        alert("❌ 1〜20の範囲で入力してください");
+        return;
+      }
+
+      try {
+        const tx = await contract.call("setMaxRankLevel", [level]);
+        await tx.wait?.();
+        setMaxRankLevel(level);
+        alert(`✅ ランク数を ${level} に変更しました`);
+        await loadRankConfig();
+      } catch (error: any) {
+        console.error("setMaxRankLevel error:", error);
+        alert(`❌ ランク数の変更に失敗しました\n${error?.message || error}`);
+      }
+    };
+
+    // ランク閾値設定
+    const handleSetRankThreshold = async (rank: number) => {
+      if (!contract) return;
+      const value = rankThresholdInputs[rank];
+      if (!value) {
+        alert("❌ 閾値を入力してください");
+        return;
+      }
+
+      try {
+        const amountWei = ethersUtils.parseUnits(value, TOKEN.DECIMALS);
+        const tx = await contract.call("setRankThreshold", [rank, amountWei.toString()]);
+        await tx.wait?.();
+        alert(`✅ ランク${rank}の閾値を ${value} ${TOKEN.SYMBOL} に設定しました`);
+      } catch (error: any) {
+        console.error("setRankThreshold error:", error);
+        alert(`❌ 閾値の設定に失敗しました\n${error?.message || error}`);
+      }
+    };
+
+    // NFT URI設定
+    const handleSetNFTRankUri = async (rank: number) => {
+      if (!contract) return;
+      const uri = rankURIInputs[rank];
+      if (!uri) {
+        alert("❌ URIを入力してください");
+        return;
+      }
+
+      try {
+        const tx = await contract.call("setNFTRankUri", [rank, uri]);
+        await tx.wait?.();
+        alert(`✅ ランク${rank}のNFT URIを設定しました`);
+      } catch (error: any) {
+        console.error("setNFTRankUri error:", error);
+        alert(`❌ NFT URIの設定に失敗しました\n${error?.message || error}`);
+      }
+    };
+
+    // 初回ロード
+    useEffect(() => {
+      loadRankConfig();
+    }, [contract]);
 
     return (
       <div style={{
@@ -1463,6 +1583,172 @@ export default function AdminDashboard() {
           >
             💾 保存
           </button>
+        </div>
+
+        {/* ランク設定セクション */}
+        <div style={{ marginTop: 32, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
+            🏆 ランク設定
+          </h3>
+
+          {isLoadingRankConfig ? (
+            <div style={{ textAlign: "center", padding: 40 }}>
+              <p style={{ margin: 0, fontSize: 16 }}>⏳ 読み込み中...</p>
+            </div>
+          ) : (
+            <>
+              {/* ランク数設定 */}
+              <div style={{
+                marginBottom: 24,
+                padding: 16,
+                background: "rgba(59, 130, 246, 0.1)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                borderRadius: 8
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h4 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 600 }}>
+                      ランク数設定
+                    </h4>
+                    <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>
+                      現在のランク数: <strong style={{ color: "#3B82F6" }}>{maxRankLevel}</strong> 段階
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSetMaxRankLevel}
+                    style={{
+                      padding: "8px 16px",
+                      background: "#3B82F6",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer"
+                    }}
+                  >
+                    変更
+                  </button>
+                </div>
+              </div>
+
+              {/* 各ランクの設定 */}
+              <div style={{ display: "grid", gap: 16 }}>
+                {Array.from({ length: maxRankLevel }, (_, i) => i + 1).map((rank) => (
+                  <div
+                    key={rank}
+                    style={{
+                      padding: 16,
+                      background: "rgba(255,255,255,.03)",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,.1)"
+                    }}
+                  >
+                    <h5 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#10B981" }}>
+                      {RANK_LABELS[rank]?.icon || "⭐"} ランク {rank}: {RANK_LABELS[rank]?.label || `Rank ${rank}`}
+                    </h5>
+
+                    {/* 閾値設定 */}
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, opacity: 0.8 }}>
+                        必要累積TIP額 ({TOKEN.SYMBOL})
+                      </label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          type="text"
+                          value={rankThresholdInputs[rank] || ""}
+                          onChange={(e) => setRankThresholdInputs({ ...rankThresholdInputs, [rank]: e.target.value })}
+                          placeholder="例: 100"
+                          style={{
+                            flex: 1,
+                            padding: "8px 12px",
+                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            borderRadius: 6,
+                            color: "#fff",
+                            fontSize: 13
+                          }}
+                        />
+                        <button
+                          onClick={() => handleSetRankThreshold(rank)}
+                          style={{
+                            padding: "8px 16px",
+                            background: "#10B981",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          設定
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* NFT URI設定 */}
+                    <div>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, opacity: 0.8 }}>
+                        NFT メタデータ URI
+                      </label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          type="text"
+                          value={rankURIInputs[rank] || ""}
+                          onChange={(e) => setRankURIInputs({ ...rankURIInputs, [rank]: e.target.value })}
+                          placeholder="例: ipfs://..."
+                          style={{
+                            flex: 1,
+                            padding: "8px 12px",
+                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            borderRadius: 6,
+                            color: "#fff",
+                            fontSize: 13
+                          }}
+                        />
+                        <button
+                          onClick={() => handleSetNFTRankUri(rank)}
+                          style={{
+                            padding: "8px 16px",
+                            background: "#8B5CF6",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer"
+                          }}
+                        >
+                          設定
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ヒント */}
+              <div style={{
+                marginTop: 16,
+                padding: 12,
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                borderRadius: 8
+              }}>
+                <h4 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 600, color: "#10B981" }}>
+                  ℹ️ 設定のヒント
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, lineHeight: 1.6, opacity: 0.9 }}>
+                  <li>各ランクの閾値は累積TIP額で判定されます</li>
+                  <li>ランク数は1〜20まで設定可能です</li>
+                  <li>NFT URIはIPFS、Arweave、HTTPSなどが使用できます</li>
+                  <li>設定後、ユーザーのランクは自動的に更新されます</li>
+                </ul>
+              </div>
+            </>
+          )}
         </div>
 
         {/* TIP UI URL表示セクション */}
