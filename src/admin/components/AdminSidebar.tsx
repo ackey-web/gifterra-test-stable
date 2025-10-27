@@ -37,7 +37,7 @@ const MENU_GROUPS: MenuGroup[] = [
     icon: "🔥",
     items: [
       { id: "dashboard", label: "ダッシュボード", icon: "📊", color: "#16a34a" },
-      { id: "tip-ui-management", label: "TIP UI管理", icon: "💝", color: "#dc2626" },
+      { id: "tip-ui-management", label: "TIP 管理", icon: "💝", color: "#dc2626" },
       { id: "reward-ui-management", label: "REWARD管理", icon: "🏆", color: "#7c3aed" },
     ]
   },

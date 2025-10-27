@@ -1353,7 +1353,10 @@ export default function AdminDashboard() {
     4: { label: "Mythic Patron", icon: "🌈" },
   };
 
+  type TipTabType = 'design' | 'ranks';
+
   const TipUIManagementPage = () => {
+    const [activeTab, setActiveTab] = useState<TipTabType>('design');
     const [tipBgImage, setTipBgImage] = useState<string>(() => {
       return localStorage.getItem('tip-bg-image') || '';
     });
@@ -1482,17 +1485,136 @@ export default function AdminDashboard() {
 
     return (
       <div style={{
-        width: "min(800px, 96vw)",
+        width: "min(1200px, 96vw)",
         margin: "20px auto",
         background: "rgba(255,255,255,.04)",
         borderRadius: 12,
-        padding: 24,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "calc(100vh - 200px)"
       }}>
-        <h2 style={{ margin: "0 0 20px 0", fontSize: 24, fontWeight: 800 }}>
-          💸 TIP UI 総合管理
-        </h2>
+        {/* ヘッダー：タイトルとURL */}
+        <div style={{
+          padding: "20px 24px",
+          borderBottom: "1px solid rgba(255,255,255,.1)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 16
+        }}>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#fff" }}>
+            💸 TIP 総合管理
+          </h2>
 
-        {/* 背景画像設定セクション */}
+          {/* TIP UI URL（右上に配置） */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 500 }}>
+            <input
+              type="text"
+              value={typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip'}
+              readOnly
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.9)',
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                borderRadius: 6,
+                fontFamily: 'monospace',
+                outline: 'none',
+                minWidth: 200
+              }}
+            />
+            <button
+              onClick={() => {
+                const url = typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip';
+                navigator.clipboard.writeText(url);
+                const btn = document.activeElement as HTMLButtonElement;
+                if (btn) {
+                  const originalText = btn.textContent;
+                  btn.textContent = '✓';
+                  setTimeout(() => {
+                    btn.textContent = originalText;
+                  }, 1500);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#fff',
+                background: 'rgba(220, 38, 38, 0.8)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              📋 コピー
+            </button>
+          </div>
+        </div>
+
+        {/* タブナビゲーション */}
+        <div
+          style={{
+            padding: '0 20px',
+            borderBottom: '1px solid rgba(255,255,255,.1)',
+            display: 'flex',
+            gap: 4
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('design')}
+            role="tab"
+            aria-selected={activeTab === 'design'}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'design' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+              color: activeTab === 'design' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+              border: 'none',
+              borderBottom: activeTab === 'design' ? '2px solid #3B82F6' : '2px solid transparent',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            🎨 UI Design
+          </button>
+          <button
+            onClick={() => setActiveTab('ranks')}
+            role="tab"
+            aria-selected={activeTab === 'ranks'}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'ranks' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+              color: activeTab === 'ranks' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+              border: 'none',
+              borderBottom: activeTab === 'ranks' ? '2px solid #3B82F6' : '2px solid transparent',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            🏆 Rank Settings
+          </button>
+        </div>
+
+        {/* タブコンテンツ */}
+        <div style={{
+          padding: 24,
+          color: "#fff",
+          overflowY: "auto",
+          flex: 1
+        }}>
+          {activeTab === 'design' && (
+            <div>
+              {/* 背景画像設定セクション */}
         <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 TIP UI 背景画像設定</h3>
           <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
@@ -1584,7 +1706,11 @@ export default function AdminDashboard() {
             💾 保存
           </button>
         </div>
+            </div>
+          )}
 
+          {activeTab === 'ranks' && (
+            <div>
         {/* ランク設定セクション */}
         <div style={{ marginTop: 32, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
@@ -1750,60 +1876,8 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
-
-        {/* TIP UI URL表示セクション */}
-        <div style={{ marginTop: 32, padding: 16, background: "rgba(220, 38, 38, 0.1)", border: "1px solid rgba(220, 38, 38, 0.3)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🔗 TIP UI ページURL</h3>
-          <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 12 }}>
-            このURLをユーザーに共有してください
-          </div>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="text"
-              value={typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip'}
-              readOnly
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.9)',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(220, 38, 38, 0.4)',
-                borderRadius: 6,
-                fontFamily: 'monospace',
-                outline: 'none'
-              }}
-            />
-            <button
-              onClick={() => {
-                const url = typeof window !== 'undefined' ? `${window.location.origin}/tip` : '/tip';
-                navigator.clipboard.writeText(url);
-                const btn = document.activeElement as HTMLButtonElement;
-                if (btn) {
-                  const originalText = btn.textContent;
-                  btn.textContent = '✓ コピー完了';
-                  setTimeout(() => {
-                    btn.textContent = originalText;
-                  }, 1500);
-                }
-              }}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#fff',
-                background: 'rgba(220, 38, 38, 0.8)',
-                border: 'none',
-                borderRadius: 6,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              📋 コピー
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
