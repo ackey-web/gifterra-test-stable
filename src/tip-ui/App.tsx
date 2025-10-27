@@ -49,7 +49,7 @@ function getEventArgsFromReceipt(receipt: any, eventName: string, contractAddres
 
 /* ---------------- ランク表示など ---------------- */
 type RankInfo = { label: string; icon: string };
-const RANK_LABELS: Record<number, RankInfo> = {
+const DEFAULT_rankLabels: Record<number, RankInfo> = {
   0: { label: "Unranked", icon: "—" },
   1: { label: "Seed Supporter", icon: "🌱" },
   2: { label: "Grow Supporter", icon: "🌿" },
@@ -99,6 +99,19 @@ export default function TipApp() {
   // 背景画像をlocalStorageから取得（管理画面で設定可能）
   const [customBgImage] = useState<string>(() => {
     return localStorage.getItem('tip-bg-image') || '/ads/ui-wallpeaper.png';
+  });
+
+  // ランク表示名をlocalStorageから取得（管理画面で設定可能）
+  const [rankLabels] = useState<Record<number, RankInfo>>(() => {
+    try {
+      const saved = localStorage.getItem('tip-rank-labels');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load rank labels:', error);
+    }
+    return DEFAULT_rankLabels;
   });
 
   // 管理者モード（オーナー確認のみ保持）
@@ -329,7 +342,7 @@ export default function TipApp() {
       setShowRankUpEffect(true);
       
       // メインのランクアップメッセージ
-      setRankUpMsg(`${RANK_LABELS[currentLevel]?.icon} ${RANK_LABELS[currentLevel]?.label} にランクアップ！ 🎉`);
+      setRankUpMsg(`${rankLabels[currentLevel]?.icon} ${rankLabels[currentLevel]?.label} にランクアップ！ 🎉`);
       
       // SBT処理の詳細案内
       const sbtMessages = [
@@ -1191,7 +1204,7 @@ export default function TipApp() {
             <div>
               <div style={{ fontSize: 12, opacity: 0.8 }}>💎 SBTランク</div>
               <div style={{ fontSize: 18, fontWeight: 800 }}>
-                {RANK_LABELS[currentLevel]?.icon} {RANK_LABELS[currentLevel]?.label ?? "Unranked"}
+                {rankLabels[currentLevel]?.icon} {rankLabels[currentLevel]?.label ?? "Unranked"}
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -1218,7 +1231,7 @@ export default function TipApp() {
 
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.85, flexWrap: "wrap", gap: 8 }}>
             <div>
-              次のランク: <strong>{RANK_LABELS[nextLevel]?.icon} {RANK_LABELS[nextLevel]?.label ?? "—"}</strong>
+              次のランク: <strong>{rankLabels[nextLevel]?.icon} {rankLabels[nextLevel]?.label ?? "—"}</strong>
             </div>
             <div>
               あと <strong>{fmtUnits(nextThreshold > totalTips ? nextThreshold - totalTips : 0n, selectedTokenConfig.decimals)} {selectedTokenConfig.symbol}</strong>

@@ -1345,7 +1345,9 @@ export default function AdminDashboard() {
   // ---- Tip UI管理ページ ----
   // ランク情報の定義
   type RankInfo = { label: string; icon: string };
-  const RANK_LABELS: Record<number, RankInfo> = {
+
+  // デフォルトのランクラベル
+  const DEFAULT_RANK_LABELS: Record<number, RankInfo> = {
     0: { label: "Unranked", icon: "—" },
     1: { label: "Seed Supporter", icon: "🌱" },
     2: { label: "Grow Supporter", icon: "🌿" },
@@ -1356,7 +1358,7 @@ export default function AdminDashboard() {
   type TipTabType = 'design' | 'ranks';
 
   const TipUIManagementPage = () => {
-    const [activeTab, setActiveTab] = useState<TipTabType>('design');
+    const [activeTab, setActiveTab] = useState<TipTabType>('ranks');
     const [tipBgImage, setTipBgImage] = useState<string>(() => {
       return localStorage.getItem('tip-bg-image') || '';
     });
@@ -1370,13 +1372,69 @@ export default function AdminDashboard() {
     const [rankThresholdInputs, setRankThresholdInputs] = useState<Record<number, string>>({});
     const [rankURIInputs, setRankURIInputs] = useState<Record<number, string>>({});
 
-    const handleSaveTipBg = () => {
+    // ランクラベルのstate（UI表示用）
+    const [rankLabels, setRankLabels] = useState<Record<number, RankInfo>>(() => {
+      try {
+        const saved = localStorage.getItem('tip-rank-labels');
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Failed to load rank labels:', error);
+      }
+      return DEFAULT_RANK_LABELS;
+    });
+
+    // TIP背景画像アップロードハンドラー
+    const handleTipBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        // 新しい背景画像をアップロード
+        const imageUrl = await uploadImage(file, 'gh-public');
+
+        if (imageUrl) {
+          // 古い背景画像を削除（差し替えの場合）
+          const previousUrl = previousTipBgRef.current;
+          if (previousUrl && previousUrl !== imageUrl) {
+            await deleteFileFromUrl(previousUrl);
+          }
+
+          // 新しい背景画像を設定
+          setTipBgImage(imageUrl);
+          previousTipBgRef.current = imageUrl;
+          alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
+        }
+      } catch (error: any) {
+        console.error('❌ 背景画像アップロードエラー:', error);
+        alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}\n\n詳細はコンソールを確認してください。`);
+      } finally {
+        // ファイル入力をリセット
+        e.target.value = '';
+      }
+    };
+
+    const handleSaveDesignSettings = () => {
       if (tipBgImage) {
         localStorage.setItem('tip-bg-image', tipBgImage);
       } else {
         localStorage.removeItem('tip-bg-image');
       }
-      alert('✅ TIP UI背景画像の設定を保存しました！');
+      alert('✅ デザイン設定を保存しました！');
+    };
+
+    // ランク表示名を保存
+    const handleSaveRankLabels = () => {
+      try {
+        localStorage.setItem('tip-rank-labels', JSON.stringify(rankLabels));
+        alert('✅ ランク表示名を保存しました！TIP UIに反映されます。');
+      } catch (error) {
+        console.error('Failed to save rank labels:', error);
+        alert('❌ 保存に失敗しました');
+      }
     };
 
     // ランク設定をロード
@@ -1568,24 +1626,6 @@ export default function AdminDashboard() {
           }}
         >
           <button
-            onClick={() => setActiveTab('design')}
-            role="tab"
-            aria-selected={activeTab === 'design'}
-            style={{
-              padding: '12px 24px',
-              background: activeTab === 'design' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-              color: activeTab === 'design' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
-              border: 'none',
-              borderBottom: activeTab === 'design' ? '2px solid #3B82F6' : '2px solid transparent',
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            🎨 UI Design
-          </button>
-          <button
             onClick={() => setActiveTab('ranks')}
             role="tab"
             aria-selected={activeTab === 'ranks'}
@@ -1603,6 +1643,24 @@ export default function AdminDashboard() {
           >
             🏆 Rank Settings
           </button>
+          <button
+            onClick={() => setActiveTab('design')}
+            role="tab"
+            aria-selected={activeTab === 'design'}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'design' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+              color: activeTab === 'design' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+              border: 'none',
+              borderBottom: activeTab === 'design' ? '2px solid #3B82F6' : '2px solid transparent',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            🎨 Design Settings
+          </button>
         </div>
 
         {/* タブコンテンツ */}
@@ -1615,97 +1673,63 @@ export default function AdminDashboard() {
           {activeTab === 'design' && (
             <div>
               {/* 背景画像設定セクション */}
-        <div style={{ marginBottom: 20, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
-          <h3 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 TIP UI 背景画像設定</h3>
-          <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
-            <li>TIP UI の背景画像を設定できます</li>
-          </ul>
+              <div style={{ marginTop: 32, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+                <h4 style={{ margin: "0 0 10px 0", fontSize: 16 }}>🎨 TIP UI 背景画像設定</h4>
+                <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, opacity: 0.8, fontSize: 14 }}>
+                  <li>TIP UI の背景画像を設定できます</li>
+                </ul>
 
-          <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 12 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleTipBgImageUpload}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "rgba(255,255,255,.1)",
+                      border: "1px solid rgba(255,255,255,.2)",
+                      borderRadius: 4,
+                      color: "#fff",
+                      fontSize: 14,
+                      cursor: "pointer"
+                    }}
+                  />
+                </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              id="tip-bg-upload"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  try {
-                    // 新しい背景画像をアップロード
-                    const imageUrl = await uploadImage(file, 'gh-public');
+                {/* プレビュー */}
+                {tipBgImage && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>プレビュー:</div>
+                    <div style={{
+                      width: "100%",
+                      height: 200,
+                      background: `url(${tipBgImage}) center/cover`,
+                      borderRadius: 8,
+                      border: "2px solid rgba(255,255,255,.2)"
+                    }} />
+                  </div>
+                )}
+              </div>
 
-                    if (imageUrl) {
-                      // 古い背景画像を削除（差し替えの場合）
-                      const previousUrl = previousTipBgRef.current;
-                      if (previousUrl && previousUrl !== imageUrl) {
-                        await deleteFileFromUrl(previousUrl);
-                      }
-
-                      // 新しい背景画像を設定
-                      setTipBgImage(imageUrl);
-                      previousTipBgRef.current = imageUrl;
-                      alert('✅ 背景画像のアップロードが完了しました！\n保存ボタンを押して設定を保存してください。');
-                    }
-                  } catch (error: any) {
-                    console.error('❌ TIP背景画像アップロードエラー:', error);
-                    alert(`❌ 背景画像のアップロードに失敗しました。\n\nエラー: ${error?.message || '不明なエラー'}\n\n詳細はコンソールを確認してください。`);
-                  } finally {
-                    // ファイル入力をリセット
-                    e.target.value = '';
-                  }
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => document.getElementById('tip-bg-upload')?.click()}
-              style={{
-                padding: "10px 16px",
-                background: "#dc2626",
-                color: "#fff",
-                border: "none",
-                borderRadius: 4,
-                fontSize: 14,
-                cursor: "pointer",
-                width: "100%"
-              }}
-            >
-              📁 ファイルを選択
-            </button>
-          </div>
-
-          {/* プレビュー */}
-          {tipBgImage && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 8 }}>プレビュー:</div>
-              <div style={{
-                width: "100%",
-                height: 200,
-                background: `url(${tipBgImage}) center/cover`,
-                borderRadius: 8,
-                border: "2px solid rgba(255,255,255,.2)"
-              }} />
-            </div>
-          )}
-
-          <button
-            onClick={handleSaveTipBg}
-            style={{
-              background: "#dc2626",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 800,
-              cursor: "pointer",
-              marginTop: 16,
-              width: "100%"
-            }}
-          >
-            💾 保存
-          </button>
-        </div>
+              {/* 保存ボタン（Designタブのみ） */}
+              <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={handleSaveDesignSettings}
+                  style={{
+                    background: "#0ea5e9",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "12px 24px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    fontSize: 16
+                  }}
+                >
+                  💾 デザイン設定を保存
+                </button>
+              </div>
             </div>
           )}
 
@@ -1771,8 +1795,64 @@ export default function AdminDashboard() {
                     }}
                   >
                     <h5 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#10B981" }}>
-                      {RANK_LABELS[rank]?.icon || "⭐"} ランク {rank}: {RANK_LABELS[rank]?.label || `Rank ${rank}`}
+                      {rankLabels[rank]?.icon || "⭐"} ランク {rank}: {rankLabels[rank]?.label || `Rank ${rank}`}
                     </h5>
+
+                    {/* ランク表示名設定（UI用） */}
+                    <div style={{ marginBottom: 12, padding: 12, background: "rgba(234, 88, 12, 0.1)", border: "1px solid rgba(234, 88, 12, 0.3)", borderRadius: 6 }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.8, color: "#ea580c" }}>
+                        📝 UI表示名設定（コントラクトには影響しません）
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 3fr", gap: 8, marginBottom: 8 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, marginBottom: 4, opacity: 0.7 }}>
+                            アイコン
+                          </label>
+                          <input
+                            type="text"
+                            value={rankLabels[rank]?.icon || ""}
+                            onChange={(e) => setRankLabels({
+                              ...rankLabels,
+                              [rank]: { ...rankLabels[rank], icon: e.target.value }
+                            })}
+                            placeholder="🌱"
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.2)",
+                              borderRadius: 4,
+                              color: "#fff",
+                              fontSize: 13,
+                              textAlign: "center"
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 11, marginBottom: 4, opacity: 0.7 }}>
+                            ラベル
+                          </label>
+                          <input
+                            type="text"
+                            value={rankLabels[rank]?.label || ""}
+                            onChange={(e) => setRankLabels({
+                              ...rankLabels,
+                              [rank]: { ...rankLabels[rank], label: e.target.value }
+                            })}
+                            placeholder="Seed Supporter"
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.2)",
+                              borderRadius: 4,
+                              color: "#fff",
+                              fontSize: 13
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
                     {/* 閾値設定 */}
                     <div style={{ marginBottom: 12 }}>
@@ -1855,6 +1935,43 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
+              {/* ランク表示名保存ボタン */}
+              <div style={{
+                marginTop: 16,
+                padding: 16,
+                background: "rgba(234, 88, 12, 0.1)",
+                border: "1px solid rgba(234, 88, 12, 0.3)",
+                borderRadius: 8,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <div>
+                  <h4 style={{ margin: "0 0 4px 0", fontSize: 14, fontWeight: 600, color: "#ea580c" }}>
+                    📝 ランク表示名の保存
+                  </h4>
+                  <p style={{ margin: 0, fontSize: 12, opacity: 0.8 }}>
+                    上記で設定したランク表示名（アイコン・ラベル）をTIP UIに反映します
+                  </p>
+                </div>
+                <button
+                  onClick={handleSaveRankLabels}
+                  style={{
+                    padding: "10px 20px",
+                    background: "#ea580c",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  💾 保存
+                </button>
+              </div>
+
               {/* ヒント */}
               <div style={{
                 marginTop: 16,
@@ -1871,6 +1988,7 @@ export default function AdminDashboard() {
                   <li>ランク数は1〜20まで設定可能です</li>
                   <li>NFT URIはIPFS、Arweave、HTTPSなどが使用できます</li>
                   <li>設定後、ユーザーのランクは自動的に更新されます</li>
+                  <li><strong>ランク表示名</strong>はUI上の見た目のみに影響し、コントラクトには影響しません</li>
                 </ul>
               </div>
             </>
