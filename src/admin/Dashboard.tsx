@@ -1358,7 +1358,10 @@ export default function AdminDashboard() {
   type TipTabType = 'design' | 'ranks';
 
   const TipUIManagementPage = () => {
-    const [activeTab, setActiveTab] = useState<TipTabType>('ranks');
+    const [activeTab, setActiveTab] = useState<TipTabType>(() => {
+      const saved = localStorage.getItem('tip-active-tab');
+      return (saved === 'design' || saved === 'ranks') ? saved as TipTabType : 'ranks';
+    });
     const [tipBgImage, setTipBgImage] = useState<string>(() => {
       return localStorage.getItem('tip-bg-image') || '';
     });
@@ -1626,7 +1629,10 @@ export default function AdminDashboard() {
           }}
         >
           <button
-            onClick={() => setActiveTab('ranks')}
+            onClick={() => {
+              setActiveTab('ranks');
+              localStorage.setItem('tip-active-tab', 'ranks');
+            }}
             role="tab"
             aria-selected={activeTab === 'ranks'}
             style={{
@@ -1644,7 +1650,10 @@ export default function AdminDashboard() {
             🏆 Rank Settings
           </button>
           <button
-            onClick={() => setActiveTab('design')}
+            onClick={() => {
+              setActiveTab('design');
+              localStorage.setItem('tip-active-tab', 'design');
+            }}
             role="tab"
             aria-selected={activeTab === 'design'}
             style={{
