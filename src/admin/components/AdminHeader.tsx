@@ -139,6 +139,8 @@ export default function AdminHeader({
         <ConnectWallet
           theme="dark"
           btnTitle="Connect"
+          modalTitle="管理者ダッシュボード接続"
+          modalTitleIconUrl=""
           style={{
             fontSize: 13,
             padding: "8px 16px",
