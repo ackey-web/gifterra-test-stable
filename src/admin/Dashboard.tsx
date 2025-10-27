@@ -26,7 +26,10 @@ import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
 import RevenueManagement from "./revenue/RevenueManagement";
-import { useTenant, RequireOwner } from "./contexts/TenantContext";
+import { useTenant } from "./contexts/TenantContext";
+import AdminLayout from "./components/AdminLayout";
+import type { PageType } from "./components/AdminSidebar";
+import FlagNFTManagementPage from "./components/FlagNFTManagementPage";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -38,10 +41,11 @@ type TipItem = {
   txHash?: string;
 };
 
-type PageType = "dashboard" | "revenue-management" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "diagnostics" | "tenant-management";
+// PageType は AdminSidebar.tsx から import
 
 // 🚀 将来のマルチテナント実装準備
 // - tenant-management: テナント管理（スーパーアドミン専用）
+// - flag-nft-management: フラグNFT管理
 // - plan-management: プラン管理（スーパーアドミン専用）
 // - user-management: ユーザー管理（テナント管理者用）
 
@@ -1570,275 +1574,23 @@ export default function AdminDashboard() {
 
   /* ---------- 画面 ---------- */
 
+  const handleEmergencyToggle = () => {
+    if (emergencyStop) {
+      setEmergencyStop(false);
+      setEmergencyFlag(false);
+    } else {
+      setEmergencyStop(true);
+      setEmergencyFlag(true);
+    }
+  };
+
   return (
-    <RequireOwner>
-      <main
-      style={{
-        minHeight: "100vh",
-        background: "#0b1620",
-        color: "#fff",
-        padding: 16,
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <AdminLayout
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+      emergencyStop={emergencyStop}
+      onEmergencyToggle={handleEmergencyToggle}
     >
-      {/* 最上部ヘッダー */}
-      <header
-        style={{
-          width: "min(1120px, 96vw)",
-          margin: "0 auto",
-          padding: "16px 0 24px 0",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 12,
-          marginBottom: 12
-        }}>
-          <img src="/gifterra-logo.png" alt="GIFTERRA" style={{ height: 32 }} />
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-            GIFTERRA admin : Dashboard
-          </h1>
-        </div>
-
-        {/* テナント情報とオーナー権限表示 */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-          flexWrap: "wrap",
-          fontSize: 13
-        }}>
-          {/* 開発モード警告 */}
-          {devMode && isDevSuperAdmin && (
-            <div style={{
-              padding: "6px 12px",
-              background: "rgba(245, 158, 11, 0.2)",
-              border: "2px solid rgba(245, 158, 11, 0.5)",
-              borderRadius: 6,
-              fontWeight: 700,
-              animation: "pulse 2s ease-in-out infinite"
-            }}>
-              🔧 DEV MODE: Super Admin Access
-            </div>
-          )}
-
-          <div style={{
-            padding: "6px 12px",
-            background: "rgba(59, 130, 246, 0.1)",
-            border: "1px solid rgba(59, 130, 246, 0.3)",
-            borderRadius: 6
-          }}>
-            <span style={{ opacity: 0.7 }}>テナント: </span>
-            <strong>{tenant.name}</strong>
-          </div>
-
-          <div style={{
-            padding: "6px 12px",
-            background: isOwner ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-            border: `1px solid ${isOwner ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
-            borderRadius: 6
-          }}>
-            <span style={{ opacity: 0.7 }}>権限: </span>
-            <strong>
-              {isDevSuperAdmin ? "🔧 デバッグ管理者" : isOwner ? "✅ オーナー" : "❌ 非オーナー"}
-            </strong>
-          </div>
-
-          {isOwner && (
-            <div style={{
-              padding: "6px 12px",
-              background: "rgba(139, 92, 246, 0.1)",
-              border: "1px solid rgba(139, 92, 246, 0.3)",
-              borderRadius: 6,
-              fontSize: 11
-            }}>
-              <span style={{ opacity: 0.7 }}>コントラクト権限: </span>
-              {ownerStatus.gifterra && <span title="Gifterra">🎁 </span>}
-              {ownerStatus.rewardEngine && <span title="RewardEngine">⚙️ </span>}
-              {ownerStatus.flagNFT && <span title="FlagNFT">🚩 </span>}
-              {ownerStatus.rewardToken && <span title="RewardToken">🪙 </span>}
-              {ownerStatus.tipManager && <span title="TipManager">💝 </span>}
-            </div>
-          )}
-        </div>
-
-        {/* 開発モード注意書き */}
-        {devMode && isDevSuperAdmin && (
-          <div style={{
-            marginTop: 12,
-            padding: "8px 16px",
-            background: "rgba(245, 158, 11, 0.1)",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            borderRadius: 6,
-            fontSize: 12,
-            textAlign: "center",
-            opacity: 0.8
-          }}>
-            ⚠️ 開発環境モード：全コントラクトへのフルアクセスが許可されています。本番環境では無効化されます。
-          </div>
-        )}
-      </header>
-
-      {/* ナビゲーションボタン */}
-      <nav
-        style={{
-          width: "min(1120px, 96vw)",
-          margin: "0 auto 24px",
-          display: "flex",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <button
-          onClick={() => setCurrentPage("dashboard")}
-          style={{
-            background: currentPage === "dashboard" ? "#16a34a" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          📊 ダッシュボード
-        </button>
-        <button
-          onClick={() => setCurrentPage("reward-ui-management")}
-          style={{
-            background: currentPage === "reward-ui-management" ? "#7c3aed" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          REWARD管理
-        </button>
-        <button
-          onClick={() => setCurrentPage("tip-ui-management")}
-          style={{
-            background: currentPage === "tip-ui-management" ? "#dc2626" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          TIP管理
-        </button>
-        <button
-          onClick={() => setCurrentPage("vending-management")}
-          style={{
-            background: currentPage === "vending-management" ? "#059669" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          🏪 GIFT HUB管理
-        </button>
-        <button
-          onClick={() => setCurrentPage("revenue-management")}
-          style={{
-            background: currentPage === "revenue-management" ? "#0891b2" : "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 16px",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: 14,
-          }}
-        >
-          💰 収益管理
-        </button>
-        {/* 🚀 将来のマルチテナント実装: スーパーアドミン専用ボタン */}
-        {/* {currentUser?.role === UserRole.SUPER_ADMIN && (
-          <button
-            onClick={() => setCurrentPage("tenant-management")}
-            style={{
-              background: currentPage === "tenant-management" ? "#7c2d12" : "#374151",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "8px 16px",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontSize: 14,
-            }}
-          >
-            🏢 テナント管理
-          </button>
-        )} */}
-      </nav>
-
-      {/* システム制御ボタン */}
-      <div
-        style={{
-          width: "min(1120px, 96vw)",
-          margin: "0 auto 16px",
-          display: "flex",
-          gap: 8,
-          justifyContent: "flex-end",
-        }}
-      >
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            background: "#0ea5e9",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontSize: 12,
-          }}
-        >
-          🔄 リロード
-        </button>
-        <button
-          onClick={() => {
-            if (emergencyStop) {
-              setEmergencyStop(false);
-              setEmergencyFlag(false);
-            } else {
-              setEmergencyStop(true);
-              setEmergencyFlag(true);
-            }
-          }}
-          style={{
-            background: emergencyStop ? "#16a34a" : "#dc2626",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontSize: 12,
-            minWidth: 100,
-          }}
-        >
-          {emergencyStop ? "🟢 稼働再開" : "🛑 緊急停止"}
-        </button>
-      </div>
 
       {/* システム状況・ウォレット接続パネル */}
       <div style={{
@@ -1937,6 +1689,8 @@ export default function AdminDashboard() {
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (
         <VendingDashboardNew />
+      ) : currentPage === "flag-nft-management" ? (
+        <FlagNFTManagementPage />
       ) : currentPage === "diagnostics" ? (
         <DiagnosticsPage />
       ) : currentPage === "tenant-management" ? (
@@ -2634,28 +2388,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* フッター */}
-      <footer
-        style={{
-          textAlign: "center",
-          opacity: 0.6,
-          fontSize: 12,
-          marginTop: 8,
-        }}
-      >
-        Presented by <strong>METATRON.</strong>
-      </footer>
-
       {isLoading && <LoadingOverlay period={period} />}
-
-      {/* 開発モード用のCSS */}
-      {devMode && <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.02); }
-        }
-      `}</style>}
-    </main>
-    </RequireOwner>
+    </AdminLayout>
   );
 }
