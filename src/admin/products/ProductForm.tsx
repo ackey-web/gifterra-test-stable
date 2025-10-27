@@ -91,8 +91,6 @@ export function ProductForm({
 
     setDetectingRoyalty(true);
     try {
-      console.log('🔍 EIP-2981 Royalty検出中...', formData.nftAddress);
-
       // publicClientを作成
       const publicClient = createPublicClient({
         chain: polygonAmoy,
@@ -119,8 +117,6 @@ export function ProductForm({
 
       // PaymentSplit生成
       const split = createPaymentSplit(royaltyInfo, tenantOwnerAddress);
-
-      console.log('✅ EIP-2981検出成功:', split);
 
       handleChange('paymentSplit', split);
       setSplitMode('auto');

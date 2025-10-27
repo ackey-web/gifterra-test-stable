@@ -176,7 +176,6 @@ async function getLogsInChunks(
   const blockRange = toBlock - fromBlock;
 
   const numChunks = Math.ceil(blockRange / CHUNK_SIZE);
-  console.log(`📦 Fetching logs from ${numChunks} chunks (${CHUNK_SIZE} blocks each, total ${blockRange.toLocaleString()} blocks)...`);
 
   for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
     const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
@@ -191,11 +190,7 @@ async function getLogsInChunks(
     try {
       const logs = await rpc<any[]>("eth_getLogs", [logRequest]);
       allLogs.push(...logs);
-      if (logs.length > 0) {
-        console.log(`  ✓ Blocks ${start.toLocaleString()}-${end.toLocaleString()}: Found ${logs.length} logs`);
-      }
     } catch (error: any) {
-      console.warn(`  ⚠️ Blocks ${start.toLocaleString()}-${end.toLocaleString()}: ${error.message}`);
       // 1つのチャンクが失敗しても続行
     }
 
@@ -205,7 +200,6 @@ async function getLogsInChunks(
     }
   }
 
-  console.log(`✅ Total logs fetched: ${allLogs.length} from ${blockRange.toLocaleString()} blocks`);
   return allLogs;
 }
 

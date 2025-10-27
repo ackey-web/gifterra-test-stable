@@ -160,9 +160,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     // スーパーアドミンは全権限を持つ
     if (isDevSuperAdmin) {
-      console.log('🔧 SUPER ADMIN: Full Access Granted', address);
-      console.log('   Whitelist Enabled:', ADMIN_WHITELIST_ENABLED);
-      console.log('   Dev Mode:', DEV_MODE);
       setOwnerStatus({
         gifterra: true,
         rewardEngine: true,

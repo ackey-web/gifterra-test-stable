@@ -106,14 +106,6 @@ export async function getRoyaltyInfo(
         ? Number((royaltyAmount * 10000n) / salePrice)
         : 0;
 
-    console.log('📊 EIP-2981 Royalty Info:', {
-      nftAddress,
-      receiver,
-      royaltyAmount: royaltyAmount.toString(),
-      royaltyBasisPoints,
-      percentage: `${royaltyBasisPoints / 100}%`,
-    });
-
     return {
       receiver,
       royaltyAmount,

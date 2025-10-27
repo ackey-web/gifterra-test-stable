@@ -281,8 +281,12 @@ export function toTokenWei(amount: number, tokenId: TokenId): string {
 
 /**
  * デバッグ用：現在のトークン設定を表示
+ * 注: 現在はコンソールログを出力しません
  */
 export function debugTokenConfig() {
+  // デバッグ出力は削除されました
+  // 必要に応じて以下のコードを有効化してください
+  /*
   const network = getNetworkEnv();
   console.log('🪙 Token Configuration');
   console.log('Network:', network);
@@ -295,4 +299,5 @@ export function debugTokenConfig() {
       decimals: config.decimals,
     });
   });
+  */
 }

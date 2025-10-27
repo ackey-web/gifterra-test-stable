@@ -45,7 +45,57 @@ https://app.supabase.com にアクセスし、プロジェクトを選択
 このSQLで以下が追加されます：
 - `products.image_url` カラム（商品画像URL）
 
-#### 3-4. RLSポリシーの設定
+#### 3-4. サンプル商品の挿入（オプション）
+
+`supabase/migrations/003_insert_sample_product.sql` の内容をコピーして実行
+
+このSQLで以下が作成されます：
+- サンプル商品データ
+
+#### 3-5. トークン有効期限の更新
+
+`supabase/migrations/004_update_token_expiration.sql` の内容をコピーして実行
+
+このSQLで以下が更新されます：
+- ダウンロードトークンの有効期限設定
+
+#### 3-6. 購入履歴取得関数の修正
+
+`supabase/migrations/005_fix_get_user_purchases_case_insensitive.sql` の内容をコピーして実行
+
+このSQLで以下が修正されます：
+- `get_user_purchases` RPC関数（大文字小文字を区別しない検索）
+
+#### 3-7. ダウンロードトークンRLSポリシーの修正
+
+`supabase/migrations/006_fix_download_tokens_rls_policy.sql` の内容をコピーして実行
+
+このSQLで以下が修正されます：
+- `download_tokens` テーブルのRLSポリシー（匿名ユーザーアクセス許可）
+
+#### 3-8. 支払い分割機能の追加
+
+`supabase/migrations/007_add_payment_split_to_products.sql` の内容をコピーして実行
+
+このSQLで以下が追加されます：
+- `products.payment_split` カラム（PaymentSplitter統合）
+
+#### 3-9. 🎯 共通カタログ機能の追加（最新）
+
+`supabase/migrations/008_create_vending_machines_and_hub_products.sql` の内容をコピーして実行
+
+このSQLで以下が作成されます：
+- `vending_machines` テーブル（GIFT HUB本体の設定）
+- `hub_products` テーブル（HUBと商品の紐づけ）
+- `products.category` カラム（共通カタログフラグ）
+- `v_hub_products_full` ビュー（HUB商品一覧取得）
+- `add_product_to_hub()` RPC関数（商品追加）
+- `remove_product_from_hub()` RPC関数（商品削除）
+- RLSポリシー（vending_machines, hub_products）
+
+**注意**: このマイグレーションは共通カタログ管理機能に必須です。
+
+#### 3-10. RLSポリシーの設定
 
 `supabase/table-policies.sql` の内容をコピーして実行
 

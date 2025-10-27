@@ -68,7 +68,6 @@ export async function purchaseProduct(
 
     // 2. approve（必要な場合のみ）
     if (currentAllowance < priceWei) {
-      console.log('📝 Approving ERC20 token to PaymentSplitter...');
       const approveTx = await walletClient.writeContract({
         address: tokenAddress,
         abi: ERC20_MIN_ABI,
@@ -81,20 +80,12 @@ export async function purchaseProduct(
       if (approveReceipt.status !== 'success') {
         throw new Error('Approveに失敗しました');
       }
-      console.log('✅ Approve successful');
     }
 
     // 3. donateERC20 実行（PaymentSplitterへ）
     // sku: 商品ID, traceId: txHashの予定（後でAPIで記録）
     const skuBytes32 = productIdToBytes32(product.id);
     const traceIdBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000000'; // 初期値
-
-    console.log('💰 Executing donateERC20 to PaymentSplitter...', {
-      paymentSplitter: paymentSplitterAddress,
-      token: tokenAddress,
-      amount: priceWei.toString(),
-      sku: skuBytes32,
-    });
 
     const donateTx = await walletClient.writeContract({
       address: paymentSplitterAddress as `0x${string}`,
@@ -113,7 +104,6 @@ export async function purchaseProduct(
     if (donateReceipt.status !== 'success') {
       throw new Error('Payment failed');
     }
-    console.log('✅ Payment successful, tx:', donateTx);
 
     // 4. APIに購入初期化を通知
     const apiUrl = import.meta.env.VITE_API_BASE_URL || '';

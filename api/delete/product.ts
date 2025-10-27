@@ -41,8 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'productId は必須です' });
     }
 
-    console.log('🗑️ [API] 商品削除開始:', productId);
-
     // まず商品データを取得
     const { data: product, error: fetchError } = await supabase
       .from('products')
@@ -58,13 +56,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    console.log('📦 [API] 削除対象商品:', product);
-
     const deletionResults: string[] = [];
 
     // サムネイル画像を削除（公開バケット gh-public）
     if (product?.image_url) {
-      console.log('🗑️ [API] サムネイル画像を削除:', product.image_url);
       try {
         // URLからファイル名を抽出
         const url = new URL(product.image_url);
@@ -89,8 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 配布ファイルを削除（非公開バケット gh-downloads）
     if (product?.content_path) {
-      console.log('🗑️ [API] 配布ファイルを削除:', product.content_path);
-      try {
+      try{
         const { error: contentError } = await supabase.storage
           .from(bucket('DOWNLOADS'))
           .remove([product.content_path]);
@@ -108,7 +102,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // データベースから商品を完全削除（SERVICE_ROLE_KEYを使用するのでRLSをバイパス）
-    console.log('🔄 [API] データベースから商品を削除中...');
     const { error: deleteError } = await supabase
       .from('products')
       .delete()
@@ -122,8 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         code: deleteError.code
       });
     }
-
-    console.log('✅ [API] 商品削除完了:', deletionResults);
 
     return res.json({
       success: true,
