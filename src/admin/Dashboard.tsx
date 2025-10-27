@@ -25,7 +25,6 @@ import VendingDashboardNew from "./vending/VendingDashboardNew";
 import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
-import RevenueManagement from "./revenue/RevenueManagement";
 import { useTenant } from "./contexts/TenantContext";
 import AdminLayout from "./components/AdminLayout";
 import type { PageType } from "./components/AdminSidebar";
@@ -2197,8 +2196,6 @@ export default function AdminDashboard() {
           RewardTokenChargeSection={RewardTokenChargeSection}
           RewardAmountSettingSection={RewardAmountSettingSection}
         />
-      ) : currentPage === "revenue-management" ? (
-        <RevenueManagement />
       ) : currentPage === "tip-ui-management" ? (
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (

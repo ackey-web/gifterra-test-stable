@@ -7,7 +7,6 @@ export type PageType =
   | "reward-ui-management"
   | "vending-management"
   | "flag-nft-management"
-  | "revenue-management"
   | "diagnostics"
   | "tenant-management";
 
@@ -47,13 +46,6 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { id: "vending-management", label: "GIFT HUB管理", icon: "🏪", color: "#059669" },
       { id: "flag-nft-management", label: "フラグNFT管理", icon: "🚩", color: "#ea580c" },
-    ]
-  },
-  {
-    title: "運営管理",
-    icon: "💰",
-    items: [
-      { id: "revenue-management", label: "収益管理", icon: "💰", color: "#0891b2" },
     ]
   },
   {

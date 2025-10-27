@@ -12,6 +12,7 @@ import type { TokenId } from '../../../config/tokens';
 import { getAvailableTokens, formatTokenSymbol } from '../../../config/tokens';
 import { PurchaseHistoryTab } from './PurchaseHistoryTab';
 import { VendingStatsTab } from './VendingStatsTab';
+import { RevenueTab } from './RevenueTab';
 
 interface HubDetailPanelNewProps {
   machine: VendingMachine | null;
@@ -21,7 +22,7 @@ interface HubDetailPanelNewProps {
   onProductChange?: () => void; // 特典追加/削除時のコールバック
 }
 
-type TabType = 'settings' | 'design' | 'products' | 'purchases' | 'stats' | 'preview';
+type TabType = 'settings' | 'design' | 'products' | 'purchases' | 'stats' | 'revenue' | 'preview';
 
 const REDIRECT_TAB_KEY = 'vending_redirect_tab';
 
@@ -35,7 +36,7 @@ export function HubDetailPanelNew({
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     // リダイレクト用に保存されたタブがあればそれを使用
     const savedTab = localStorage.getItem(REDIRECT_TAB_KEY);
-    if (savedTab && ['settings', 'design', 'products', 'purchases', 'stats', 'preview'].includes(savedTab)) {
+    if (savedTab && ['settings', 'design', 'products', 'purchases', 'stats', 'revenue', 'preview'].includes(savedTab)) {
       localStorage.removeItem(REDIRECT_TAB_KEY);
       return savedTab as TabType;
     }
@@ -490,6 +491,25 @@ export function HubDetailPanelNew({
           }}
         >
           📈 Statistics
+        </button>
+        <button
+          onClick={() => setActiveTab('revenue')}
+          role="tab"
+          aria-selected={activeTab === 'revenue'}
+          aria-controls="revenue-panel"
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'revenue' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+            color: activeTab === 'revenue' ? '#10B981' : 'rgba(255,255,255,0.6)',
+            border: 'none',
+            borderBottom: activeTab === 'revenue' ? '2px solid #10B981' : '2px solid transparent',
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          💰 Revenue
         </button>
         <button
           onClick={() => window.open(`/content?machine=${machine.slug}`, '_blank')}
@@ -1094,6 +1114,11 @@ export function HubDetailPanelNew({
         {/* 統計ダッシュボードタブ */}
         {activeTab === 'stats' && machine && (
           <VendingStatsTab machine={machine} />
+        )}
+
+        {/* 収益管理タブ */}
+        {activeTab === 'revenue' && machine && (
+          <RevenueTab paymentSplitterAddress={machine.settings.paymentSplitterAddress} />
         )}
       </div>
 
