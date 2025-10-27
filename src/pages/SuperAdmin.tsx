@@ -119,20 +119,20 @@ export function SuperAdminPage() {
             onClick={() => setActiveTab('tenants')}
             icon="🏢"
             label="テナント管理"
-            disabled
           />
           <TabButton
             active={activeTab === 'revenue'}
             onClick={() => setActiveTab('revenue')}
             icon="💰"
             label="収益管理"
-            disabled
           />
         </div>
 
         {/* タブコンテンツ */}
         {activeTab === 'dashboard' && <DashboardTab />}
         {activeTab === 'user-preview' && <UserPreviewTab />}
+        {activeTab === 'tenants' && <TenantsTab />}
+        {activeTab === 'revenue' && <RevenueTab />}
       </div>
     </div>
   );
@@ -813,6 +813,266 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
           <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>🎉 Reward受取</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{profile.stats.rewardClaimedCount}回</div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * テナント管理タブ
+ */
+function TenantsTab() {
+  const { tenants, isLoading } = useTenantList();
+
+  if (isLoading) {
+    return (
+      <div style={{
+        padding: 60,
+        textAlign: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <div style={{ fontSize: 18 }}>テナント情報を読み込み中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+          🏢 テナント一覧
+        </h2>
+        <p style={{ fontSize: 14, opacity: 0.7, marginBottom: 20 }}>
+          プラットフォーム上で動作している全テナントの管理と監視
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {tenants.map(tenant => {
+            const statusInfo = getHealthStatusInfo(tenant.health.status);
+            return (
+              <div
+                key={tenant.id}
+                style={{
+                  padding: 20,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: 20, fontWeight: 700 }}>{tenant.name}</h3>
+                    <div style={{ fontSize: 12, opacity: 0.7, fontFamily: 'monospace' }}>{tenant.id}</div>
+                  </div>
+                  <div style={{
+                    padding: '8px 16px',
+                    background: statusInfo.color + '20',
+                    border: `1px solid ${statusInfo.color}`,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: statusInfo.color,
+                  }}>
+                    {statusInfo.icon} {statusInfo.label}
+                  </div>
+                </div>
+
+                {tenant.stats && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: 12,
+                    marginTop: 16,
+                  }}>
+                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>GIFT HUB</div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{tenant.stats.totalHubs}個</div>
+                      <div style={{ fontSize: 11, opacity: 0.6 }}>稼働中: {tenant.stats.activeHubs}個</div>
+                    </div>
+                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>総配布数</div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{tenant.stats.totalDistributions.toLocaleString()}回</div>
+                    </div>
+                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>総収益</div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{formatTokenAmount(BigInt(tenant.stats.totalRevenue), 18, 0)} JPYC</div>
+                    </div>
+                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>ユーザー数</div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{tenant.stats.userCount.toLocaleString()}人</div>
+                    </div>
+                  </div>
+                )}
+
+                {tenant.health.issues.length > 0 && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: 12,
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: 8,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>⚠️ 問題が検出されました</div>
+                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 11, opacity: 0.9 }}>
+                      {tenant.health.issues.map((issue, i) => (
+                        <li key={i}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 将来の機能 */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
+          🚀 今後の機能
+        </h3>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8, opacity: 0.8 }}>
+          <li>新規テナントの作成・登録</li>
+          <li>テナントごとの設定管理</li>
+          <li>テナントごとのロイヤリティ設定</li>
+          <li>テナントごとのユーザーアクセス制御</li>
+          <li>テナント間のデータ分離と移行</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 収益管理タブ
+ */
+function RevenueTab() {
+  const { stats, isLoading } = useSystemStats();
+
+  if (isLoading) {
+    return (
+      <div style={{
+        padding: 60,
+        textAlign: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <div style={{ fontSize: 18 }}>収益データを読み込み中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* 収益概要 */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+          💰 収益概要
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16,
+        }}>
+          <div style={{
+            padding: 20,
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05))',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: 12,
+          }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>💎 総収益</div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: '#f59e0b' }}>
+              {formatTokenAmount(BigInt(stats.totalRevenue), 18, 0)}
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.7, marginTop: 4 }}>JPYC</div>
+          </div>
+          <div style={{
+            padding: 20,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+          }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>📊 総トランザクション</div>
+            <div style={{ fontSize: 32, fontWeight: 800 }}>
+              {stats.totalTransactions.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.7, marginTop: 4 }}>件</div>
+          </div>
+          <div style={{
+            padding: 20,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+          }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>🎁 総配布数</div>
+            <div style={{ fontSize: 32, fontWeight: 800 }}>
+              {stats.totalDistributions.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.7, marginTop: 4 }}>回</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 収益の内訳 */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
+          📈 収益の内訳（準備中）
+        </h3>
+        <p style={{ fontSize: 14, opacity: 0.7, marginBottom: 16 }}>
+          今後、以下の情報を表示予定です：
+        </p>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8, opacity: 0.8 }}>
+          <li>テナント別の収益</li>
+          <li>GIFT HUB別の収益</li>
+          <li>時系列の収益推移グラフ</li>
+          <li>ロイヤリティ分配の詳細</li>
+          <li>プラットフォーム手数料の詳細</li>
+        </ul>
+      </div>
+
+      {/* 将来の機能 */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
+          🚀 今後の機能
+        </h3>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8, opacity: 0.8 }}>
+          <li>収益の引き出し機能</li>
+          <li>収益レポートのエクスポート（CSV, PDF）</li>
+          <li>リアルタイム収益ダッシュボード</li>
+          <li>収益の自動分配設定</li>
+          <li>税務レポートの生成</li>
+        </ul>
       </div>
     </div>
   );
