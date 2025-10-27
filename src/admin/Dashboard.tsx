@@ -22,7 +22,6 @@ import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
 import VendingDashboardNew from "./vending/VendingDashboardNew";
-import ProductManager from "./products/ProductManager";
 import DiagnosticsPage from "./DiagnosticsPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
@@ -39,7 +38,7 @@ type TipItem = {
   txHash?: string;
 };
 
-type PageType = "dashboard" | "revenue-management" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "product-management" | "diagnostics" | "tenant-management";
+type PageType = "dashboard" | "revenue-management" | "reward-ui-management" | "tip-ui-management" | "vending-management" | "diagnostics" | "tenant-management";
 
 // 🚀 将来のマルチテナント実装準備
 // - tenant-management: テナント管理（スーパーアドミン専用）
@@ -1944,8 +1943,6 @@ export default function AdminDashboard() {
         <TipUIManagementPage />
       ) : currentPage === "vending-management" ? (
         <VendingDashboardNew />
-      ) : currentPage === "product-management" ? (
-        <ProductManager />
       ) : currentPage === "diagnostics" ? (
         <DiagnosticsPage />
       ) : currentPage === "tenant-management" ? (

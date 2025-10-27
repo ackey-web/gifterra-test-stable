@@ -5,10 +5,16 @@ import type { VendingMachine } from '../../types/vending';
 import { generateSlug } from '../../utils/slugGenerator';
 import { HubListNew } from './components/HubListNew';
 import { HubDetailPanelNew } from './components/HubDetailPanelNew';
+import CommonCatalogManager from './components/CommonCatalogManager';
 
 const STORAGE_KEY = 'vending_machines_data';
 
+type ViewMode = 'hub' | 'catalog';
+
 const VendingDashboardNew: React.FC = () => {
+  // 表示モード切替
+  const [viewMode, setViewMode] = useState<ViewMode>('hub');
+
   // localStorageと同期するstate（既存ロジック維持）
   const [machines, setMachines] = useState<VendingMachine[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -223,43 +229,90 @@ const VendingDashboardNew: React.FC = () => {
     >
       {/* ページヘッダー */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>
-          GIFT HUB 管理
-        </h1>
-        <p style={{ margin: '8px 0 0 0', fontSize: 14, opacity: 0.7 }}>
-          左: HUB一覧 → 右: 詳細パネル（Design / Products / Preview）
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>
+            GIFT HUB 管理
+          </h1>
+
+          {/* モード切替ボタン */}
+          <div style={{ display: 'flex', gap: 8, backgroundColor: 'rgba(0,0,0,0.3)', padding: 4, borderRadius: 8 }}>
+            <button
+              onClick={() => setViewMode('hub')}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: viewMode === 'hub' ? '#3B82F6' : 'transparent',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: viewMode === 'hub' ? 700 : 400,
+                fontSize: 14,
+                transition: 'all 0.2s'
+              }}
+            >
+              🏪 GIFT HUB管理
+            </button>
+            <button
+              onClick={() => setViewMode('catalog')}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: viewMode === 'catalog' ? '#8B5CF6' : 'transparent',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: viewMode === 'catalog' ? 700 : 400,
+                fontSize: 14,
+                transition: 'all 0.2s'
+              }}
+            >
+              📦 共通カタログ
+            </button>
+          </div>
+        </div>
+
+        <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>
+          {viewMode === 'hub'
+            ? '左: HUB一覧 → 右: 詳細パネル（Design / Products / Preview）'
+            : 'テナント全体で共有する商品マスター（ホームページ販売用など）'}
         </p>
       </div>
 
-      {/* 2カラムレイアウト */}
-      <div
-        className="vending-dashboard-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '400px 1fr',
-          gap: 20,
-          minHeight: 'calc(100vh - 140px)'
-        }}
-      >
-        {/* 左カラム：HUB一覧 */}
-        <HubListNew
-          machines={machines}
-          selectedMachineId={selectedMachineId}
-          onSelectMachine={handleSelectMachine}
-          onAddNew={handleAddMachine}
-          onDeleteMachine={handleDeleteMachine}
-          refreshTrigger={refreshTrigger}
-        />
+      {/* コンテンツエリア */}
+      {viewMode === 'hub' ? (
+        // GIFT HUB管理モード：2カラムレイアウト
+        <div
+          className="vending-dashboard-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '400px 1fr',
+            gap: 20,
+            minHeight: 'calc(100vh - 140px)'
+          }}
+        >
+          {/* 左カラム：HUB一覧 */}
+          <HubListNew
+            machines={machines}
+            selectedMachineId={selectedMachineId}
+            onSelectMachine={handleSelectMachine}
+            onAddNew={handleAddMachine}
+            onDeleteMachine={handleDeleteMachine}
+            refreshTrigger={refreshTrigger}
+          />
 
-        {/* 右カラム：詳細パネル */}
-        <HubDetailPanelNew
-          machine={selectedMachine}
-          onSave={handleSave}
-          onToggleActive={handleToggleActive}
-          onUpdateMachine={handleUpdateMachine}
-          onProductChange={() => setRefreshTrigger(prev => prev + 1)}
-        />
-      </div>
+          {/* 右カラム：詳細パネル */}
+          <HubDetailPanelNew
+            machine={selectedMachine}
+            onSave={handleSave}
+            onToggleActive={handleToggleActive}
+            onUpdateMachine={handleUpdateMachine}
+            onProductChange={() => setRefreshTrigger(prev => prev + 1)}
+          />
+        </div>
+      ) : (
+        // 共通カタログ管理モード
+        <CommonCatalogManager />
+      )}
 
       {/* レスポンシブ対応 */}
       <style>{`

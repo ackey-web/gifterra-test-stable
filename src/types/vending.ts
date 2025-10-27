@@ -34,8 +34,12 @@ export interface VendingMachine {
   id: string;
   slug: string; // URL用スラッグ (例: honsha-1f)
   name: string;
-  location: string;
+  location: string; // メモフィールド（設置場所の記録用）
   description: string;
+  /**
+   * @deprecated Use Supabase products table instead
+   * Products are now managed separately in Supabase and linked via hub_products table
+   */
   products: Product[];
   isActive: boolean;
   totalSales: number;
