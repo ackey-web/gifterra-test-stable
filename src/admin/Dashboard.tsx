@@ -473,7 +473,7 @@ export default function AdminDashboard() {
         // 10ブロックずつに分割してログを取得
         const logs: any[] = await getLogsInChunks(
           CONTRACT_ADDRESS,
-          fromBlock,
+          Number(fromBlock),
           latestBlock,
           [TOPIC_TIPPED]
         );
