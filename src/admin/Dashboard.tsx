@@ -179,9 +179,8 @@ async function getBlockTimestamp(num: number): Promise<number> {
   return block?.timestamp ? parseInt(block.timestamp, 16) : 0;
 }
 
-/* ---------- Alchemy Free Tier対応: スマートなeth_getLogs分割戦略 ---------- */
-const CHUNK_SIZE = 2000; // まず2000ブロックで試す
-const ALCHEMY_FREE_TIER_BLOCK_LIMIT = 10; // エラー時は10ブロックに縮小
+/* ---------- eth_getLogs分割戦略: Public RPC優先（制限回避） ---------- */
+const CHUNK_SIZE = 5000; // Public RPCなら大きなチャンクでOK
 
 async function getLogsInChunks(
   address: string,
@@ -192,33 +191,11 @@ async function getLogsInChunks(
   const allLogs: any[] = [];
   const blockRange = toBlock - fromBlock;
 
-  // まず全体を一度にリクエストしてみる（小範囲の場合）
-  if (blockRange <= CHUNK_SIZE) {
-    const logRequest = {
-      address,
-      fromBlock: "0x" + fromBlock.toString(16),
-      toBlock: "0x" + toBlock.toString(16),
-      topics,
-    };
+  const numChunks = Math.ceil(blockRange / CHUNK_SIZE);
+  console.log(`📦 Fetching logs from ${numChunks} chunks (${CHUNK_SIZE} blocks each, total ${blockRange.toLocaleString()} blocks)...`);
 
-    try {
-      return await rpc("eth_getLogs", [logRequest]);
-    } catch (error: any) {
-      // Alchemy制限エラーなら10ブロックに分割
-      if (error.isAlchemyLimit) {
-        console.log(`📦 Alchemy Free Tier limit detected. Splitting into ${Math.ceil(blockRange / ALCHEMY_FREE_TIER_BLOCK_LIMIT)} chunks...`);
-      } else {
-        throw error; // 他のエラーはそのまま投げる
-      }
-    }
-  }
-
-  // 大きな範囲をCHUNK_SIZEずつに分割
-  const chunkSize = blockRange > CHUNK_SIZE ? CHUNK_SIZE : ALCHEMY_FREE_TIER_BLOCK_LIMIT;
-  console.log(`📦 Splitting eth_getLogs into chunks (${Math.ceil(blockRange / chunkSize)} requests)...`);
-
-  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
-    const end = Math.min(start + chunkSize - 1, toBlock);
+  for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
+    const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
 
     const logRequest = {
       address,
@@ -230,19 +207,21 @@ async function getLogsInChunks(
     try {
       const logs = await rpc<any[]>("eth_getLogs", [logRequest]);
       allLogs.push(...logs);
-      console.log(`  ✓ Fetched blocks ${start} - ${end} (${logs.length} logs)`);
+      if (logs.length > 0) {
+        console.log(`  ✓ Blocks ${start.toLocaleString()}-${end.toLocaleString()}: Found ${logs.length} logs`);
+      }
     } catch (error: any) {
-      console.error(`  ❌ Failed to fetch blocks ${start} - ${end}:`, error.message);
+      console.warn(`  ⚠️ Blocks ${start.toLocaleString()}-${end.toLocaleString()}: ${error.message}`);
       // 1つのチャンクが失敗しても続行
     }
 
-    // レート制限対策: 各リクエスト間に小さな遅延
-    if (start + chunkSize <= toBlock) {
-      await new Promise(resolve => setTimeout(resolve, 50));
+    // レート制限対策: 小さな遅延
+    if (start + CHUNK_SIZE <= toBlock) {
+      await new Promise(resolve => setTimeout(resolve, 30));
     }
   }
 
-  console.log(`✅ Total logs fetched: ${allLogs.length}`);
+  console.log(`✅ Total logs fetched: ${allLogs.length} from ${blockRange.toLocaleString()} blocks`);
   return allLogs;
 }
 
@@ -250,15 +229,15 @@ async function getLogsInChunks(
 // 🔧 パフォーマンス最適化: 期間別の適切なブロック範囲制限
 // Polygon Amoyテストネットの平均ブロック時間: 約2秒
 
-// 期間別の最適なブロック範囲（Alchemy Free Tier対応）
+// 期間別の最適なブロック範囲（実際のイベント範囲に対応）
 const OPTIMIZED_LOOKBACK: Record<Exclude<Period, "all">, number> = {
-  day: 2000,      // 約1時間分（本番環境でのパフォーマンス優先）
-  week: 14400,    // 約8時間分（4日 × 3600ブロック）
-  month: 43200,   // 約24時間分（1日）
+  day: 50000,      // 約1日分（43200ブロック + バッファ）
+  week: 350000,    // 約8日分（302400ブロック + バッファ）
+  month: 1500000,  // 約34日分（1296000ブロック + バッファ）
 };
 
 // 最大検索範囲制限（メモリ保護）
-const MAX_BLOCK_RANGE = 500000; // 約11.5日分
+const MAX_BLOCK_RANGE = 1500000; // 約34日分（過去のイベントをカバー）
 const TOPIC_TIPPED = ethers.utils.keccak256(
   ethers.utils.toUtf8Bytes("TipSent(address,uint256)")
 );
