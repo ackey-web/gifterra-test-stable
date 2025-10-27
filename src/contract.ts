@@ -121,15 +121,38 @@ export const FACTORY_CONFIG = {
 } as const;
 
 /* =========================================
-   ✅ tNHT トークン設定（新デプロイ版）
+   ✅ tNHT トークン設定（テストネット用）
 ========================================= */
-export const TOKEN = {
+export const TNHT_TOKEN = {
   ADDRESS: getAddress("0xdB738C7A83FE7738299a67741Ae2AbE42B3BA2Ea"),
   SYMBOL: "tNHT",
   DECIMALS: 18,
+  NAME: "Test NHT Token",
   // シンプルなSVGアイコン（モバイル対応強化）
   ICON: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM4MjQ3ZTMiLz4KPHN2ZyB4PSI2IiB5PSI2IiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMiAxNWwtNS01aDNWOGg0djRoM2wtNSA1eiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cjwvc3ZnPg=="
 };
+
+/* =========================================
+   ✅ JPYC トークン設定
+   📝 Polygon Mainnet & Amoy 対応
+========================================= */
+export const JPYC_TOKEN = {
+  // Polygon Mainnet (ChainID: 137) & Polygon Amoy (ChainID: 80002)
+  ADDRESS: getAddress("0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29"),
+  SYMBOL: "JPYC",
+  DECIMALS: 18,
+  NAME: "JPY Coin",
+  ICON: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMDg4Y2MiLz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjE4IiBmb250LXdlaWdodD0iYm9sZCI+wqU8L3RleHQ+Cjwvc3ZnPg=="
+};
+
+/* =========================================
+   ✅ 現在使用中のトークン設定
+   📝 環境に応じて切り替え可能
+========================================= */
+export const TOKEN = JPYC_TOKEN; // デフォルトはJPYC
+
+// 開発環境でtNHTを使用する場合は以下をコメントアウト解除
+// export const TOKEN = TNHT_TOKEN;
 
 /* =========================================
    ✅ viem 読み取り専用クライアント
