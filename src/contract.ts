@@ -525,3 +525,263 @@ export const PAYMENT_SPLITTER_ABI = [
     type: "function",
   },
 ] as const;
+
+/* =========================================
+   ✅ PaymentSplitter V2 ABI（可変機能対応）
+========================================= */
+export const PAYMENT_SPLITTER_V2_ABI = [
+  // ========== 寄付受け口（v1互換） ==========
+  {
+    inputs: [
+      { internalType: "bytes32", name: "sku", type: "bytes32" },
+      { internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "donateNative",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "token", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "bytes32", name: "sku", type: "bytes32" },
+      { internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "donateERC20",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+
+  // ========== 分配関数 ==========
+  {
+    inputs: [{ internalType: "address payable", name: "account", type: "address" }],
+    name: "release",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract IERC20", name: "token", type: "address" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "release",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "releaseAll",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "contract IERC20", name: "token", type: "address" }],
+    name: "releaseAllERC20",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+
+  // ========== クリエイター管理（V2新機能） ==========
+  {
+    inputs: [
+      { internalType: "address", name: "account", type: "address" },
+      { internalType: "uint256", name: "shares_", type: "uint256" },
+    ],
+    name: "addPayee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "account", type: "address" }],
+    name: "removePayee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "account", type: "address" },
+      { internalType: "uint256", name: "newShares", type: "uint256" },
+    ],
+    name: "updateShares",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+
+  // ========== View関数 ==========
+  {
+    inputs: [],
+    name: "getAllPayees",
+    outputs: [
+      { internalType: "address[]", name: "payees", type: "address[]" },
+      { internalType: "uint256[]", name: "shares", type: "uint256[]" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "account", type: "address" }],
+    name: "shares",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalShares",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "payeeCount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "account", type: "address" }],
+    name: "pendingNativePayment",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract IERC20", name: "token", type: "address" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "pendingERC20Payment",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getStats",
+    outputs: [
+      { internalType: "uint256", name: "payeeCount_", type: "uint256" },
+      { internalType: "uint256", name: "totalShares_", type: "uint256" },
+      { internalType: "uint256", name: "nativeBalance", type: "uint256" },
+      { internalType: "uint256", name: "totalNativeReceived_", type: "uint256" },
+      { internalType: "bool", name: "isPaused", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "version",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "pure",
+    type: "function",
+  },
+
+  // ========== Pause機能 ==========
+  {
+    inputs: [],
+    name: "pause",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "unpause",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "paused",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+
+  // ========== Owner管理 ==========
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "newOwner", type: "address" }],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+
+  // ========== イベント ==========
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "payer", type: "address" },
+      { indexed: true, internalType: "address", name: "token", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+      { indexed: true, internalType: "bytes32", name: "sku", type: "bytes32" },
+      { indexed: false, internalType: "bytes32", name: "traceId", type: "bytes32" },
+    ],
+    name: "DonationReceived",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "account", type: "address" },
+      { indexed: false, internalType: "uint256", name: "shares", type: "uint256" },
+    ],
+    name: "PayeeAdded",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "account", type: "address" },
+    ],
+    name: "PayeeRemoved",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "account", type: "address" },
+      { indexed: false, internalType: "uint256", name: "oldShares", type: "uint256" },
+      { indexed: false, internalType: "uint256", name: "newShares", type: "uint256" },
+    ],
+    name: "SharesUpdated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "account", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "NativeReleased",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "contract IERC20", name: "token", type: "address" },
+      { indexed: true, internalType: "address", name: "account", type: "address" },
+      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "ERC20Released",
+    type: "event",
+  },
+] as const;
