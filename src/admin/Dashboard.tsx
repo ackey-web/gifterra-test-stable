@@ -1545,10 +1545,12 @@ export default function AdminDashboard() {
       }
     };
 
-    // 初回ロード
+    // Rank Settingsタブが表示されている時のみランク設定をロード
     useEffect(() => {
-      loadRankConfig();
-    }, [contract]);
+      if (activeTab === 'ranks' && contract) {
+        loadRankConfig();
+      }
+    }, [contract, activeTab]);
 
     return (
       <div style={{
