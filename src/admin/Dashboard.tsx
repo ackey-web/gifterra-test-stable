@@ -124,36 +124,21 @@ async function rpcWithFallback<T = any>(method: string, params: any[] = [], rpcU
 }
 
 async function rpc<T = any>(method: string, params: any[] = []): Promise<T> {
-  // 🔧 本番環境とCORS対策: Alchemyを優先、Public RPCをフォールバックに
-  const IS_PRODUCTION = !(import.meta as any)?.env?.DEV;
+  // 🔧 Public RPC最優先戦略（Alchemy Free Tierの10ブロック制限回避）
+  // eth_getLogsは大きなブロック範囲が必要なため、Public RPCを優先
 
-  // 本番環境ではAlchemyを優先（CORS回避）
-  if (IS_PRODUCTION && ALCHEMY_RPC) {
-    try {
-      const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
-      return result;
-    } catch (alchemyError: any) {
-      console.warn("⚠️ Alchemy RPC failed, trying Public RPC:", alchemyError.message);
-      // Public RPCにフォールバック
-      try {
-        const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
-        return result;
-      } catch (error: any) {
-        console.error("❌ All RPC endpoints failed");
-        throw error;
-      }
-    }
-  }
-
-  // 開発環境では履歴表示優先: Public RPCを最初に試行
+  // Public RPCを最初に試行（開発・本番共通）
   try {
     const result = await rpcWithFallback<T>(method, params, PUBLIC_RPC);
     return result;
   } catch (publicError: any) {
-    console.warn("⚠️ Public RPC failed, trying Alchemy:", publicError.message);
+    // Public RPCが失敗した場合のみログ出力
+    if (method !== "eth_getLogs") {
+      console.warn("⚠️ Public RPC failed, trying Alchemy:", publicError.message);
+    }
   }
 
-  // Fallback to Alchemy (if configured)
+  // Fallback to Alchemy (Public RPCが失敗した場合のみ)
   if (ALCHEMY_RPC) {
     try {
       const result = await rpcWithFallback<T>(method, params, ALCHEMY_RPC);
