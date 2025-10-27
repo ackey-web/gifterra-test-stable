@@ -22,7 +22,7 @@ interface HubDetailPanelNewProps {
   onProductChange?: () => void; // 特典追加/削除時のコールバック
 }
 
-type TabType = 'settings' | 'design' | 'products' | 'purchases' | 'stats' | 'revenue' | 'preview';
+type TabType = 'settings' | 'design' | 'items' | 'analytics' | 'distribution' | 'preview';
 
 const REDIRECT_TAB_KEY = 'vending_redirect_tab';
 
@@ -36,7 +36,7 @@ export function HubDetailPanelNew({
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     // リダイレクト用に保存されたタブがあればそれを使用
     const savedTab = localStorage.getItem(REDIRECT_TAB_KEY);
-    if (savedTab && ['settings', 'design', 'products', 'purchases', 'stats', 'revenue', 'preview'].includes(savedTab)) {
+    if (savedTab && ['settings', 'design', 'items', 'analytics', 'distribution', 'preview'].includes(savedTab)) {
       localStorage.removeItem(REDIRECT_TAB_KEY);
       return savedTab as TabType;
     }
@@ -123,10 +123,10 @@ export function HubDetailPanelNew({
       // 特典数をリフレッシュ
       onProductChange?.();
 
-      // Productsタブに切り替え
-      setActiveTab('products');
+      // 特典タブに切り替え
+      setActiveTab('items');
     } catch (err) {
-      console.error('❌ 商品保存エラー:', err);
+      console.error('❌ 特典保存エラー:', err);
       alert('❌ 予期しないエラーが発生しました');
     } finally {
       setIsSubmitting(false);
@@ -156,7 +156,7 @@ export function HubDetailPanelNew({
       // 特典数をリフレッシュ
       onProductChange?.();
     } catch (err) {
-      console.error('❌ [HubDetailPanel] 商品削除エラー:', err);
+      console.error('❌ [HubDetailPanel] 特典削除エラー:', err);
       alert('❌ 予期しないエラーが発生しました');
     }
   };
@@ -436,80 +436,61 @@ export function HubDetailPanelNew({
           🎨 Design
         </button>
         <button
-          onClick={() => setActiveTab('products')}
+          onClick={() => setActiveTab('items')}
           role="tab"
-          aria-selected={activeTab === 'products'}
-          aria-controls="products-panel"
+          aria-selected={activeTab === 'items'}
+          aria-controls="items-panel"
           style={{
             padding: '12px 24px',
-            background: activeTab === 'products' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-            color: activeTab === 'products' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            background: activeTab === 'items' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'items' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
             border: 'none',
-            borderBottom: activeTab === 'products' ? '2px solid #3B82F6' : '2px solid transparent',
+            borderBottom: activeTab === 'items' ? '2px solid #3B82F6' : '2px solid transparent',
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
-          📦 Products
+          🎁 特典
         </button>
         <button
-          onClick={() => setActiveTab('purchases')}
+          onClick={() => setActiveTab('analytics')}
           role="tab"
-          aria-selected={activeTab === 'purchases'}
-          aria-controls="purchases-panel"
+          aria-selected={activeTab === 'analytics'}
+          aria-controls="analytics-panel"
           style={{
             padding: '12px 24px',
-            background: activeTab === 'purchases' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-            color: activeTab === 'purchases' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            background: activeTab === 'analytics' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+            color: activeTab === 'analytics' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
             border: 'none',
-            borderBottom: activeTab === 'purchases' ? '2px solid #3B82F6' : '2px solid transparent',
+            borderBottom: activeTab === 'analytics' ? '2px solid #3B82F6' : '2px solid transparent',
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
-          📊 Purchase History
+          📊 配布履歴・統計
         </button>
         <button
-          onClick={() => setActiveTab('stats')}
+          onClick={() => setActiveTab('distribution')}
           role="tab"
-          aria-selected={activeTab === 'stats'}
-          aria-controls="stats-panel"
+          aria-selected={activeTab === 'distribution'}
+          aria-controls="distribution-panel"
           style={{
             padding: '12px 24px',
-            background: activeTab === 'stats' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-            color: activeTab === 'stats' ? '#3B82F6' : 'rgba(255,255,255,0.6)',
+            background: activeTab === 'distribution' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+            color: activeTab === 'distribution' ? '#10B981' : 'rgba(255,255,255,0.6)',
             border: 'none',
-            borderBottom: activeTab === 'stats' ? '2px solid #3B82F6' : '2px solid transparent',
+            borderBottom: activeTab === 'distribution' ? '2px solid #10B981' : '2px solid transparent',
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
-          📈 Statistics
-        </button>
-        <button
-          onClick={() => setActiveTab('revenue')}
-          role="tab"
-          aria-selected={activeTab === 'revenue'}
-          aria-controls="revenue-panel"
-          style={{
-            padding: '12px 24px',
-            background: activeTab === 'revenue' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-            color: activeTab === 'revenue' ? '#10B981' : 'rgba(255,255,255,0.6)',
-            border: 'none',
-            borderBottom: activeTab === 'revenue' ? '2px solid #10B981' : '2px solid transparent',
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          💰 Revenue
+          💰 分配管理
         </button>
         <button
           onClick={() => window.open(`/content?machine=${machine.slug}`, '_blank')}
@@ -697,7 +678,7 @@ export function HubDetailPanelNew({
               borderTop: '1px solid rgba(255,255,255,0.1)'
             }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
-                💰 収益管理設定
+                💰 分配管理設定
               </h4>
 
               {/* PaymentSplitterアドレス */}
@@ -751,7 +732,7 @@ export function HubDetailPanelNew({
                   </a>
                 </div>
                 <p style={{ margin: '8px 0 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
-                  商品販売時の収益分配に使用されるPaymentSplitterコントラクトのアドレス
+                  特典配布時の収益分配に使用されるPaymentSplitterコントラクトのアドレス
                 </p>
                 {!machine.settings.paymentSplitterAddress && (
                   <div style={{
@@ -763,12 +744,12 @@ export function HubDetailPanelNew({
                     fontSize: 12,
                     color: '#f59e0b'
                   }}>
-                    ⚠️ PaymentSplitterが未設定です。商品販売の収益分配が行われません。
+                    ⚠️ PaymentSplitterが未設定です。特典配布時の収益分配が行われません。
                   </div>
                 )}
               </div>
 
-              {/* 収益管理へのリンク */}
+              {/* 分配管理へのリンク */}
               {machine.settings.paymentSplitterAddress && (
                 <div style={{
                   padding: 16,
@@ -777,15 +758,14 @@ export function HubDetailPanelNew({
                   borderRadius: 8
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#10b981' }}>
-                    💡 収益確認・出金
+                    💡 分配先管理・出金
                   </div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
-                    PaymentSplitterの収益を確認・出金するには、Admin Dashboardの「💰 収益管理」タブをご利用ください。
+                    PaymentSplitterの分配先を管理・出金するには、「💰 分配管理」タブをご利用ください。
                   </div>
                   <button
                     onClick={() => {
-                      // TODO: Admin Dashboardの収益管理タブに遷移
-                      alert('Admin Dashboardの「💰 収益管理」タブを開いてください');
+                      setActiveTab('distribution');
                     }}
                     style={{
                       padding: '8px 16px',
@@ -798,7 +778,7 @@ export function HubDetailPanelNew({
                       cursor: 'pointer'
                     }}
                   >
-                    収益管理を開く →
+                    分配管理を開く →
                   </button>
                 </div>
               )}
@@ -925,7 +905,7 @@ export function HubDetailPanelNew({
           </div>
         )}
 
-        {activeTab === 'products' && (
+        {activeTab === 'items' && (
           <div>
             {/* ヘッダー: 新規特典追加ボタン */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -1005,7 +985,7 @@ export function HubDetailPanelNew({
                       e.currentTarget.style.borderColor = 'rgba(255,255,255,.1)';
                     }}
                   >
-                    {/* 商品画像 */}
+                    {/* 特典画像 */}
                     {product.image_url && (
                       <img
                         src={product.image_url}
@@ -1020,7 +1000,7 @@ export function HubDetailPanelNew({
                       />
                     )}
 
-                    {/* 商品名 */}
+                    {/* 特典名 */}
                     <h4 style={{ margin: '0 0 8px 0', fontSize: 16, fontWeight: 700, color: '#fff' }}>
                       {product.name}
                     </h4>
@@ -1106,23 +1086,34 @@ export function HubDetailPanelNew({
           </div>
         )}
 
-        {/* 購入履歴タブ */}
-        {activeTab === 'purchases' && machine && (
-          <PurchaseHistoryTab machine={machine} />
+        {/* 配布履歴・統計タブ（統合） */}
+        {activeTab === 'analytics' && machine && (
+          <div>
+            {/* 統計ダッシュボード */}
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 12 }}>
+                📈 統計
+              </h3>
+              <VendingStatsTab machine={machine} />
+            </div>
+
+            {/* 配布履歴 */}
+            <div>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 12 }}>
+                📊 配布履歴
+              </h3>
+              <PurchaseHistoryTab machine={machine} />
+            </div>
+          </div>
         )}
 
-        {/* 統計ダッシュボードタブ */}
-        {activeTab === 'stats' && machine && (
-          <VendingStatsTab machine={machine} />
-        )}
-
-        {/* 収益管理タブ */}
-        {activeTab === 'revenue' && machine && (
+        {/* 分配管理タブ */}
+        {activeTab === 'distribution' && machine && (
           <RevenueTab paymentSplitterAddress={machine.settings.paymentSplitterAddress} />
         )}
       </div>
 
-      {/* 商品追加/編集モーダル */}
+      {/* 特典追加/編集モーダル */}
       {showProductModal && (
         <div
           style={{

@@ -1,5 +1,5 @@
 // src/admin/vending/components/RevenueTab.tsx
-// GIFT HUB収益管理タブ（PaymentSplitter V2対応）
+// GIFT HUB分配管理タブ（PaymentSplitter V2対応）
 
 import { useState, useEffect } from 'react';
 import { useAddress, useContract, useContractRead, useContractWrite } from '@thirdweb-dev/react';
@@ -176,7 +176,7 @@ export function RevenueTab({ paymentSplitterAddress }: RevenueTabProps) {
   return (
     <div style={{ padding: 24 }}>
       <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 24 }}>
-        💰 収益管理
+        💰 分配管理
       </h3>
 
       {/* 統計情報 */}

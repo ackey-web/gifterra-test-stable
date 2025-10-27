@@ -1,5 +1,5 @@
 // src/admin/vending/components/PurchaseHistoryTab.tsx
-// GIFT HUB購入履歴タブ
+// GIFT HUB配布履歴タブ
 
 import { useEffect, useState } from 'react';
 import {
@@ -27,7 +27,7 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
   // 利用可能なトークン
   const availableTokens = getAvailableTokens(true);
 
-  // 購入履歴を読み込み
+  // 配布履歴を読み込み
   const loadPurchases = async () => {
     setIsLoading(true);
     try {
@@ -36,7 +36,7 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
       setPurchases(data);
     } catch (error) {
       console.error('Failed to load purchase history:', error);
-      alert('購入履歴の読み込みに失敗しました');
+      alert('配布履歴の読み込みに失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +68,7 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
   return (
     <div>
       <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700 }}>
-        📊 購入履歴 - {machine.name}
+        📊 配布履歴 - {machine.name}
       </h3>
 
       {/* 統計カード */}
@@ -88,7 +88,7 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
             borderRadius: 8,
           }}
         >
-          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>総購入数</div>
+          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>総配布数</div>
           <div style={{ fontSize: 24, fontWeight: 800 }}>{stats.totalCount}件</div>
         </div>
 
@@ -228,8 +228,8 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
           }}
         >
           <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: 18, fontWeight: 600 }}>購入履歴がありません</h3>
-          <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>商品が購入されると、ここに履歴が表示されます。</p>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: 18, fontWeight: 600 }}>配布履歴がありません</h3>
+          <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>特典が配布されると、ここに履歴が表示されます。</p>
         </div>
       ) : (
         <>
@@ -245,12 +245,12 @@ export function PurchaseHistoryTab({ machine }: PurchaseHistoryTabProps) {
             >
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>商品</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>購入者</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>特典</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>受取者</th>
                   <th style={{ padding: 12, textAlign: 'right', fontSize: 12, fontWeight: 600 }}>価格</th>
                   <th style={{ padding: 12, textAlign: 'center', fontSize: 12, fontWeight: 600 }}>ステータス</th>
                   <th style={{ padding: 12, textAlign: 'center', fontSize: 12, fontWeight: 600 }}>NFT配布</th>
-                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>購入日時</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontSize: 12, fontWeight: 600 }}>配布日時</th>
                 </tr>
               </thead>
               <tbody>
