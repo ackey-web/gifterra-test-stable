@@ -1390,24 +1390,19 @@ export default function AdminDashboard() {
     // TIP背景画像アップロードハンドラー
     const handleTipBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      console.log('📁 TIP背景画像アップロード開始:', file);
 
       if (!file) {
-        console.log('❌ ファイルが選択されていません');
         return;
       }
 
       try {
-        console.log('⏳ アップロード中...');
         // 新しい背景画像をアップロード
         const imageUrl = await uploadImage(file, 'gh-public');
-        console.log('✅ アップロード完了:', imageUrl);
 
         if (imageUrl) {
           // 古い背景画像を削除（差し替えの場合）
           const previousUrl = previousTipBgRef.current;
           if (previousUrl && previousUrl !== imageUrl) {
-            console.log('🗑️ 古い画像を削除:', previousUrl);
             await deleteFileFromUrl(previousUrl);
           }
 

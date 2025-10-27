@@ -4,17 +4,400 @@
 import { useState, useMemo } from 'react';
 import { useAddress } from '@thirdweb-dev/react';
 import { isSuperAdminWithDebug } from '../config/superAdmin';
+import { useSystemStats, useRealtimeStats } from '../hooks/useSystemStats';
+import { useTenantList } from '../hooks/useTenantList';
+import { useRecentActivity, getActivityCategoryInfo } from '../hooks/useRecentActivity';
+import { useSystemHealth, getHealthStatusInfo } from '../hooks/useSystemHealth';
+import { formatTokenAmount } from '../utils/userProfile';
+
+// ユーザープロフィールプレビュー用のインポート
 import { MOCK_PROFILE_PRESETS, generateMockUserProfile } from '../utils/mockUserProfile';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { getRankColor, getRankBadge, shortenAddress, formatTokenAmount, formatRelativeTime } from '../utils/userProfile';
+import { getRankColor, getRankBadge, shortenAddress, formatRelativeTime } from '../utils/userProfile';
 import type { UserProfile, RankName } from '../types/user';
 
+type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue';
 type PreviewMode = 'real' | 'mock';
 type PresetName = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'legend' | 'custom';
 
 export function SuperAdminPage() {
   const connectedAddress = useAddress();
   const isAdmin = isSuperAdminWithDebug(connectedAddress);
+
+  // タブ状態
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+
+  // アクセス制御
+  if (!isAdmin) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ textAlign: 'center', maxWidth: 500, padding: 20 }}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🔒</div>
+          <h1 style={{ margin: '0 0 12px 0', fontSize: 28, fontWeight: 800 }}>アクセス拒否</h1>
+          <p style={{ margin: '0 0 24px 0', fontSize: 16, opacity: 0.9 }}>
+            このページはスーパーアドミン専用です。
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            style={{
+              padding: '12px 32px',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ホームに戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%)',
+      padding: '40px 20px',
+    }}>
+      <div style={{
+        maxWidth: 1600,
+        margin: '0 auto',
+      }}>
+        {/* ヘッダー */}
+        <div style={{
+          marginBottom: 32,
+          color: '#fff',
+        }}>
+          <h1 style={{
+            margin: '0 0 8px 0',
+            fontSize: 32,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            👑 Super Admin Dashboard
+          </h1>
+          <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>
+            システム管理・監視・プレビューツール
+          </p>
+        </div>
+
+        {/* タブナビゲーション */}
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 24,
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          paddingBottom: 0,
+        }}>
+          <TabButton
+            active={activeTab === 'dashboard'}
+            onClick={() => setActiveTab('dashboard')}
+            icon="📊"
+            label="ダッシュボード"
+          />
+          <TabButton
+            active={activeTab === 'user-preview'}
+            onClick={() => setActiveTab('user-preview')}
+            icon="👤"
+            label="ユーザープロフィール"
+          />
+          <TabButton
+            active={activeTab === 'tenants'}
+            onClick={() => setActiveTab('tenants')}
+            icon="🏢"
+            label="テナント管理"
+            disabled
+          />
+          <TabButton
+            active={activeTab === 'revenue'}
+            onClick={() => setActiveTab('revenue')}
+            icon="💰"
+            label="収益管理"
+            disabled
+          />
+        </div>
+
+        {/* タブコンテンツ */}
+        {activeTab === 'dashboard' && <DashboardTab />}
+        {activeTab === 'user-preview' && <UserPreviewTab />}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * タブボタンコンポーネント
+ */
+function TabButton({ active, onClick, icon, label, disabled }: {
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: '12px 24px',
+        background: active ? 'rgba(102, 126, 234, 0.2)' : 'transparent',
+        border: 'none',
+        borderBottom: active ? '3px solid rgba(102, 126, 234, 1)' : '3px solid transparent',
+        color: disabled ? 'rgba(255,255,255,0.3)' : '#fff',
+        fontSize: 14,
+        fontWeight: active ? 700 : 600,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'all 0.2s',
+      }}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+/**
+ * ダッシュボードタブ
+ */
+function DashboardTab() {
+  const { stats, isLoading } = useSystemStats();
+  const realtimeData = useRealtimeStats();
+  const { tenants } = useTenantList();
+  const { activities } = useRecentActivity(20);
+  const { health } = useSystemHealth();
+
+  if (isLoading) {
+    return (
+      <div style={{
+        padding: 60,
+        textAlign: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <div style={{ fontSize: 18 }}>データを読み込み中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* システムヘルス */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+          ⚡ システムヘルス
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          {Object.entries(health.services).map(([key, service]) => {
+            const statusInfo = getHealthStatusInfo(service.status);
+            return (
+              <div
+                key={key}
+                style={{
+                  padding: 12,
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 8,
+                  border: `1px solid ${service.status === 'down' ? '#ef4444' : service.status === 'degraded' ? '#f59e0b' : '#10b981'}`,
+                }}
+              >
+                <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>{service.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: statusInfo.color }}>
+                  {statusInfo.icon} {statusInfo.label}
+                </div>
+                {service.responseTime && (
+                  <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>{service.responseTime}ms</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 主要統計 */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: 16,
+      }}>
+        <StatCard
+          icon="🏪"
+          label="GIFT HUB"
+          value={stats.totalHubs.toString()}
+          subtitle={`${stats.activeHubs}個が稼働中`}
+          color="#3b82f6"
+        />
+        <StatCard
+          icon="🎁"
+          label="総配布数"
+          value={stats.totalDistributions.toLocaleString()}
+          subtitle="累計配布回数"
+          color="#10b981"
+        />
+        <StatCard
+          icon="💰"
+          label="総収益"
+          value={`${formatTokenAmount(BigInt(stats.totalRevenue), 18, 0)} JPYC`}
+          subtitle="累計収益"
+          color="#f59e0b"
+        />
+        <StatCard
+          icon="📦"
+          label="商品数"
+          value={stats.totalProducts.toString()}
+          subtitle="アクティブな商品"
+          color="#8b5cf6"
+        />
+        <StatCard
+          icon="📊"
+          label="トランザクション"
+          value={stats.totalTransactions.toLocaleString()}
+          subtitle={`今日: ${stats.transactionsToday}件`}
+          color="#ec4899"
+        />
+        <StatCard
+          icon="🏢"
+          label="テナント"
+          value={stats.totalTenants.toString()}
+          subtitle={`${stats.activeTenants}個が稼働中`}
+          color="#06b6d4"
+        />
+      </div>
+
+      {/* リアルタイム統計 */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+          📡 リアルタイム統計
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>オンラインユーザー</div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{realtimeData.currentOnlineUsers}</div>
+          </div>
+          <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>処理中トランザクション</div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{realtimeData.activeTransactions}</div>
+          </div>
+          <div style={{ padding: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 8 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>システム負荷</div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{realtimeData.systemLoad}%</div>
+          </div>
+        </div>
+      </div>
+
+      {/* テナント一覧と最近のアクティビティ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        {/* テナント一覧 */}
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 20,
+          color: '#fff',
+        }}>
+          <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+            🏢 テナント一覧
+          </h2>
+          {tenants.map(tenant => {
+            const statusInfo = getHealthStatusInfo(tenant.health.status);
+            return (
+              <div
+                key={tenant.id}
+                style={{
+                  padding: 16,
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 8,
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>{tenant.name}</div>
+                  <div style={{ fontSize: 12, color: statusInfo.color }}>
+                    {statusInfo.icon} {statusInfo.label}
+                  </div>
+                </div>
+                {tenant.stats && (
+                  <div style={{ fontSize: 12, opacity: 0.7, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div>GIFT HUB: {tenant.stats.totalHubs}個</div>
+                    <div>配布: {tenant.stats.totalDistributions}回</div>
+                    <div>収益: {formatTokenAmount(BigInt(tenant.stats.totalRevenue), 18, 0)} JPYC</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 最近のアクティビティ */}
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 20,
+          color: '#fff',
+          maxHeight: 500,
+          overflowY: 'auto',
+        }}>
+          <h2 style={{ margin: '0 0 16px 0', fontSize: 18, fontWeight: 700 }}>
+            📝 最近のアクティビティ
+          </h2>
+          {activities.slice(0, 10).map(activity => {
+            const categoryInfo = getActivityCategoryInfo(activity.category);
+            return (
+              <div
+                key={activity.id}
+                style={{
+                  padding: 12,
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  borderLeft: `3px solid ${categoryInfo.color}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 16 }}>{categoryInfo.icon}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{activity.title}</span>
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{activity.description}</div>
+                <div style={{ fontSize: 11, opacity: 0.6 }}>{formatRelativeTime(activity.timestamp)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ユーザープレビュータブ（既存機能）
+ */
+function UserPreviewTab() {
+  const connectedAddress = useAddress();
 
   // プレビュー設定
   const [previewMode, setPreviewMode] = useState<PreviewMode>('mock');
@@ -61,348 +444,271 @@ export function SuperAdminPage() {
   // プレビュー対象のプロフィール
   const profile = previewMode === 'real' ? realProfile : mockProfile;
 
-  // アクセス制御
-  if (!isAdmin) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#fff',
-      }}>
-        <div style={{ textAlign: 'center', maxWidth: 500, padding: 20 }}>
-          <div style={{ fontSize: 64, marginBottom: 16 }}>🔒</div>
-          <h1 style={{ margin: '0 0 12px 0', fontSize: 28, fontWeight: 800 }}>アクセス拒否</h1>
-          <p style={{ margin: '0 0 24px 0', fontSize: 16, opacity: 0.9 }}>
-            このページはスーパーアドミン専用です。
-          </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{
-              padding: '12px 32px',
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: 8,
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            ホームに戻る
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%)',
-      padding: '40px 20px',
+      display: 'grid',
+      gridTemplateColumns: '350px 1fr',
+      gap: 24,
     }}>
-      <div style={{
-        maxWidth: 1400,
-        margin: '0 auto',
-      }}>
-        {/* ヘッダー */}
+      {/* 左側: コントロール */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* プレビューモード選択 */}
         <div style={{
-          marginBottom: 32,
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 20,
           color: '#fff',
         }}>
-          <h1 style={{
-            margin: '0 0 8px 0',
-            fontSize: 32,
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}>
-            👑 Super Admin Dashboard
-          </h1>
-          <p style={{ margin: 0, fontSize: 14, opacity: 0.7 }}>
-            システム管理・プレビュー・診断ツール
-          </p>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
+            📊 プレビューモード
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: 12,
+              background: previewMode === 'mock' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${previewMode === 'mock' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}>
+              <input
+                type="radio"
+                name="previewMode"
+                value="mock"
+                checked={previewMode === 'mock'}
+                onChange={() => setPreviewMode('mock')}
+              />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>🎨 モックデータ</div>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>テスト用のダミーデータ</div>
+              </div>
+            </label>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: 12,
+              background: previewMode === 'real' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${previewMode === 'real' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}>
+              <input
+                type="radio"
+                name="previewMode"
+                value="real"
+                checked={previewMode === 'real'}
+                onChange={() => setPreviewMode('real')}
+              />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>🔗 実データ</div>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>コントラクトから取得</div>
+              </div>
+            </label>
+          </div>
         </div>
 
-        {/* メインコンテンツ */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '350px 1fr',
-          gap: 24,
-        }}>
-          {/* 左側: コントロールパネル */}
+        {/* プリセット選択 */}
+        {previewMode === 'mock' && (
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            padding: 20,
+            color: '#fff',
           }}>
-            {/* プレビューモード選択 */}
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12,
-              padding: 20,
-              color: '#fff',
-            }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
-                📊 プレビューモード
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: 12,
-                  background: previewMode === 'mock' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${previewMode === 'mock' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>⚡ プリセット</h3>
+            <select
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value as PresetName)}
+              style={{
+                width: '100%',
+                padding: 12,
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: 14,
+              }}
+            >
+              <option value="beginner">🥉 初心者 (Bronze)</option>
+              <option value="intermediate">🥈 中級者 (Silver)</option>
+              <option value="advanced">🥇 上級者 (Gold)</option>
+              <option value="expert">💎 エキスパート (Platinum)</option>
+              <option value="legend">👑 レジェンド (Diamond)</option>
+              <option value="custom">⚙️ カスタム</option>
+            </select>
+
+            {/* カスタム設定 */}
+            {presetName === 'custom' && (
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>ランク</label>
+                  <select
+                    value={customRank}
+                    onChange={(e) => setCustomRank(e.target.value as RankName)}
+                    style={{
+                      width: '100%',
+                      padding: 8,
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 6,
+                      color: '#fff',
+                      fontSize: 13,
+                    }}
+                  >
+                    <option value="Bronze">🥉 Bronze</option>
+                    <option value="Silver">🥈 Silver</option>
+                    <option value="Gold">🥇 Gold</option>
+                    <option value="Platinum">💎 Platinum</option>
+                    <option value="Diamond">👑 Diamond</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>貢献度ポイント</label>
                   <input
-                    type="radio"
-                    name="previewMode"
-                    value="mock"
-                    checked={previewMode === 'mock'}
-                    onChange={() => setPreviewMode('mock')}
+                    type="number"
+                    value={customPoints}
+                    onChange={(e) => setCustomPoints(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 8,
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 6,
+                      color: '#fff',
+                      fontSize: 13,
+                    }}
+                    placeholder="3000"
                   />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>🎨 モックデータ</div>
-                    <div style={{ fontSize: 11, opacity: 0.7 }}>テスト用のダミーデータ</div>
-                  </div>
-                </label>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: 12,
-                  background: previewMode === 'real' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${previewMode === 'real' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                }}>
-                  <input
-                    type="radio"
-                    name="previewMode"
-                    value="real"
-                    checked={previewMode === 'real'}
-                    onChange={() => setPreviewMode('real')}
-                  />
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>🔗 実データ</div>
-                    <div style={{ fontSize: 11, opacity: 0.7 }}>コントラクトから取得</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* プリセット選択 (モックモード時のみ) */}
-            {previewMode === 'mock' && (
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12,
-                padding: 20,
-                color: '#fff',
-              }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
-                  ⚡ プリセット
-                </h3>
-                <select
-                  value={presetName}
-                  onChange={(e) => setPresetName(e.target.value as PresetName)}
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: 8,
-                    color: '#fff',
-                    fontSize: 14,
-                  }}
-                >
-                  <option value="beginner">🥉 初心者 (Bronze)</option>
-                  <option value="intermediate">🥈 中級者 (Silver)</option>
-                  <option value="advanced">🥇 上級者 (Gold)</option>
-                  <option value="expert">💎 エキスパート (Platinum)</option>
-                  <option value="legend">👑 レジェンド (Diamond)</option>
-                  <option value="custom">⚙️ カスタム</option>
-                </select>
-
-                {/* カスタム設定 */}
-                {presetName === 'custom' && (
-                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>
-                        ランク
-                      </label>
-                      <select
-                        value={customRank}
-                        onChange={(e) => setCustomRank(e.target.value as RankName)}
-                        style={{
-                          width: '100%',
-                          padding: 8,
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          borderRadius: 6,
-                          color: '#fff',
-                          fontSize: 13,
-                        }}
-                      >
-                        <option value="Bronze">🥉 Bronze</option>
-                        <option value="Silver">🥈 Silver</option>
-                        <option value="Gold">🥇 Gold</option>
-                        <option value="Platinum">💎 Platinum</option>
-                        <option value="Diamond">👑 Diamond</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>
-                        貢献度ポイント
-                      </label>
-                      <input
-                        type="number"
-                        value={customPoints}
-                        onChange={(e) => setCustomPoints(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: 8,
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          borderRadius: 6,
-                          color: '#fff',
-                          fontSize: 13,
-                        }}
-                        placeholder="3000"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* アドレス入力 */}
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12,
-              padding: 20,
-              color: '#fff',
-            }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
-                🔍 プレビュー対象
-              </h3>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>
-                  ウォレットアドレス
-                </label>
-                <input
-                  type="text"
-                  value={customAddress}
-                  onChange={(e) => {
-                    setCustomAddress(e.target.value);
-                    if (e.target.value && presetName !== 'custom') {
-                      setPresetName('custom');
-                    }
-                  }}
-                  placeholder={connectedAddress || '0x...'}
-                  style={{
-                    width: '100%',
-                    padding: 10,
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: 8,
-                    color: '#fff',
-                    fontSize: 13,
-                    fontFamily: 'monospace',
-                  }}
-                />
-              </div>
-              <button
-                onClick={() => {
-                  setCustomAddress(connectedAddress || '');
-                  setPresetName('custom');
-                }}
-                style={{
-                  width: '100%',
-                  padding: 10,
-                  background: 'rgba(102, 126, 234, 0.2)',
-                  border: '1px solid rgba(102, 126, 234, 0.5)',
-                  borderRadius: 8,
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                接続中のウォレットを使用
-              </button>
-            </div>
-
-            {/* 情報 */}
-            <div style={{
-              background: 'rgba(102, 126, 234, 0.1)',
-              border: '1px solid rgba(102, 126, 234, 0.3)',
-              borderRadius: 12,
-              padding: 16,
-              color: '#fff',
-              fontSize: 12,
-            }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>ℹ️ 使い方</div>
-              <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6, opacity: 0.9 }}>
-                <li>モックデータモードでデザインを確認</li>
-                <li>プリセットで様々なランクをプレビュー</li>
-                <li>実データモードで実際のユーザーを確認</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* 右側: プレビュー */}
-          <div>
-            {isLoadingReal && previewMode === 'real' ? (
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 16,
-                padding: 60,
-                textAlign: 'center',
-                color: '#fff',
-              }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-                <div style={{ fontSize: 18 }}>プロフィールを読み込み中...</div>
-              </div>
-            ) : profile ? (
-              <UserProfilePreview profile={profile} />
-            ) : (
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 16,
-                padding: 60,
-                textAlign: 'center',
-                color: '#fff',
-              }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-                <div style={{ fontSize: 18, marginBottom: 8 }}>プロフィールがありません</div>
-                <div style={{ fontSize: 14, opacity: 0.7 }}>
-                  {previewMode === 'real'
-                    ? 'このアドレスのデータが見つかりません'
-                    : 'プリセットを選択してください'}
                 </div>
               </div>
             )}
           </div>
+        )}
+
+        {/* アドレス入力 */}
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 20,
+          color: '#fff',
+        }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>🔍 プレビュー対象</h3>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>ウォレットアドレス</label>
+            <input
+              type="text"
+              value={customAddress}
+              onChange={(e) => {
+                setCustomAddress(e.target.value);
+                if (e.target.value && presetName !== 'custom') {
+                  setPresetName('custom');
+                }
+              }}
+              placeholder={connectedAddress || '0x...'}
+              style={{
+                width: '100%',
+                padding: 10,
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: 13,
+                fontFamily: 'monospace',
+              }}
+            />
+          </div>
+          <button
+            onClick={() => {
+              setCustomAddress(connectedAddress || '');
+              setPresetName('custom');
+            }}
+            style={{
+              width: '100%',
+              padding: 10,
+              background: 'rgba(102, 126, 234, 0.2)',
+              border: '1px solid rgba(102, 126, 234, 0.5)',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            接続中のウォレットを使用
+          </button>
         </div>
+      </div>
+
+      {/* 右側: プレビュー */}
+      <div>
+        {isLoadingReal && previewMode === 'real' ? (
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 16,
+            padding: 60,
+            textAlign: 'center',
+            color: '#fff',
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+            <div style={{ fontSize: 18 }}>プロフィールを読み込み中...</div>
+          </div>
+        ) : profile ? (
+          <UserProfilePreview profile={profile} />
+        ) : (
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 16,
+            padding: 60,
+            textAlign: 'center',
+            color: '#fff',
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
+            <div style={{ fontSize: 18, marginBottom: 8 }}>プロフィールがありません</div>
+            <div style={{ fontSize: 14, opacity: 0.7 }}>
+              {previewMode === 'real' ? 'このアドレスのデータが見つかりません' : 'プリセットを選択してください'}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /**
- * ユーザープロフィールプレビューコンポーネント
+ * 統計カード
+ */
+function StatCard({ icon, label, value, subtitle, color }: {
+  icon: string;
+  label: string;
+  value: string;
+  subtitle?: string;
+  color: string;
+}) {
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.05)',
+      border: `1px solid ${color}30`,
+      borderRadius: 12,
+      padding: 20,
+      color: '#fff',
+    }}>
+      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>{icon} {label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color }}>{value}</div>
+      {subtitle && <div style={{ fontSize: 11, opacity: 0.6, marginTop: 8 }}>{subtitle}</div>}
+    </div>
+  );
+}
+
+/**
+ * ユーザープロフィールプレビュー（簡易版）
  */
 function UserProfilePreview({ profile }: { profile: UserProfile }) {
   const rankColor = getRankColor(profile.rank.name);
@@ -416,7 +722,6 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
       padding: 24,
       color: '#fff',
     }}>
-      {/* プレビューラベル */}
       <div style={{
         marginBottom: 16,
         padding: 8,
@@ -427,25 +732,17 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
         fontWeight: 600,
         textAlign: 'center',
       }}>
-        👁️ プレビューモード - 実際のユーザー画面と同じデザイン
+        👁️ プレビューモード
       </div>
 
       {/* ヘッダー */}
       <div style={{
         background: 'rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(10px)',
         borderRadius: 12,
         padding: 24,
         marginBottom: 20,
-        border: '1px solid rgba(255,255,255,0.2)',
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 20,
-          flexWrap: 'wrap',
-        }}>
-          {/* アバター */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           <div style={{
             width: 100,
             height: 100,
@@ -460,12 +757,9 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
             {rankBadge}
           </div>
 
-          {/* 情報 */}
           <div style={{ flex: 1, minWidth: 250 }}>
             {profile.ensName && (
-              <h2 style={{ margin: '0 0 8px 0', fontSize: 24, fontWeight: 800 }}>
-                {profile.ensName}
-              </h2>
+              <h2 style={{ margin: '0 0 8px 0', fontSize: 24, fontWeight: 800 }}>{profile.ensName}</h2>
             )}
             <div style={{
               fontSize: 14,
@@ -475,12 +769,7 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
             }}>
               {shortenAddress(profile.address, 8)}
             </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              marginBottom: 8,
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <div style={{
                 padding: '6px 14px',
                 background: rankColor,
@@ -493,18 +782,11 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
               }}>
                 {rankBadge} {profile.rank.name}
               </div>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Level {profile.rank.level}
-              </div>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>Level {profile.rank.level}</div>
             </div>
             <div style={{ fontSize: 14, marginBottom: 6 }}>
               💎 貢献度: <span style={{ fontWeight: 700 }}>{profile.rank.points.toLocaleString()}</span> pt
             </div>
-            {profile.rank.nextRank && profile.rank.pointsToNext !== undefined && (
-              <div style={{ fontSize: 12, opacity: 0.9 }}>
-                次のランク（{profile.rank.nextRank}）まで: <span style={{ fontWeight: 600 }}>{profile.rank.pointsToNext.toLocaleString()}</span> pt
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -514,124 +796,24 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
         gap: 12,
-        marginBottom: 20,
       }}>
-        <StatCard emoji="💸" label="Tip送信" value={`${formatTokenAmount(profile.stats.totalTipsSent, 18, 0)} JPYC`} sub={`${profile.stats.tipSentCount}回`} />
-        <StatCard emoji="💰" label="Tip受取" value={`${formatTokenAmount(profile.stats.totalTipsReceived, 18, 0)} JPYC`} sub={`${profile.stats.tipReceivedCount}回`} />
-        <StatCard emoji="🎁" label="特典受取" value={`${profile.stats.purchaseCount}回`} />
-        <StatCard emoji="🎉" label="Reward受取" value={`${profile.stats.rewardClaimedCount}回`} />
-      </div>
-
-      {/* SBT */}
-      {profile.sbts.length > 0 && (
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 20,
-        }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700 }}>🖼️ Soulbound Tokens</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-            gap: 12,
-          }}>
-            {profile.sbts.map((sbt, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  borderRadius: 8,
-                  padding: 12,
-                  textAlign: 'center',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}
-              >
-                <div style={{ fontSize: 32, marginBottom: 6 }}>{rankBadge}</div>
-                <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>
-                  {sbt.metadata?.name || `SBT #${sbt.tokenId.toString()}`}
-                </div>
-                {sbt.mintedAt && (
-                  <div style={{ fontSize: 10, opacity: 0.6 }}>
-                    {formatRelativeTime(sbt.mintedAt)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>💸 Tip送信</div>
+          <div style={{ fontSize: 18, fontWeight: 800 }}>{formatTokenAmount(profile.stats.totalTipsSent, 18, 0)} JPYC</div>
         </div>
-      )}
-
-      {/* アクティビティ */}
-      <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: 12,
-        padding: 16,
-      }}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 700 }}>📝 最近のアクティビティ</h3>
-        {profile.recentActivities && profile.recentActivities.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {profile.recentActivities.slice(0, 5).map((activity) => (
-              <div
-                key={activity.id}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  padding: 10,
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontSize: 12,
-                }}
-              >
-                <div style={{ fontSize: 18 }}>
-                  {activity.type === 'tip_sent' ? '💸' :
-                   activity.type === 'tip_received' ? '💰' :
-                   activity.type === 'purchase' ? '🎁' :
-                   activity.type === 'reward_claimed' ? '🎉' :
-                   activity.type === 'rank_up' ? '⬆️' :
-                   activity.type === 'sbt_minted' ? '🖼️' : '📝'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                    {activity.type === 'tip_sent' ? 'Tip送信' :
-                     activity.type === 'tip_received' ? 'Tip受取' :
-                     activity.type === 'purchase' ? '特典受取' :
-                     activity.type === 'reward_claimed' ? 'Reward受取' :
-                     activity.type === 'rank_up' ? 'ランクアップ' :
-                     activity.type === 'sbt_minted' ? 'SBT取得' : activity.type}
-                  </div>
-                  <div style={{ fontSize: 10, opacity: 0.7 }}>
-                    {formatRelativeTime(activity.timestamp)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ padding: 20, textAlign: 'center', opacity: 0.5, fontSize: 12 }}>
-            アクティビティがありません
-          </div>
-        )}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>💰 Tip受取</div>
+          <div style={{ fontSize: 18, fontWeight: 800 }}>{formatTokenAmount(profile.stats.totalTipsReceived, 18, 0)} JPYC</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>🎁 特典受取</div>
+          <div style={{ fontSize: 18, fontWeight: 800 }}>{profile.stats.purchaseCount}回</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>🎉 Reward受取</div>
+          <div style={{ fontSize: 18, fontWeight: 800 }}>{profile.stats.rewardClaimedCount}回</div>
+        </div>
       </div>
-    </div>
-  );
-}
-
-/**
- * 統計カードコンポーネント
- */
-function StatCard({ emoji, label, value, sub }: { emoji: string; label: string; value: string; sub?: string }) {
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      borderRadius: 10,
-      padding: 14,
-      border: '1px solid rgba(255,255,255,0.1)',
-    }}>
-      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>{emoji} {label}</div>
-      <div style={{ fontSize: 18, fontWeight: 800 }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }

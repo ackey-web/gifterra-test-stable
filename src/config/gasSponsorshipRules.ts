@@ -184,11 +184,9 @@ export function getActiveRules(): GasSponsorRule[] {
 
   switch (phase) {
     case '2':
-      console.log('🔧 Gas Sponsorship: Phase 2 (Hybrid)');
       return PHASE_2_RULES;
     case '1':
     default:
-      console.log('🔧 Gas Sponsorship: Phase 1 (Platform Full)');
       return PHASE_1_RULES;
   }
 }

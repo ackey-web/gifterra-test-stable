@@ -50,7 +50,6 @@ export const SUPER_ADMIN_CONFIG = {
  */
 export function isSuperAdminWithDebug(address: string | undefined): boolean {
   if (SUPER_ADMIN_CONFIG.debugMode && address) {
-    console.log('🔓 [Super Admin] Debug mode enabled - granting access to:', address);
     return true;
   }
   return isSuperAdmin(address);
