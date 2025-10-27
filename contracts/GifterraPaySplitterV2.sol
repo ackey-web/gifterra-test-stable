@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ScoreRegistry.sol";
 
 /**
  * @title GifterraPaySplitter v2.0.0
@@ -68,6 +69,9 @@ contract GifterraPaySplitterV2 is Pausable, ReentrancyGuard, Ownable {
 
     /// @notice ERC20トークンの各クリエイターへの分配済み額
     mapping(IERC20 => mapping(address => uint256)) private _erc20Released;
+
+    /// @notice ScoreRegistryコントラクト（オプション）
+    ScoreRegistry public scoreRegistry;
 
     // ========================================
     // イベント
@@ -144,6 +148,18 @@ contract GifterraPaySplitterV2 is Pausable, ReentrancyGuard, Ownable {
     }
 
     // ========================================
+    // ScoreRegistry 設定
+    // ========================================
+
+    /**
+     * @notice ScoreRegistryコントラクトのアドレスを設定
+     * @param _scoreRegistry ScoreRegistryのアドレス（address(0)で無効化）
+     */
+    function setScoreRegistry(address _scoreRegistry) external onlyOwner {
+        scoreRegistry = ScoreRegistry(_scoreRegistry);
+    }
+
+    // ========================================
     // 受け口関数（ネイティブ通貨）
     // ========================================
 
@@ -163,6 +179,11 @@ contract GifterraPaySplitterV2 is Pausable, ReentrancyGuard, Ownable {
         _totalNativeReceived += msg.value;
 
         emit DonationReceived(msg.sender, address(0), msg.value, sku, traceId);
+
+        // スコア記録（ScoreRegistryが設定されている場合のみ）
+        if (address(scoreRegistry) != address(0)) {
+            scoreRegistry.recordScore(msg.sender, address(0), msg.value, traceId);
+        }
     }
 
     /**
@@ -174,6 +195,11 @@ contract GifterraPaySplitterV2 is Pausable, ReentrancyGuard, Ownable {
         _totalNativeReceived += msg.value;
 
         emit DonationReceived(msg.sender, address(0), msg.value, bytes32(0), bytes32(0));
+
+        // スコア記録（ScoreRegistryが設定されている場合のみ）
+        if (address(scoreRegistry) != address(0)) {
+            scoreRegistry.recordScore(msg.sender, address(0), msg.value, bytes32(0));
+        }
     }
 
     // ========================================
@@ -203,6 +229,11 @@ contract GifterraPaySplitterV2 is Pausable, ReentrancyGuard, Ownable {
         _totalERC20Received[tokenContract] += amount;
 
         emit DonationReceived(msg.sender, token, amount, sku, traceId);
+
+        // スコア記録（ScoreRegistryが設定されている場合のみ）
+        if (address(scoreRegistry) != address(0)) {
+            scoreRegistry.recordScore(msg.sender, token, amount, traceId);
+        }
     }
 
     // ========================================
