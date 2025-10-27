@@ -1446,7 +1446,7 @@ export default function AdminDashboard() {
       }
     };
 
-    // ランク設定をロード
+    // ランク設定をロード（プロトタイプ版コントラクトでは未実装のため、エラーは想定内）
     const loadRankConfig = async () => {
       if (!contract) return;
       setIsLoadingRankConfig(true);
@@ -1476,7 +1476,9 @@ export default function AdminDashboard() {
         }
         setRankURIInputs(uriInputs);
       } catch (error) {
-        console.error("ランク設定の読み込みエラー:", error);
+        // プロトタイプ版コントラクトでは可変ランク機能が未実装のため、
+        // エラーは想定内として静かに処理（本番用コントラクトでは動作する）
+        // console.error("ランク設定の読み込みエラー:", error);
       } finally {
         setIsLoadingRankConfig(false);
       }
@@ -1752,8 +1754,25 @@ export default function AdminDashboard() {
 
           {activeTab === 'ranks' && (
             <div>
+        {/* プロトタイプ版の警告 */}
+        <div style={{
+          marginTop: 32,
+          padding: 16,
+          background: "rgba(251, 191, 36, 0.1)",
+          border: "1px solid rgba(251, 191, 36, 0.3)",
+          borderRadius: 8
+        }}>
+          <h4 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 600, color: "#fbbf24" }}>
+            ⚠️ プロトタイプ版コントラクト接続中
+          </h4>
+          <p style={{ margin: 0, fontSize: 13, opacity: 0.9, lineHeight: 1.6 }}>
+            現在接続されているコントラクトは可変ランク機能が未実装のプロトタイプです。<br />
+            本番用コントラクトに切り替えると、ランク設定機能が利用可能になります。
+          </p>
+        </div>
+
         {/* ランク設定セクション */}
-        <div style={{ marginTop: 32, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
+        <div style={{ marginTop: 16, padding: 16, background: "rgba(255,255,255,.04)", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>
             🏆 ランク設定
           </h3>
