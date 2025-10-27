@@ -50,7 +50,56 @@ function getSmartWalletConfig(): SmartWalletConfig {
  * 1. スマートウォレット（推奨）- 初心者向け、ガスレス
  * 2. 外部ウォレット直接接続 - 上級者向け、自己管理
  */
+/**
+ * スマートウォレットの有効/無効を制御するフラグ
+ *
+ * 環境変数で制御可能:
+ * - true: スマートウォレット有効（ガスレス体験）
+ * - false: 従来のウォレットのみ
+ */
+const ENABLE_SMART_WALLET = import.meta.env.VITE_ENABLE_SMART_WALLET !== "false";
+
+/**
+ * スマートウォレット用のパーソナルウォレット設定
+ *
+ * スマートウォレット内で使えるウォレット:
+ * 1. Embedded Wallet（推奨）- メール/SNSログイン
+ * 2. MetaMask - スマートウォレット経由
+ */
+function getPersonalWalletsForSmartWallet() {
+  return [
+    new EmbeddedWallet({
+      auth: {
+        options: ["email", "google"],
+      },
+    }),
+    new MetaMaskWallet(),
+  ];
+}
+
 export const supportedWallets = [
+  // スマートウォレット（ガスレス、推奨）
+  ...(ENABLE_SMART_WALLET && import.meta.env.VITE_SMART_WALLET_FACTORY
+    ? [
+        {
+          id: "smart",
+          meta: {
+            name: "簡単ログイン（推奨・ガスレス）",
+            iconURL: "ipfs://QmQgjUANXwknJQF4o9g1E4jjLqEDi4jXp0xD8GjZJ2xQNW/smart-wallet.svg",
+          },
+          create: (options?: any) => {
+            const config = getSmartWalletConfig();
+            const smartWallet = new SmartWallet({
+              ...config,
+              ...options,
+            });
+            return smartWallet;
+          },
+          recommended: true,
+        },
+      ]
+    : []),
+
   // MetaMask（直接接続）
   {
     id: "metamask",
@@ -71,7 +120,7 @@ export const supportedWallets = [
     create: (options?: any) => new CoinbaseWallet(options),
   },
 
-  // Embedded Wallet
+  // Embedded Wallet（スマートウォレット無効時のフォールバック）
   {
     id: "embedded",
     meta: {
