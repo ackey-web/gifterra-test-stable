@@ -223,8 +223,10 @@ const OPTIMIZED_LOOKBACK: Record<Exclude<Period, "all">, number> = {
 
 // 最大検索範囲制限（メモリ保護）
 const MAX_BLOCK_RANGE = 1500000; // 約34日分（過去のイベントをカバー）
+// 🔧 FIX: The deployed contract emits "Tipped" not "TipSent"
+// Discovered via blockchain analysis at Block 28083479
 const TOPIC_TIPPED = ethers.utils.keccak256(
-  ethers.utils.toUtf8Bytes("TipSent(address,uint256)")
+  ethers.utils.toUtf8Bytes("Tipped(address,uint256)")
 );
 
 /* ---------- Loading Overlay ---------- */

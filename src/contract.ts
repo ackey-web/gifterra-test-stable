@@ -200,6 +200,9 @@ export const READ_ABI = [
 
 /* =========================================
    ✅ イベントABI
+
+   🔧 NOTE: Deployed contract uses "Tipped" not "TipSent"
+   Verified via blockchain analysis at Block 28083479
 ========================================= */
 export const EVENT_ABI = [
   {
@@ -208,7 +211,7 @@ export const EVENT_ABI = [
       { indexed: true, internalType: "address", name: "user", type: "address" },
       { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
     ],
-    name: "TipSent",
+    name: "Tipped",
     type: "event",
   },
   {
