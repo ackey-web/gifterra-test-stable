@@ -343,6 +343,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false); // バックグラウンド更新中
   const [lastFetchedBlock, setLastFetchedBlock] = useState<bigint | undefined>(); // 差分更新用
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // 初回ロードフラグ
 
   const [emergencyStop, setEmergencyStop] = useState(false);
   useEffect(() => {
@@ -411,7 +412,14 @@ export default function AdminDashboard() {
   /* ---------- 最新ブロック範囲取得（⚡ パフォーマンス最適化版） ---------- */
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+
+    // 初回のみローディングオーバーレイ表示、2回目以降はバックグラウンド更新
+    if (isInitialLoad) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+
     setLastFetchedBlock(undefined); // 期間変更時にリセット
     (async () => {
       try {
@@ -510,7 +518,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
     if (fromBlock === undefined) return;
-    setIsLoading(true);
+
+    // 初回以外はsetIsLoadingを使わない（既にsetIsRefreshingが設定されている）
+    if (isInitialLoad) {
+      setIsLoading(true);
+    }
+
     (async () => {
       try {
         // 最新ブロック番号を取得（Alchemy Free Tier対応）
@@ -532,7 +545,7 @@ export default function AdminDashboard() {
           const txHash = (log.transactionHash || "").toLowerCase();
           return { from, amount, blockNumber, txHash };
         });
-        
+
         items.sort((a, b) =>
           a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0
         );
@@ -540,8 +553,15 @@ export default function AdminDashboard() {
         if (!cancelled) {
           setRawTips(items);
           setLastFetchedBlock(BigInt(latestBlock)); // 差分更新用に保存
-          setIsLoading(false);
-          console.log(`✅ 初回ロード完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
+
+          if (isInitialLoad) {
+            setIsLoading(false);
+            setIsInitialLoad(false);
+            console.log(`✅ 初回ロード完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
+          } else {
+            setIsRefreshing(false);
+            console.log(`✅ 期間変更完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
+          }
         }
       } catch (e: any) {
         const errorMsg = e?.message || e?.data?.message || "Unknown error";
@@ -573,10 +593,16 @@ export default function AdminDashboard() {
             period
           });
         }
-        
+
         if (!cancelled) {
           setRawTips([]); // エラー時は空配列を設定
-          setIsLoading(false);
+
+          if (isInitialLoad) {
+            setIsLoading(false);
+            setIsInitialLoad(false);
+          } else {
+            setIsRefreshing(false);
+          }
         }
       }
     })();
