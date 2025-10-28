@@ -287,14 +287,6 @@ export class ScoreDatabase {
       userScore.resonance.actions.utilityTokenTips += 1;
     }
 
-    // メッセージがある場合はAI分析（将来実装）
-    if (message) {
-      // TODO: AI分析を統合
-      // const sentiment = await analyzeSentiment(message);
-      // userScore.resonance.messageCount += 1;
-      // avgSentimentを再計算
-    }
-
     // 連続日数を更新
     userScore.resonance.streak = updateStreak(
       userScore.resonance.lastDate,
@@ -308,18 +300,43 @@ export class ScoreDatabase {
 
     userScore.resonance.lastDate = timestamp;
 
+    // ai_quality_scoreを取得（フロントエンドが既に計算済み）
+    const aiQualityScore = await this.getAIQualityScore(userScore.address);
+
     // 正規化（新しいkodomi算出: 案A + AI質的スコア）
-    // avgSentimentは現在デフォルト50（将来メッセージ機能実装時に実際の値を使用）
     userScore.resonance.normalized = normalizeResonanceScore(
       userScore.resonance.actions.utilityTokenTips,  // 全トークン重み1.0
       userScore.resonance.actions.economicTokenTips, // 全トークン重み1.0
       userScore.resonance.streak,
-      userScore.resonance.avgSentiment || 50 // デフォルト中立
+      aiQualityScore // DBから取得したAI質的スコア
     );
 
     // レベル計算
     userScore.resonance.level = calculateResonanceLevel(userScore.resonance.normalized);
     userScore.resonance.displayLevel = getDisplayLevel(userScore.resonance.level);
+  }
+
+  /**
+   * ユーザーのAI質的スコアを取得
+   */
+  private async getAIQualityScore(address: string): Promise<number> {
+    try {
+      const { data, error } = await this.supabase
+        .from('user_scores')
+        .select('ai_quality_score')
+        .eq('address', address.toLowerCase())
+        .single();
+
+      if (error || !data) {
+        // まだai_quality_scoreが計算されていない場合は0を返す
+        return 0;
+      }
+
+      return data.ai_quality_score || 0;
+    } catch (error) {
+      console.error('❌ Error fetching ai_quality_score:', error);
+      return 0;
+    }
   }
 
   private async updateResonanceScore(
@@ -352,12 +369,15 @@ export class ScoreDatabase {
 
     userScore.resonance.lastDate = timestamp;
 
-    // 正規化（kodomi算出: トークン種別ごとの重み付き回数 + 連続ボーナス）
+    // ai_quality_scoreを取得（フロントエンドが既に計算済み）
+    const aiQualityScore = await this.getAIQualityScore(userScore.address);
+
+    // 正規化（kodomi算出: トークン種別ごとの重み付き回数 + 連続ボーナス + AI質的スコア）
     userScore.resonance.normalized = normalizeResonanceScore(
       userScore.resonance.actions.utilityTokenTips,  // tNHT等（重み1.0）
       userScore.resonance.actions.economicTokenTips, // JPYC等（重み1.0）
       userScore.resonance.streak,
-      userScore.resonance.avgSentiment || 50
+      aiQualityScore // DBから取得したAI質的スコア
     );
 
     // レベル計算

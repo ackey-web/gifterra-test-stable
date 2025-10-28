@@ -173,21 +173,18 @@ export function normalizeResonanceScore(
   utilityTokenCount: number,
   jpycTipCount: number,
   streak: number,
-  avgSentiment: number = 50
+  aiQualityScore: number = 0
 ): number {
   // 回数スコア（全トークン同じ重み）
   const countScore = utilityTokenCount + jpycTipCount;
 
-  // AI質的スコア（0-100の感情スコアを0-50に正規化）
-  const qualityScore = (avgSentiment / 100) * 50;
-
-  // ベーススコア = 回数 + AI質的評価
-  const baseScore = countScore + qualityScore;
-
-  // 連続ボーナス（7日ごとに10%加算）
+  // 連続ボーナス（7日ごとに10%加算）- 回数スコアのみに適用
   const streakBonus = Math.floor(streak / 7) * 0.1;
 
-  return Math.round(baseScore * (1 + streakBonus));
+  // kodomi = (回数スコア × (1 + 連続ボーナス)) + AI質的スコア
+  const kodomi = (countScore * (1 + streakBonus)) + aiQualityScore;
+
+  return Math.round(kodomi);
 }
 
 // ========================================

@@ -11,6 +11,7 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contract";
 import { utils as ethersUtils, ethers } from "ethers";
 import { saveAnnotation, fetchAnnotation } from "../lib/annotations";
 import { saveTxMessage } from "../lib/annotations_tx";
+import { saveTipMessageToSupabase } from "../lib/saveTipMessage";
 import { useEmergency } from "../lib/emergency";
 import { useCountUp } from "../hooks/useCountUp";
 import { tipSuccessConfetti, rankUpConfetti } from "../utils/confetti";
@@ -709,12 +710,46 @@ export default function TipApp() {
         }
       }
 
-      // トランザクション単位メッセージ保存
+      // メッセージ + AI分析結果をSupabaseに保存
       if (txHash && msg) {
+        // AI分析を実行
+        setSentimentState("analyzing");
+
         try {
-          await saveTxMessage(address, txHash, msg);
-        } catch (e) {
-          console.warn("saveTxMessage failed", e);
+          const sentiment = await analyzeSentimentSafe(msg);
+
+          // Supabaseに保存（メッセージ + AI分析結果）
+          await saveTipMessageToSupabase(txHash, address, msg, sentiment || undefined);
+
+          // UI更新：AI分析結果を表示
+          if (sentiment) {
+            setSentimentResult({
+              label: EMOTION_LABELS[sentiment.label],
+              score: sentiment.score,
+            });
+            setBgGradient(EMOTION_GRADIENTS[sentiment.label]);
+            setSentimentState("show");
+
+            setTimeout(() => {
+              setSentimentState("idle");
+              setBgGradient("");
+            }, 3000);
+          } else {
+            setSentimentState("idle");
+          }
+
+          console.log("✅ Message and sentiment saved to Supabase");
+        } catch (error) {
+          console.error("Failed to save message/sentiment:", error);
+          setSentimentState("idle");
+
+          // フォールバック：外部Workers APIに保存
+          try {
+            await saveTxMessage(address, txHash, msg);
+            console.log("✅ Message saved to fallback storage");
+          } catch (e) {
+            console.warn("Fallback saveTxMessage also failed", e);
+          }
         }
       }
 
@@ -744,31 +779,6 @@ export default function TipApp() {
       setTimeout(() => startCountUp(), 600);
 
       alert(`Tipを贈りました💝 (+${pretty} ${selectedTokenConfig.symbol})`);
-
-      // Tip成功後に感情分析（非同期・独立実行）
-      if (msg) {
-        setSentimentState("analyzing");
-        analyzeSentimentSafe(msg).then((sentiment) => {
-          if (sentiment) {
-            setSentimentResult({
-              label: EMOTION_LABELS[sentiment.label],
-              score: sentiment.score,
-            });
-            setBgGradient(EMOTION_GRADIENTS[sentiment.label]);
-            setSentimentState("show");
-            
-            setTimeout(() => {
-              setSentimentState("idle");
-              setBgGradient("");
-            }, 3000);
-          } else {
-            setSentimentState("idle");
-          }
-        }).catch((error) => {
-          console.error("Sentiment analysis error:", error);
-          setSentimentState("idle");
-        });
-      }
     } catch (e: any) {
       console.error("Tip transaction failed:", e);
       setTxState("error");
