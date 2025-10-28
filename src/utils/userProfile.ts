@@ -70,7 +70,7 @@ export function shortenAddress(address: string, chars: number = 4): string {
  */
 export function formatTokenAmount(amountWei: bigint | string, decimals: number = 18, maxDecimals: number = 2): string {
   const amount = typeof amountWei === 'string' ? BigInt(amountWei) : amountWei;
-  const divisor = BigInt(10 ** decimals);
+  const divisor = BigInt(10) ** BigInt(decimals);
   const integerPart = amount / divisor;
   const fractionalPart = amount % divisor;
 
