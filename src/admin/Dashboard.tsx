@@ -439,8 +439,10 @@ export default function AdminDashboard() {
 
   // 🆕 AI分析用state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [heatResults, setHeatResults] = useState<ContributionHeat[]>([]);
+  const [heatResults, setHeatResults] = useState<ContributionHeat[]>([]); // 全期間の分析結果
   const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
+  const [analyzedUserCount, setAnalyzedUserCount] = useState(0); // 分析済みユーザー数
+  const [totalUserCount, setTotalUserCount] = useState(0); // 全ユーザー数
 
   /* ---------- 最新ブロック範囲取得（⚡ パフォーマンス最適化版） ---------- */
   useEffect(() => {
@@ -1147,27 +1149,35 @@ export default function AdminDashboard() {
     };
   }, [filtered, txMsgMap]);
 
-  // 🆕 AI分析実行
-  const handleAIAnalysis = async () => {
+  // 🆕 AI分析実行（全期間対応・段階的ロード版）
+  const handleAIAnalysis = async (batchMode: 'initial' | 'next' = 'initial') => {
     setIsAnalyzing(true);
-    setHeatResults([]);
-    
+
+    // 初回分析時のみリセット
+    if (batchMode === 'initial') {
+      setHeatResults([]);
+      setAnalyzedUserCount(0);
+    }
+
     // 詳細パネルまでスクロール
     setTimeout(() => {
-      document.getElementById('ai-detail-panel')?.scrollIntoView({ 
-        behavior: 'smooth' 
+      document.getElementById('ai-detail-panel')?.scrollIntoView({
+        behavior: 'smooth'
       });
     }, 100);
-    
+
     try {
-      // メッセージ付きTipデータを準備
-      const tipsWithMessages = filtered.map(t => {
+      // 【重要】全期間のrawTipsを使用（期間フィルタは表示時に適用）
+      const allTips = rawTips; // 現在表示されている期間のデータ
+
+      // メッセージ付きTipデータを準備（全期間）
+      const tipsWithMessages = allTips.map(t => {
         const addrL = t.from.toLowerCase();
         const txHash = (t.txHash || "").toLowerCase();
         const ann = annMap.get(addrL);
         const txMsg = (txHash && txMsgMap?.[addrL]?.[txHash]) || "";
         const msg = txMsg || pickMessage(ann) || "";
-        
+
         return {
           from: t.from,
           amount: t.amount,
@@ -1175,23 +1185,66 @@ export default function AdminDashboard() {
           message: msg,
         };
       });
-      
+
+      // ユーザーごとにグループ化して金額順にソート
+      const userTipsMap = new Map<string, typeof tipsWithMessages>();
+      for (const tip of tipsWithMessages) {
+        const addrL = tip.from.toLowerCase();
+        if (!userTipsMap.has(addrL)) {
+          userTipsMap.set(addrL, []);
+        }
+        userTipsMap.get(addrL)!.push(tip);
+      }
+
+      // 金額順にソート（上位から分析）
+      const userAddresses = Array.from(userTipsMap.keys());
+      const userAmounts = userAddresses.map(addr => {
+        const tips = userTipsMap.get(addr)!;
+        const totalAmount = tips.reduce((sum, t) => sum + t.amount, 0n);
+        return { addr, totalAmount };
+      });
+      userAmounts.sort((a, b) => Number(b.totalAmount - a.totalAmount));
+
+      // 段階的ロード: 20人ずつ分析
+      const BATCH_SIZE = 20;
+      const startIndex = analyzedUserCount;
+      const endIndex = Math.min(startIndex + BATCH_SIZE, userAmounts.length);
+      const batchAddresses = userAmounts.slice(startIndex, endIndex).map(u => u.addr);
+
       // 名前マップ作成
       const nameMap = new Map<string, string>();
       for (const addr of allAddrsToAnnotate) {
         nameMap.set(addr, nameFor(addr));
       }
-      
-      // AI分析実行
-      const results = await analyzeContributionHeat(
-        tipsWithMessages,
+
+      // バッチ分のTipデータを準備
+      const batchTips = tipsWithMessages.filter(t =>
+        batchAddresses.includes(t.from.toLowerCase())
+      );
+
+      // 総ユーザー数を記録
+      setTotalUserCount(userAmounts.length);
+
+      // AI分析実行（バッチ分のみ）
+      const newResults = await analyzeContributionHeat(
+        batchTips,
         nameMap,
         (current, total) => {
           setAnalysisProgress({ current, total });
         }
       );
-      
-      setHeatResults(results);
+
+      // 既存の結果に追加
+      setHeatResults(prev => {
+        const merged = [...prev, ...newResults];
+        // heatScoreでソート
+        merged.sort((a, b) => b.heatScore - a.heatScore);
+        return merged;
+      });
+
+      setAnalyzedUserCount(endIndex);
+
+      console.log(`✅ AI分析完了: ${startIndex + 1}-${endIndex}人目 / 全${userAmounts.length}人`);
     } catch (error) {
       console.error("AI analysis failed:", error);
       alert("AI分析に失敗しました。APIキーを確認してください。");
@@ -2408,11 +2461,29 @@ export default function AdminDashboard() {
 
         <div style={{
           marginTop: 8,
-          fontSize: 11,
-          opacity: 0.6,
-          color: "#10b981"
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap"
         }}>
-          ⚡ パフォーマンス最適化済み - 期間別に読み込み範囲を制限
+          <div style={{
+            fontSize: 11,
+            opacity: 0.6,
+            color: "#10b981"
+          }}>
+            ⚡ パフォーマンス最適化済み - 期間別に読み込み範囲を制限
+          </div>
+          <div style={{
+            fontSize: 11,
+            opacity: 0.7,
+            color: "#8b5cf6",
+            padding: "4px 8px",
+            borderRadius: 6,
+            background: "rgba(139, 92, 246, 0.1)",
+            border: "1px solid rgba(139, 92, 246, 0.3)"
+          }}>
+            💎 トークン: {TOKEN.SYMBOL}
+          </div>
         </div>
       </header>
 
@@ -2804,10 +2875,10 @@ export default function AdminDashboard() {
             <div style={{ fontSize: 11, opacity: 0.7 }}>
               回数 + AI質的スコア + 連続ボーナス
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
-                onClick={handleAIAnalysis}
-                disabled={isAnalyzing || filtered.length === 0}
+                onClick={() => handleAIAnalysis('initial')}
+                disabled={isAnalyzing || rawTips.length === 0}
                 style={{
                   background: isAnalyzing ? "#6b7280" : "#8b5cf6",
                   color: "#fff",
@@ -2816,13 +2887,31 @@ export default function AdminDashboard() {
                   padding: "6px 12px",
                   fontSize: 12,
                   fontWeight: 700,
-                  cursor: isAnalyzing || filtered.length === 0 ? "not-allowed" : "pointer",
-                  opacity: isAnalyzing || filtered.length === 0 ? 0.6 : 1,
+                  cursor: isAnalyzing || rawTips.length === 0 ? "not-allowed" : "pointer",
+                  opacity: isAnalyzing || rawTips.length === 0 ? 0.6 : 1,
                   transition: "all 0.2s ease",
                 }}
               >
                 {isAnalyzing ? "🤖 分析中..." : "🤖 AI詳細分析"}
               </button>
+              {!isAnalyzing && analyzedUserCount > 0 && analyzedUserCount < totalUserCount && (
+                <button
+                  onClick={() => handleAIAnalysis('next')}
+                  style={{
+                    background: "#f59e0b",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  ➕ さらに分析 (残り{totalUserCount - analyzedUserCount}人)
+                </button>
+              )}
               {!isAnalyzing && heatResults.length > 0 && (
                 <>
                 <button

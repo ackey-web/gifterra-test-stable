@@ -147,12 +147,28 @@ export const JPYC_TOKEN = {
 
 /* =========================================
    ✅ 現在使用中のトークン設定
-   📝 環境に応じて切り替え可能
+   📝 チェーンIDに応じて自動切り替え
+   - Polygon Amoy (80002): tNHT
+   - Polygon Mainnet (137): NHT (将来)
 ========================================= */
-export const TOKEN = JPYC_TOKEN; // デフォルトはJPYC
+export function getActiveToken() {
+  const chainId = polygonAmoy.id; // 現在のチェーン
 
-// 開発環境でtNHTを使用する場合は以下をコメントアウト解除
-// export const TOKEN = TNHT_TOKEN;
+  // テストネット（Amoy）ではtNHT、メインネット（将来）ではNHT/JPYC
+  if (chainId === 80002) {
+    return TNHT_TOKEN;
+  }
+
+  // メインネット（将来の拡張）
+  // if (chainId === 137) {
+  //   return NHT_TOKEN; // メインネット用NHTトークン
+  // }
+
+  // デフォルトはtNHT（テストネット想定）
+  return TNHT_TOKEN;
+}
+
+export const TOKEN = getActiveToken();
 
 /* =========================================
    ✅ viem 読み取り専用クライアント
