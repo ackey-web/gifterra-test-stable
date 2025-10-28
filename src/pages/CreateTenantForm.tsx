@@ -1,5 +1,5 @@
 // src/pages/CreateTenantForm.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useContract } from '@thirdweb-dev/react';
 import { GIFTERRA_FACTORY_ABI, TNHT_TOKEN } from '../contract';
 import { ethers } from 'ethers';
@@ -35,13 +35,13 @@ export default function CreateTenantForm({ factoryAddress, onSuccess, onCancel }
   const [createdTenantInfo, setCreatedTenantInfo] = useState<any>(null);
 
   // デプロイ手数料取得
-  useState(() => {
+  useEffect(() => {
     if (factory) {
       factory.call('deploymentFee').then((fee: bigint) => {
         setDeploymentFee(ethers.formatEther(fee));
       }).catch(console.error);
     }
-  });
+  }, [factory]);
 
   const handleCreate = async () => {
     if (!factory) {

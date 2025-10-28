@@ -456,7 +456,7 @@ function UserPreviewTab() {
         rank: customRank,
         contributionPoints: BigInt(customPoints || '0'),
         totalTipsSent: BigInt(customPoints || '0'),
-        totalTipsReceived: BigInt(parseInt(customPoints || '0') / 2),
+        totalTipsReceived: BigInt(Math.floor(parseInt(customPoints || '0') / 2)),
         purchaseCount: Math.floor(parseInt(customPoints || '0') / 500),
         rewardClaimedCount: Math.floor(parseInt(customPoints || '0') / 100),
         activityCount: Math.min(50, Math.floor(parseInt(customPoints || '0') / 100)),
