@@ -9,7 +9,7 @@ import "./RewardNFT_v2.sol";
 import "./GifterraPaySplitter.sol";
 import "./JourneyPass.sol";
 import "./RandomRewardEngine.sol";
-import "./ScoreRegistry.sol";
+import "./RankPlanRegistry.sol";
 
 /**
  * @title GifterraFactory
@@ -26,7 +26,6 @@ import "./ScoreRegistry.sol";
  * 3. GifterraPaySplitter - 支払い受付
  * 4. JourneyPass - スタンプラリー
  * 5. RandomRewardEngine - ランダム報酬配布
- * 6. ScoreRegistry - 二軸スコアシステム（💸 Economic / 🔥 Resonance）
  *
  * 【特許対応】
  * 特許出願人による実装。各テナントが自動配布機能を利用可能。
@@ -57,7 +56,6 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
         address payLitter;          // GifterraPaySplitter
         address journeyPass;        // JourneyPass
         address randomRewardEngine; // RandomRewardEngine
-        address scoreRegistry;      // ScoreRegistry（二軸スコアシステム）
     }
 
     struct TenantInfo {
@@ -92,6 +90,9 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
     uint256 public defaultDailyRewardAmount = 30 * 1e18;
     uint256[] public defaultRankThresholds;  // [0, 1000, 5000, 10000, 50000]
 
+    // ランクプランレジストリ（固定プラン制）
+    address public rankPlanRegistry;
+
     // ========================================
     // イベント
     // ========================================
@@ -104,8 +105,7 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
         address rewardNFT,
         address payLitter,
         address journeyPass,
-        address randomRewardEngine,
-        address scoreRegistry
+        address randomRewardEngine
     );
 
     event TenantStatusUpdated(uint256 indexed tenantId, bool isActive, bool isPaused);
@@ -158,13 +158,15 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
      * @param admin テナント管理者アドレス
      * @param rewardTokenAddress 報酬トークンアドレス
      * @param tipWalletAddress 投げ銭受取ウォレット
+     * @param rankPlan ランクプラン（LITE/STANDARD/PRO）
      * @return tenantId 作成されたテナントID
      */
     function createTenant(
         string memory tenantName,
         address admin,
         address rewardTokenAddress,
-        address tipWalletAddress
+        address tipWalletAddress,
+        RankPlanRegistry.PlanType rankPlan
     ) external payable nonReentrant whenNotPaused returns (uint256) {
         require(bytes(tenantName).length > 0, "Invalid tenant name");
         require(admin != address(0), "Invalid admin address");
@@ -175,6 +177,16 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
 
         // 1. Gifterra (SBT) デプロイ
         Gifterra gifterra = new Gifterra(rewardTokenAddress, tipWalletAddress);
+
+        // 1-1. ランクプランで初期化（固定プラン制）
+        // CUSTOM プランの場合はスキップ（手動設定を許可）
+        if (rankPlanRegistry != address(0) && rankPlan != RankPlanRegistry.PlanType.CUSTOM) {
+            gifterra.initializeWithPlan(rankPlanRegistry, rankPlan);
+
+            // プラン使用回数を記録
+            RankPlanRegistry(rankPlanRegistry).recordPlanUsage(rankPlan);
+        }
+
         gifterra.transferOwnership(admin);
 
         // 2. RewardNFT_v2 デプロイ
@@ -195,14 +207,7 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
         shares[0] = 100;
         GifterraPaySplitter payLitter = new GifterraPaySplitter(payees, shares);
 
-        // 4. ScoreRegistry デプロイ（二軸スコアシステム）
-        ScoreRegistry scoreRegistry = new ScoreRegistry();
-        scoreRegistry.transferOwnership(admin);
-
-        // PaySplitterにScoreRegistryを設定
-        payLitter.setScoreRegistry(address(scoreRegistry));
-
-        // 5. JourneyPass デプロイ
+        // 4. JourneyPass デプロイ
         JourneyPass journeyPass = new JourneyPass(
             string(abi.encodePacked(tenantName, " Journey Pass")),
             "JPASS",
@@ -210,7 +215,7 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
             admin
         );
 
-        // 6. RandomRewardEngine デプロイ
+        // 5. RandomRewardEngine デプロイ
         RandomRewardEngine randomEngine = new RandomRewardEngine(
             address(gifterra),
             address(rewardNFT),
@@ -232,8 +237,7 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
                 rewardNFT: address(rewardNFT),
                 payLitter: address(payLitter),
                 journeyPass: address(journeyPass),
-                randomRewardEngine: address(randomEngine),
-                scoreRegistry: address(scoreRegistry)
+                randomRewardEngine: address(randomEngine)
             }),
             createdAt: block.timestamp,
             lastActivityAt: block.timestamp,
@@ -251,7 +255,6 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
         isTenantContract[address(payLitter)] = true;
         isTenantContract[address(journeyPass)] = true;
         isTenantContract[address(randomEngine)] = true;
-        isTenantContract[address(scoreRegistry)] = true;
 
         // 手数料徴収
         totalFeesCollected += msg.value;
@@ -264,8 +267,7 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
             address(rewardNFT),
             address(payLitter),
             address(journeyPass),
-            address(randomEngine),
-            address(scoreRegistry)
+            address(randomEngine)
         );
 
         return tenantId;
@@ -335,6 +337,18 @@ contract GifterraFactory is AccessControl, ReentrancyGuard, Pausable {
     // ========================================
     // 手数料管理
     // ========================================
+
+    /**
+     * @notice ランクプランレジストリアドレス設定
+     * @param _rankPlanRegistry RankPlanRegistryコントラクトアドレス
+     */
+    function setRankPlanRegistry(address _rankPlanRegistry)
+        external
+        onlyRole(SUPER_ADMIN_ROLE)
+    {
+        require(_rankPlanRegistry != address(0), "Invalid address");
+        rankPlanRegistry = _rankPlanRegistry;
+    }
 
     /**
      * @notice デプロイ手数料変更

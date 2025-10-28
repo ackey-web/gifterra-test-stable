@@ -16,7 +16,10 @@ import { useUserProfile } from '../hooks/useUserProfile';
 import { getRankColor, getRankBadge, shortenAddress, formatRelativeTime } from '../utils/userProfile';
 import type { UserProfile, RankName } from '../types/user';
 
-type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue';
+// スコア管理ページのインポート
+import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
+
+type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue' | 'score-parameters' | 'token-axis' | 'system-monitoring';
 type PreviewMode = 'real' | 'mock';
 type PresetName = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'legend' | 'custom';
 
@@ -101,6 +104,7 @@ export function SuperAdminPage() {
           marginBottom: 24,
           borderBottom: '1px solid rgba(255,255,255,0.1)',
           paddingBottom: 0,
+          flexWrap: 'wrap',
         }}>
           <TabButton
             active={activeTab === 'dashboard'}
@@ -126,6 +130,24 @@ export function SuperAdminPage() {
             icon="💰"
             label="収益管理"
           />
+          <TabButton
+            active={activeTab === 'score-parameters'}
+            onClick={() => setActiveTab('score-parameters')}
+            icon="⚖️"
+            label="スコアパラメータ"
+          />
+          <TabButton
+            active={activeTab === 'token-axis'}
+            onClick={() => setActiveTab('token-axis')}
+            icon="🪙"
+            label="トークン軸設定"
+          />
+          <TabButton
+            active={activeTab === 'system-monitoring'}
+            onClick={() => setActiveTab('system-monitoring')}
+            icon="🖥️"
+            label="システム監視"
+          />
         </div>
 
         {/* タブコンテンツ */}
@@ -133,6 +155,9 @@ export function SuperAdminPage() {
         {activeTab === 'user-preview' && <UserPreviewTab />}
         {activeTab === 'tenants' && <TenantsTab />}
         {activeTab === 'revenue' && <RevenueTab />}
+        {activeTab === 'score-parameters' && <ScoreParametersPage />}
+        {activeTab === 'token-axis' && <TokenAxisPage />}
+        {activeTab === 'system-monitoring' && <SystemMonitoringPage />}
       </div>
     </div>
   );

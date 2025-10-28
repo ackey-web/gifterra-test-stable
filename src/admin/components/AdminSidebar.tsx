@@ -32,7 +32,7 @@ interface AdminSidebarProps {
 
 const MENU_GROUPS: MenuGroup[] = [
   {
-    title: "投げ銭エンゲージメント",
+    title: "TIPエンゲージメント",
     icon: "🔥",
     items: [
       { id: "dashboard", label: "ダッシュボード", icon: "📊", color: "#16a34a" },

@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./RankPlanRegistry.sol";
 
 /**
  * @title Gifterra
@@ -76,7 +77,7 @@ contract Gifterra is ERC721Enumerable, Ownable {
 
     /**
      * @notice ランク数の設定
-     * @dev UI側から動的にランク数を変更可能
+     * @dev CUSTOMプラン（運営デフォルトテナント・フルカスタムオーダー）向けの手動設定
      * @param _maxLevel 最大ランクレベル（1以上）
      */
     function setMaxRankLevel(uint256 _maxLevel) external onlyOwner {
@@ -88,7 +89,7 @@ contract Gifterra is ERC721Enumerable, Ownable {
 
     /**
      * @notice ランク閾値の設定
-     * @dev UI側から動的に閾値を変更可能
+     * @dev CUSTOMプラン向けの手動設定
      * @param level ランクレベル
      * @param amount 必要な累積投げ銭額
      */
@@ -100,12 +101,39 @@ contract Gifterra is ERC721Enumerable, Ownable {
 
     /**
      * @notice ランクNFTのURI設定
+     * @dev CUSTOMプラン向けの手動設定
      * @param level ランクレベル
      * @param uri NFTのメタデータURI
      */
     function setNFTRankUri(uint256 level, string calldata uri) external onlyOwner {
         require(level > 0 && level <= maxRankLevel, "Invalid level");
         rankNFTUris[level] = uri;
+    }
+
+    /**
+     * @notice ランクプランで初期化
+     * @dev GifterraFactoryから呼び出される、固定プラン制に対応
+     * @param rankPlanRegistry RankPlanRegistryコントラクトアドレス
+     * @param planType プランタイプ（LITE/STANDARD/PRO）
+     */
+    function initializeWithPlan(
+        address rankPlanRegistry,
+        RankPlanRegistry.PlanType planType
+    ) external onlyOwner {
+        RankPlanRegistry registry = RankPlanRegistry(rankPlanRegistry);
+        RankPlanRegistry.RankPlan memory plan = registry.getPlan(planType);
+
+        // 段階数を設定
+        maxRankLevel = plan.stages;
+
+        // 各レベルの閾値とURIを設定
+        for (uint256 i = 0; i < plan.stages; i++) {
+            uint256 level = i + 1; // レベルは1始まり
+            rankThresholds[level] = plan.thresholds[i];
+            rankNFTUris[level] = plan.uriTemplates[i];
+        }
+
+        emit MaxRankLevelUpdated(0, plan.stages);
     }
 
     // ========================================
