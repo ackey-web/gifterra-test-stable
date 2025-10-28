@@ -71,8 +71,8 @@ export interface ResonanceScore extends AxisScore {
   longestStreak: number;     // 最長連続
   lastDate: Date | null;     // 最終応援日
   actions: {
-    tips: number;            // 投げ銭回数
-    purchases: number;       // 購入回数
+    tips: number;            // TIP回数
+    purchases: number;       // 特典受取回数（廃止予定）
     claims: number;          // 特典受取回数
     logins: number;          // ログイン日数（将来）
   };
