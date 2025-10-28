@@ -2,13 +2,14 @@
 // スーパーアドミン専用ダッシュボード
 
 import { useState, useMemo, useEffect } from 'react';
-import { useAddress } from '@thirdweb-dev/react';
+import { useAddress, useContract } from '@thirdweb-dev/react';
 import { isSuperAdminWithDebug } from '../config/superAdmin';
 import { useSystemStats, useRealtimeStats } from '../hooks/useSystemStats';
 import { useTenantList } from '../hooks/useTenantList';
 import { useRecentActivity, getActivityCategoryInfo } from '../hooks/useRecentActivity';
 import { useSystemHealth, getHealthStatusInfo } from '../hooks/useSystemHealth';
 import { formatTokenAmount } from '../utils/userProfile';
+import { GIFTERRA_FACTORY_ABI, TOKEN, TNHT_TOKEN } from '../contract';
 
 // ユーザープロフィールプレビュー用のインポート
 import { MOCK_PROFILE_PRESETS, generateMockUserProfile } from '../utils/mockUserProfile';
@@ -18,6 +19,7 @@ import type { UserProfile, RankName } from '../types/user';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
+import CreateTenantForm from './CreateTenantForm';
 
 type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue' | 'score-parameters' | 'token-axis' | 'system-monitoring';
 type PreviewMode = 'real' | 'mock';
@@ -771,6 +773,10 @@ function StatCard({ icon, label, value, subtitle, color }: {
  */
 function TenantsTab() {
   const { tenants, isLoading } = useTenantList();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // 環境変数からFactoryアドレスを取得
+  const factoryAddress = import.meta.env.VITE_FACTORY_ADDRESS;
 
   if (isLoading) {
     return (
@@ -881,25 +887,53 @@ function TenantsTab() {
         </div>
       </div>
 
-      {/* 将来の機能 */}
-      <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 12,
-        padding: 20,
-        color: '#fff',
-      }}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
-          🚀 今後の機能
-        </h3>
-        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8, opacity: 0.8 }}>
-          <li>新規テナントの作成・登録</li>
-          <li>テナントごとの設定管理</li>
-          <li>テナントごとのロイヤリティ設定</li>
-          <li>テナントごとのユーザーアクセス制御</li>
-          <li>テナント間のデータ分離と移行</li>
-        </ul>
-      </div>
+      {/* 新規テナント作成 */}
+      {showCreateForm ? (
+        <CreateTenantForm
+          factoryAddress={factoryAddress}
+          onSuccess={(tenantId, contracts) => {
+            console.log('Tenant created:', tenantId, contracts);
+            setShowCreateForm(false);
+            // テナント一覧を再読み込み（将来的にrefetch機能を実装）
+          }}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      ) : (
+        <div style={{
+          background: 'rgba(139, 92, 246, 0.1)',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
+          borderRadius: 12,
+          padding: 20,
+          color: '#fff',
+          textAlign: 'center',
+        }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
+            ➕ 新規テナント作成
+          </h3>
+          <p style={{ fontSize: 14, opacity: 0.8, marginBottom: 16 }}>
+            新しいテナントのコントラクトセットを一括デプロイします
+          </p>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            style={{
+              padding: '12px 32px',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <span>🏭</span>
+            <span>テナント作成フォームを開く</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
