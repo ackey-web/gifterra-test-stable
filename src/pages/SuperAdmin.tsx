@@ -720,7 +720,7 @@ function UserPreviewTab() {
                 {previewMode === 'real' ? '🔗 実データ' : '🎨 モック'}
               </span>
             </div>
-            <UserProfilePreview address={previewAddress} mode={previewMode} presetName={selectedPreset} />
+            <UserProfilePreview address={previewAddress} mode={previewMode} presetName={presetName} />
           </div>
         ) : (
           <div style={{
