@@ -22,17 +22,15 @@ import {
 // メインページコンポーネント
 // ========================================
 
-export default function ScoreProfilePage({ previewUserId }: { previewUserId?: string } = {}) {
+export default function ScoreProfilePage() {
   const connectedAddress = useAddress();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'rankings' | 'tenants'>('overview');
 
   // URLパラメータまたは接続アドレスからユーザーIDを取得
   const userIdFromQuery = useMemo(() => {
-    // プレビューモード（SuperAdmin等）の場合はpreviewUserIdを優先
-    if (previewUserId) return previewUserId;
     const params = new URLSearchParams(window.location.search);
     return params.get('userId') || undefined;
-  }, [previewUserId]);
+  }, []);
   const userId = userIdFromQuery || connectedAddress;
   const isOwnProfile = !userIdFromQuery || userIdFromQuery === connectedAddress;
 

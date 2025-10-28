@@ -18,7 +18,6 @@ import type { UserProfile, RankName } from '../types/user';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
-import ScoreProfilePage from './score-profile';
 
 type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue' | 'score-parameters' | 'token-axis' | 'system-monitoring';
 type PreviewMode = 'real' | 'mock';
@@ -719,7 +718,7 @@ function UserPreviewTab() {
                 {previewMode === 'real' ? '🔗 実データ' : '🎨 モック'}
               </span>
             </div>
-            <ScoreProfilePage previewUserId={previewAddress} />
+            <UserProfilePreview address={previewAddress} mode={previewMode} presetName={selectedPreset} />
           </div>
         ) : (
           <div style={{
@@ -1224,6 +1223,222 @@ function RevenueTab() {
           <li>税務レポートの生成</li>
         </ul>
       </div>
+    </div>
+  );
+}
+
+/**
+ * ユーザープロフィールプレビュー（APIサーバー不要版）
+ */
+function UserProfilePreview({ address, mode, presetName }: {
+  address: string;
+  mode: PreviewMode;
+  presetName: PresetName;
+}) {
+  // モックモードまたはプリセット選択時
+  const profile = mode === 'mock' || presetName !== 'custom'
+    ? generateMockUserProfile(presetName)
+    : useUserProfile(address).data;
+
+  // ローディング状態
+  if (!profile && mode === 'real') {
+    return (
+      <div style={{
+        padding: 60,
+        textAlign: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <div style={{ fontSize: 18 }}>プロフィールを読み込み中...</div>
+      </div>
+    );
+  }
+
+  // データがない場合
+  if (!profile) {
+    return (
+      <div style={{
+        padding: 60,
+        textAlign: 'center',
+        color: '#fff',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
+        <div style={{ fontSize: 18 }}>プロフィールが見つかりません</div>
+        <div style={{ fontSize: 14, opacity: 0.7, marginTop: 8 }}>
+          アドレス: {shortenAddress(address)}
+        </div>
+      </div>
+    );
+  }
+
+  const rankInfo = getRankBadge(profile.rank);
+  const rankColor = getRankColor(profile.rank);
+
+  return (
+    <div style={{
+      padding: 20,
+      color: '#fff',
+    }}>
+      {/* ヘッダー */}
+      <div style={{
+        background: `linear-gradient(135deg, ${rankColor} 0%, ${rankColor}99 100%)`,
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 48 }}>{rankInfo.emoji}</div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
+              {profile.displayName || shortenAddress(profile.address)}
+            </div>
+            <div style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 700,
+            }}>
+              {rankInfo.label}
+            </div>
+          </div>
+        </div>
+        <div style={{
+          fontSize: 12,
+          opacity: 0.9,
+          fontFamily: 'monospace',
+          wordBreak: 'break-all',
+        }}>
+          {profile.address}
+        </div>
+      </div>
+
+      {/* 統計カード */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 12,
+        marginBottom: 20,
+      }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 16,
+        }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Total Tips</div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>
+            {formatTokenAmount(profile.totalTips)} tNHT
+          </div>
+        </div>
+
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 16,
+        }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Rank</div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>
+            #{profile.globalRank || '—'}
+          </div>
+        </div>
+
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 16,
+        }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>Purchases</div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>
+            {profile.purchaseCount}
+          </div>
+        </div>
+      </div>
+
+      {/* 最近のアクティビティ */}
+      <div style={{
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: 16,
+      }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
+          🕒 Recent Activity
+        </h3>
+        {profile.recentActivity && profile.recentActivity.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {profile.recentActivity.slice(0, 5).map((activity, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 8,
+                  fontSize: 13,
+                }}
+              >
+                <div>
+                  <span style={{ marginRight: 8 }}>{activity.type === 'tip' ? '💰' : '🎁'}</span>
+                  <span>{activity.type === 'tip' ? 'Tipped' : 'Purchased'}</span>
+                  {activity.amount && (
+                    <span style={{ fontWeight: 700, marginLeft: 8 }}>
+                      {formatTokenAmount(activity.amount)} tNHT
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, opacity: 0.6 }}>
+                  {formatRelativeTime(activity.timestamp)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', opacity: 0.6, padding: 20 }}>
+            アクティビティがありません
+          </div>
+        )}
+      </div>
+
+      {/* バッジ */}
+      {profile.badges && profile.badges.length > 0 && (
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12,
+          padding: 16,
+          marginTop: 20,
+        }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700 }}>
+            🏅 Badges
+          </h3>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}>
+            {profile.badges.map((badge, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {badge}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
