@@ -313,13 +313,11 @@ export async function analyzeContributionHeat(
   
   for (const addr of addresses) {
     const user = userMap.get(addr)!;
-    
-    // 各メッセージの感情分析
-    const sentiments: SentimentAnalysis[] = [];
-    for (const msg of user.messages) {
-      const sentiment = await analyzeSentiment(msg);
-      sentiments.push(sentiment);
-    }
+
+    // 各メッセージの感情分析（並列処理で高速化）
+    const sentiments: SentimentAnalysis[] = await Promise.all(
+      user.messages.map(msg => analyzeSentiment(msg))
+    );
     
     // 平均感情スコア
     const avgSentiment = sentiments.length > 0

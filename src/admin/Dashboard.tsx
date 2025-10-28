@@ -32,12 +32,15 @@ import FlagNFTManagementPage from "./components/FlagNFTManagementPage";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
+type TokenFilter = "tNHT" | "JPYC" | "all";
+type RankingTab = "kodomi" | "jpyc";
 type TipItem = {
   from: string;
   amount: bigint;
   blockNumber: bigint;
   timestamp?: number;
   txHash?: string;
+  token?: string; // 将来のマルチトークン対応用
 };
 
 // PageType は AdminSidebar.tsx から import
@@ -373,6 +376,8 @@ export default function AdminDashboard() {
 
 
   const [period, setPeriod] = useState<Period>("day");
+  const [tokenFilter, setTokenFilter] = useState<TokenFilter>("all"); // トークンフィルタ
+  const [rankingTab, setRankingTab] = useState<RankingTab>("kodomi"); // ランキングタブ
   const [fromBlock, setFromBlock] = useState<bigint | undefined>();
   const [rawTips, setRawTips] = useState<TipItem[]>([]);
   const [blockTimeMap, setBlockTimeMap] = useState<Record<string, number>>({});
@@ -2625,39 +2630,83 @@ export default function AdminDashboard() {
 
         {/* Ranking */}
         <div style={card}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 16 }}>🏆 Top Supporters ({periodLabel})</h2>
-            <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ margin: 0, fontSize: 16 }}>🏆 Top Supporters ({periodLabel})</h2>
+              {rankingTab === "kodomi" && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={exportRankingCSV}
+                    style={{
+                      background: "#10b981",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📄 CSV
+                  </button>
+                  <button
+                    onClick={exportRankingJSON}
+                    style={{
+                      background: "#3b82f6",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    📄 JSON
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ランキングタブ */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 600 }}>📊 Ranking:</span>
               <button
-                onClick={exportRankingCSV}
+                onClick={() => setRankingTab("kodomi")}
                 style={{
-                  background: "#10b981",
+                  padding: "6px 14px",
+                  background: rankingTab === "kodomi" ? "#10b981" : "rgba(255,255,255,0.1)",
                   color: "#fff",
-                  border: "none",
+                  border: rankingTab === "kodomi" ? "1px solid rgba(16, 185, 129, 0.5)" : "1px solid rgba(255,255,255,0.2)",
                   borderRadius: 6,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  fontSize: 11,
+                  fontWeight: 700,
                   cursor: "pointer",
+                  transition: "all 0.2s ease",
                 }}
               >
-                📄 CSV
+                🤖 Kodomi（総合評価）
               </button>
               <button
-                onClick={exportRankingJSON}
+                onClick={() => setRankingTab("jpyc")}
                 style={{
-                  background: "#3b82f6",
+                  padding: "6px 14px",
+                  background: rankingTab === "jpyc" ? "#f59e0b" : "rgba(255,255,255,0.1)",
                   color: "#fff",
-                  border: "none",
+                  border: rankingTab === "jpyc" ? "1px solid rgba(245, 158, 11, 0.5)" : "1px solid rgba(255,255,255,0.2)",
                   borderRadius: 6,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  fontSize: 11,
+                  fontWeight: 700,
                   cursor: "pointer",
+                  transition: "all 0.2s ease",
                 }}
               >
-                📄 JSON
+                💰 JPYC金額のみ
               </button>
+              <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.6 }}>
+                {rankingTab === "kodomi" ? "質的評価 + 金額 + 継続性" : "JPYC投げ銭金額のみ（エクスポート不可）"}
+              </span>
             </div>
           </div>
           <div style={tableBox}>
@@ -2711,39 +2760,68 @@ export default function AdminDashboard() {
 
         {/* Recent */}
         <div style={card}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ margin: "4px 0 10px", fontSize: 16 }}>🕒 Recent Tips ({periodLabel})</h2>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={exportRecentCSV}
-                style={{
-                  background: "#10b981",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                📄 CSV
-              </button>
-              <button
-                onClick={exportRecentJSON}
-                style={{
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                📄 JSON
-              </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ margin: "4px 0 0", fontSize: 16 }}>🕒 Recent Tips ({periodLabel})</h2>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={exportRecentCSV}
+                  style={{
+                    background: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  📄 CSV
+                </button>
+                <button
+                  onClick={exportRecentJSON}
+                  style={{
+                    background: "#3b82f6",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  📄 JSON
+                </button>
+              </div>
+            </div>
+
+            {/* トークンフィルタ */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 12, opacity: 0.7, fontWeight: 600 }}>💎 Token:</span>
+              {(["all", "tNHT", "JPYC"] as TokenFilter[]).map((token) => (
+                <button
+                  key={token}
+                  onClick={() => setTokenFilter(token)}
+                  style={{
+                    padding: "6px 14px",
+                    background: tokenFilter === token ? "#8b5cf6" : "rgba(255,255,255,0.1)",
+                    color: "#fff",
+                    border: tokenFilter === token ? "1px solid rgba(139, 92, 246, 0.5)" : "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {token === "all" ? "All" : token}
+                </button>
+              ))}
+              <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.6 }}>
+                {tokenFilter === "all" ? "全トークン表示" : `${tokenFilter}のみ表示`}
+              </span>
             </div>
           </div>
           <div style={tableBox}>
@@ -2892,7 +2970,20 @@ export default function AdminDashboard() {
                   transition: "all 0.2s ease",
                 }}
               >
-                {isAnalyzing ? "🤖 分析中..." : "🤖 AI詳細分析"}
+                {isAnalyzing ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{
+                      display: "inline-block",
+                      width: 12,
+                      height: 12,
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      borderTopColor: "#fff",
+                      borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite"
+                    }} />
+                    分析中...
+                  </span>
+                ) : "🤖 AI詳細分析"}
               </button>
               {!isAnalyzing && analyzedUserCount > 0 && analyzedUserCount < totalUserCount && (
                 <button
