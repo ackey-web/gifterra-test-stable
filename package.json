@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "compile": "hardhat compile --config hardhat.config.cjs",
-    "compile:size": "hardhat compile --config hardhat.config.cjs && hardhat size-contracts --config hardhat.config.cjs"
+    "compile:size": "hardhat compile --config hardhat.config.cjs && hardhat size-contracts --config hardhat.config.cjs",
+    "indexer": "USE_GIFTERRA=true tsx src/indexer/index.ts",
+    "indexer:backfill": "ENABLE_BACKFILL=true USE_GIFTERRA=true tsx src/indexer/index.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",

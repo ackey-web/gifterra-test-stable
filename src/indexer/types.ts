@@ -14,6 +14,17 @@ export type Curve = 'Linear' | 'Sqrt' | 'Log';
 // イベント型
 // ========================================
 
+export interface TippedEvent {
+  blockNumber: number;
+  transactionHash: string;
+  logIndex: number;
+  timestamp: Date;
+
+  from: string;
+  amount: bigint;
+  message?: string; // 将来のメッセージ機能用（現在はundefined）
+}
+
 export interface ScoreIncrementedEvent {
   blockNumber: number;
   transactionHash: string;

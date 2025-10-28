@@ -4,6 +4,7 @@
 
 import { ethers } from 'ethers';
 import type {
+  TippedEvent,
   ScoreIncrementedEvent,
   ScoreParamsUpdatedEvent,
   TokenAxisUpdatedEvent,
@@ -15,6 +16,12 @@ import type {
 // ABIの定義（必要な部分のみ）
 // ========================================
 
+// Gifterra コントラクトの TIP イベント
+const GIFTERRA_ABI = [
+  'event Tipped(address indexed from, uint256 amount)',
+];
+
+// 将来のScoreRegistryとの互換性のため、型定義は維持
 const SCORE_REGISTRY_ABI = [
   'event ScoreIncremented(address indexed user, address indexed token, uint256 amountRaw, bytes32 axis, bytes32 indexed traceId)',
   'event ScoreParamsUpdated(uint256 weightEconomic, uint256 weightResonance, uint8 curve, uint256 timestamp)',
@@ -281,6 +288,10 @@ export interface EventHandlers {
   onTokenAxisUpdated: (event: TokenAxisUpdatedEvent) => Promise<void>;
 }
 
+export interface GifterraEventHandlers {
+  onTipped: (event: TippedEvent) => Promise<void>;
+}
+
 export interface HistoricalEvents {
   scoreIncremented: ScoreIncrementedEvent[];
   scoreParamsUpdated: ScoreParamsUpdatedEvent[];
@@ -342,6 +353,140 @@ export async function backfillEvents(
     allEvents.scoreIncremented.push(...events.scoreIncremented);
     allEvents.scoreParamsUpdated.push(...events.scoreParamsUpdated);
     allEvents.tokenAxisUpdated.push(...events.tokenAxisUpdated);
+
+    // レート制限対策：少し待機
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return allEvents;
+}
+
+// ========================================
+// Gifterraイベントリスナークラス（現在使用中）
+// ========================================
+
+/**
+ * GifterraコントラクトのTippedイベントを監視
+ */
+export class GifterraEventListener {
+  private provider: ethers.Provider;
+  private contract: ethers.Contract;
+  private handlers: GifterraEventHandlers;
+  private tokenAddress: string;
+
+  constructor(
+    provider: ethers.Provider,
+    contractAddress: string,
+    tokenAddress: string,
+    handlers: GifterraEventHandlers
+  ) {
+    this.provider = provider;
+    this.tokenAddress = tokenAddress;
+    this.contract = new ethers.Contract(
+      contractAddress,
+      GIFTERRA_ABI,
+      provider
+    );
+    this.handlers = handlers;
+  }
+
+  /**
+   * イベントリスナーを開始
+   */
+  async start(): Promise<void> {
+    console.log('🎧 GifterraEventListener: Starting...');
+
+    // Tipped イベント
+    this.contract.on(
+      'Tipped',
+      async (from, amount, event) => {
+        try {
+          const parsed = await this.parseTippedEvent(from, amount, event);
+          await this.handlers.onTipped(parsed);
+        } catch (error) {
+          console.error('❌ Error handling Tipped:', error);
+        }
+      }
+    );
+
+    console.log('✅ GifterraEventListener: Started successfully');
+  }
+
+  /**
+   * イベントリスナーを停止
+   */
+  stop(): void {
+    this.contract.removeAllListeners();
+    console.log('🛑 GifterraEventListener: Stopped');
+  }
+
+  /**
+   * 過去のイベントを取得（バックフィル用）
+   */
+  async fetchHistoricalEvents(
+    fromBlock: number,
+    toBlock: number | 'latest'
+  ): Promise<TippedEvent[]> {
+    console.log(`📜 Fetching Tipped events from ${fromBlock} to ${toBlock}...`);
+
+    const tippedEvents: TippedEvent[] = [];
+
+    const filter = this.contract.filters.Tipped();
+    const events = await this.contract.queryFilter(filter, fromBlock, toBlock);
+
+    for (const event of events) {
+      const parsed = await this.parseTippedEvent(
+        event.args![0],
+        event.args![1],
+        event
+      );
+      tippedEvents.push(parsed);
+    }
+
+    console.log(`✅ Fetched ${tippedEvents.length} Tipped events`);
+
+    return tippedEvents;
+  }
+
+  /**
+   * Tippedイベントをパース
+   */
+  private async parseTippedEvent(
+    from: string,
+    amount: bigint,
+    event: any
+  ): Promise<TippedEvent> {
+    const block = await event.getBlock();
+
+    return {
+      blockNumber: event.blockNumber,
+      transactionHash: event.transactionHash,
+      logIndex: event.logIndex,
+      timestamp: new Date(block.timestamp * 1000),
+      from: from.toLowerCase(),
+      amount,
+      message: undefined, // 現在のコントラクトにはメッセージフィールドがない
+    };
+  }
+}
+
+/**
+ * Gifterraイベントのバックフィル実行
+ */
+export async function backfillGifterraEvents(
+  listener: GifterraEventListener,
+  fromBlock: number,
+  toBlock: number,
+  chunkSize: number = 10000
+): Promise<TippedEvent[]> {
+  const ranges = splitBlockRange(fromBlock, toBlock, chunkSize);
+  const allEvents: TippedEvent[] = [];
+
+  for (const range of ranges) {
+    console.log(`📦 Backfilling Tipped events blocks ${range.from} - ${range.to}...`);
+
+    const events = await listener.fetchHistoricalEvents(range.from, range.to);
+    allEvents.push(...events);
 
     // レート制限対策：少し待機
     await new Promise((resolve) => setTimeout(resolve, 100));

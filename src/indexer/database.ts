@@ -4,6 +4,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type {
+  TippedEvent,
   UserScore,
   TenantScore,
   ScoreParams,
@@ -150,6 +151,53 @@ export class ScoreDatabase {
   // スコア記録
   // ========================================
 
+  /**
+   * Gifterraコントラクトの TIP イベントを記録（現在使用中）
+   * @param event TippedEvent
+   * @param tokenAddress トークンアドレス（JPYC等）
+   */
+  async recordTip(event: TippedEvent, tokenAddress: string): Promise<void> {
+    const userLower = event.from.toLowerCase();
+    const tokenLower = tokenAddress.toLowerCase();
+
+    // ユーザースコアを取得または作成
+    let userScore = await this.getUserScore(userLower);
+    if (!userScore) {
+      userScore = this.createNewUserScore(userLower);
+    }
+
+    // トークンがEconomic軸かどうか判定
+    const isEconomicToken = this.tokenAxes.get(tokenLower) ?? true; // デフォルトはEconomic
+
+    // Economic軸: 金額をEconomicスコアに加算
+    await this.updateEconomicScore(userScore, tokenLower, event.amount);
+
+    // Resonance軸: 回数を加算（kodomi: 案A - 全トークン同重み）
+    await this.updateResonanceScoreForTip(userScore, event.timestamp, isEconomicToken, event.message);
+
+    // 合成スコアを再計算
+    userScore.composite = calculateCompositeScore(
+      userScore.economic,
+      userScore.resonance,
+      this.currentParams
+    );
+
+    userScore.lastUpdated = event.timestamp;
+
+    // DBに保存
+    await this.saveUserScore(userScore);
+
+    // トランザクションログを保存
+    await this.saveTipTransaction(
+      userLower,
+      tokenLower,
+      event.amount,
+      event.transactionHash,
+      event.timestamp,
+      event.message
+    );
+  }
+
   async recordScore(
     user: string,
     token: string,
@@ -218,6 +266,62 @@ export class ScoreDatabase {
     userScore.economic.displayLevel = getDisplayLevel(userScore.economic.level);
   }
 
+  /**
+   * TIP用のResonanceスコア更新（新しいkodomi計算）
+   */
+  private async updateResonanceScoreForTip(
+    userScore: UserScore,
+    timestamp: Date,
+    isEconomicToken: boolean,
+    message?: string
+  ): Promise<void> {
+    // 回数を加算
+    userScore.resonance.raw += 1;
+    userScore.resonance.count += 1;
+    userScore.resonance.actions.tips += 1;
+
+    // トークン種別に応じて回数をカウント（案A: 全トークン同重み）
+    if (isEconomicToken) {
+      userScore.resonance.actions.economicTokenTips += 1;
+    } else {
+      userScore.resonance.actions.utilityTokenTips += 1;
+    }
+
+    // メッセージがある場合はAI分析（将来実装）
+    if (message) {
+      // TODO: AI分析を統合
+      // const sentiment = await analyzeSentiment(message);
+      // userScore.resonance.messageCount += 1;
+      // avgSentimentを再計算
+    }
+
+    // 連続日数を更新
+    userScore.resonance.streak = updateStreak(
+      userScore.resonance.lastDate,
+      timestamp,
+      userScore.resonance.streak
+    );
+
+    if (userScore.resonance.streak > userScore.resonance.longestStreak) {
+      userScore.resonance.longestStreak = userScore.resonance.streak;
+    }
+
+    userScore.resonance.lastDate = timestamp;
+
+    // 正規化（新しいkodomi算出: 案A + AI質的スコア）
+    // avgSentimentは現在デフォルト50（将来メッセージ機能実装時に実際の値を使用）
+    userScore.resonance.normalized = normalizeResonanceScore(
+      userScore.resonance.actions.utilityTokenTips,  // 全トークン重み1.0
+      userScore.resonance.actions.economicTokenTips, // 全トークン重み1.0
+      userScore.resonance.streak,
+      userScore.resonance.avgSentiment || 50 // デフォルト中立
+    );
+
+    // レベル計算
+    userScore.resonance.level = calculateResonanceLevel(userScore.resonance.normalized);
+    userScore.resonance.displayLevel = getDisplayLevel(userScore.resonance.level);
+  }
+
   private async updateResonanceScore(
     userScore: UserScore,
     timestamp: Date,
@@ -251,8 +355,9 @@ export class ScoreDatabase {
     // 正規化（kodomi算出: トークン種別ごとの重み付き回数 + 連続ボーナス）
     userScore.resonance.normalized = normalizeResonanceScore(
       userScore.resonance.actions.utilityTokenTips,  // tNHT等（重み1.0）
-      userScore.resonance.actions.economicTokenTips, // JPYC等（重み0.3）
-      userScore.resonance.streak
+      userScore.resonance.actions.economicTokenTips, // JPYC等（重み1.0）
+      userScore.resonance.streak,
+      userScore.resonance.avgSentiment || 50
     );
 
     // レベル計算
@@ -288,6 +393,38 @@ export class ScoreDatabase {
     if (error) {
       console.error('❌ Error saving user score:', error);
       throw error;
+    }
+  }
+
+  /**
+   * TIPトランザクションを保存（メッセージ付き）
+   */
+  private async saveTipTransaction(
+    user: string,
+    token: string,
+    amountRaw: bigint,
+    traceId: string,
+    timestamp: Date,
+    message?: string
+  ): Promise<void> {
+    // トークンがEconomic軸かどうか判定
+    const isEconomicToken = this.tokenAxes.get(token) ?? true;
+    const axis: Axis = isEconomicToken ? 'ECONOMIC' : 'RESONANCE';
+
+    const { error } = await this.supabase.from('score_transactions').insert({
+      user_address: user,
+      token_address: token,
+      amount_raw: amountRaw.toString(),
+      axis,
+      trace_id: traceId,
+      timestamp: timestamp.toISOString(),
+      message: message || null,
+      sentiment_score: 50, // デフォルト中立（将来AI分析で更新）
+      sentiment_label: 'neutral',
+    });
+
+    if (error) {
+      console.error('❌ Error saving tip transaction:', error);
     }
   }
 
