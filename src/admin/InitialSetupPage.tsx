@@ -3,19 +3,15 @@ import React, { useState, useEffect } from 'react';
 
 interface TenantConfig {
   paymentSplitterAddress: string;
-  tipReceiverWallet: string;
   tenantName: string;
   tenantDescription: string;
-  platformFeePercentage: number;
 }
 
 export default function InitialSetupPage() {
   const [config, setConfig] = useState<TenantConfig>({
     paymentSplitterAddress: '',
-    tipReceiverWallet: '',
     tenantName: '',
     tenantDescription: '',
-    platformFeePercentage: 5,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -45,16 +41,8 @@ export default function InitialSetupPage() {
         throw new Error('有効なPaymentSplitterアドレスを入力してください');
       }
 
-      if (!config.tipReceiverWallet || !/^0x[a-fA-F0-9]{40}$/.test(config.tipReceiverWallet)) {
-        throw new Error('有効なTIP受取ウォレットアドレスを入力してください');
-      }
-
       if (!config.tenantName.trim()) {
         throw new Error('テナント名を入力してください');
-      }
-
-      if (config.platformFeePercentage < 0 || config.platformFeePercentage > 100) {
-        throw new Error('プラットフォーム手数料は0-100%の範囲で設定してください');
       }
 
       // ローカルストレージに保存
@@ -83,10 +71,8 @@ export default function InitialSetupPage() {
     if (confirm('設定をリセットしてもよろしいですか？')) {
       const defaultConfig: TenantConfig = {
         paymentSplitterAddress: '',
-        tipReceiverWallet: '',
         tenantName: '',
         tenantDescription: '',
-        platformFeePercentage: 5,
       };
       setConfig(defaultConfig);
       localStorage.removeItem('gifterra_tenant_config');
@@ -278,116 +264,9 @@ export default function InitialSetupPage() {
                 marginTop: 6,
                 lineHeight: 1.5
               }}>
-                TIPの収益分配を管理するスマートコントラクトのアドレスです。
+                GIFT HUB購入時の収益分配を管理するスマートコントラクトのアドレスです。
               </p>
             </div>
-
-            {/* TIP受取ウォレット */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 8,
-                color: 'rgba(255,255,255,0.9)'
-              }}>
-                TIP 受取ウォレットアドレス <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={config.tipReceiverWallet}
-                onChange={(e) => setConfig({ ...config, tipReceiverWallet: e.target.value })}
-                placeholder="0x..."
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 6,
-                  color: '#fff',
-                  fontSize: 14,
-                  fontFamily: 'monospace',
-                  outline: 'none'
-                }}
-              />
-              <p style={{
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.5)',
-                marginTop: 6,
-                lineHeight: 1.5
-              }}>
-                受け取ったTIPが送金されるウォレットアドレスです。
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 手数料設定 */}
-        <section style={{ marginBottom: 32 }}>
-          <h2 style={{
-            fontSize: 18,
-            fontWeight: 700,
-            marginBottom: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <span>💰</span>
-            <span>手数料設定</span>
-          </h2>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: 13,
-              fontWeight: 600,
-              marginBottom: 8,
-              color: 'rgba(255,255,255,0.9)'
-            }}>
-              プラットフォーム手数料 (%)
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                step="0.5"
-                value={config.platformFeePercentage}
-                onChange={(e) => setConfig({ ...config, platformFeePercentage: parseFloat(e.target.value) })}
-                style={{
-                  flex: 1,
-                  accentColor: '#8b5cf6'
-                }}
-              />
-              <input
-                type="number"
-                min="0"
-                max="20"
-                step="0.5"
-                value={config.platformFeePercentage}
-                onChange={(e) => setConfig({ ...config, platformFeePercentage: parseFloat(e.target.value) || 0 })}
-                style={{
-                  width: 80,
-                  padding: '8px 12px',
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: 6,
-                  color: '#fff',
-                  fontSize: 14,
-                  textAlign: 'center',
-                  outline: 'none'
-                }}
-              />
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>%</span>
-            </div>
-            <p style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.5)',
-              marginTop: 6,
-              lineHeight: 1.5
-            }}>
-              TIP金額からプラットフォームが受け取る手数料の割合です。推奨: 5%
-            </p>
           </div>
         </section>
 
@@ -484,8 +363,7 @@ export default function InitialSetupPage() {
           paddingLeft: 0,
           listStyle: 'disc'
         }}>
-          <li>コントラクトアドレスは一度設定すると変更が困難です。慎重に入力してください。</li>
-          <li>TIP受取ウォレットは、秘密鍵を厳重に管理しているウォレットを使用してください。</li>
+          <li>PaymentSplitterアドレスは一度設定すると変更が困難です。慎重に入力してください。</li>
           <li>現在の設定はブラウザのローカルストレージに保存されます。</li>
           <li>ブラウザのキャッシュをクリアすると設定が失われる可能性があります。</li>
         </ul>

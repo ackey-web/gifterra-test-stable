@@ -1,7 +1,7 @@
 // src/pages/SuperAdmin.tsx
 // スーパーアドミン専用ダッシュボード
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAddress } from '@thirdweb-dev/react';
 import { isSuperAdminWithDebug } from '../config/superAdmin';
 import { useSystemStats, useRealtimeStats } from '../hooks/useSystemStats';
@@ -909,6 +909,44 @@ function TenantsTab() {
  */
 function RevenueTab() {
   const { stats, isLoading } = useSystemStats();
+  const [platformFee, setPlatformFee] = useState<number>(5);
+  const [isSavingFee, setIsSavingFee] = useState(false);
+  const [feeMessage, setFeeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // ローカルストレージから手数料設定を読み込み
+  useEffect(() => {
+    try {
+      const savedFee = localStorage.getItem('gifterra_platform_fee');
+      if (savedFee) {
+        setPlatformFee(parseFloat(savedFee));
+      }
+    } catch (error) {
+      console.error('Failed to load platform fee:', error);
+    }
+  }, []);
+
+  // 手数料を保存
+  const handleSaveFee = () => {
+    setIsSavingFee(true);
+    setFeeMessage(null);
+
+    try {
+      if (platformFee < 0 || platformFee > 20) {
+        throw new Error('手数料は0-20%の範囲で設定してください');
+      }
+
+      localStorage.setItem('gifterra_platform_fee', platformFee.toString());
+      setFeeMessage({ type: 'success', text: '手数料設定を保存しました' });
+      setTimeout(() => setFeeMessage(null), 3000);
+    } catch (error) {
+      setFeeMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '保存に失敗しました'
+      });
+    } finally {
+      setIsSavingFee(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -925,6 +963,108 @@ function RevenueTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* プラットフォーム手数料設定 */}
+      <div style={{
+        background: 'rgba(139, 92, 246, 0.1)',
+        border: '1px solid rgba(139, 92, 246, 0.3)',
+        borderRadius: 12,
+        padding: 20,
+        color: '#fff',
+      }}>
+        <h2 style={{ margin: '0 0 8px 0', fontSize: 18, fontWeight: 700 }}>
+          ⚙️ プラットフォーム手数料設定
+        </h2>
+        <p style={{ fontSize: 13, opacity: 0.7, margin: '0 0 16px 0' }}>
+          テナントから徴収するプラットフォーム利用手数料を設定します（現在は参考値として保存のみ）
+        </p>
+
+        {feeMessage && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: 6,
+            marginBottom: 16,
+            background: feeMessage.type === 'success'
+              ? 'rgba(34, 197, 94, 0.2)'
+              : 'rgba(239, 68, 68, 0.2)',
+            border: `1px solid ${feeMessage.type === 'success' ? '#22c55e' : '#ef4444'}`,
+            color: feeMessage.type === 'success' ? '#86efac' : '#fca5a5',
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            <span>{feeMessage.type === 'success' ? '✅' : '❌'}</span>
+            <span>{feeMessage.text}</span>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{
+              display: 'block',
+              fontSize: 13,
+              fontWeight: 600,
+              marginBottom: 8,
+            }}>
+              手数料率
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="range"
+                min="0"
+                max="20"
+                step="0.5"
+                value={platformFee}
+                onChange={(e) => setPlatformFee(parseFloat(e.target.value))}
+                style={{
+                  flex: 1,
+                  accentColor: '#8b5cf6'
+                }}
+              />
+              <input
+                type="number"
+                min="0"
+                max="20"
+                step="0.5"
+                value={platformFee}
+                onChange={(e) => setPlatformFee(parseFloat(e.target.value) || 0)}
+                style={{
+                  width: 80,
+                  padding: '8px 12px',
+                  background: 'rgba(0,0,0,0.3)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 14,
+                  textAlign: 'center',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: 14, minWidth: 20 }}>%</span>
+            </div>
+          </div>
+          <button
+            onClick={handleSaveFee}
+            disabled={isSavingFee}
+            style={{
+              padding: '10px 24px',
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              border: 'none',
+              borderRadius: 6,
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: isSavingFee ? 'not-allowed' : 'pointer',
+              opacity: isSavingFee ? 0.6 : 1,
+              transition: 'all 0.2s ease',
+              marginTop: 22
+            }}
+          >
+            {isSavingFee ? '保存中...' : '💾 保存'}
+          </button>
+        </div>
+      </div>
+
       {/* 収益概要 */}
       <div style={{
         background: 'rgba(255,255,255,0.05)',
