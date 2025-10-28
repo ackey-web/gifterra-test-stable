@@ -2655,10 +2655,18 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 🆕 AI貢献熱量分析（詳細パネル） */}
+        {/* 🆕 AI貢献熱量度（kodomi）分析 */}
         <div id="ai-detail-panel" style={card}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 16 }}>🤖 AI貢献熱量分析</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 16 }}>🤖 AI貢献熱量度（kodomi）分析</h2>
+              <div style={{ fontSize: 10, opacity: 0.6, marginTop: 2 }}>
+                ※貢献熱量ポイント
+              </div>
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>
+              回数 + AI質的スコア + 連続ボーナス
+            </div>
             {!isAnalyzing && heatResults.length > 0 && (
               <div style={{ display: "flex", gap: 8 }}>
                 <button

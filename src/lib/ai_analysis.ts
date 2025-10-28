@@ -193,7 +193,42 @@ function mockSentimentAnalysis(message: string): SentimentAnalysis {
 }
 
 /**
- * 貢献熱量スコアを計算（時間減衰機能付き）
+ * 貢献熱量度（kodomi）を計算
+ *
+ * 【新しいkodomi算出基準】
+ * kodomi = 回数スコア + AI質的スコア + 連続ボーナス
+ *
+ * - 回数スコア: tNHTもJPYCも同じ重み（案A）
+ * - AI質的スコア: メッセージの感情分析結果
+ * - 連続ボーナス: 7日ごとに10%加算
+ */
+export function calculateKodomi(
+  tipCount: number,
+  avgSentiment: number,
+  streak: number = 0
+): number {
+  // 回数スコア（1回 = 1ポイント）
+  const countScore = tipCount;
+
+  // AI質的スコア（0-100の感情スコアを0-50に正規化）
+  // メッセージがない場合は50（中立）として扱う
+  const qualityScore = (avgSentiment / 100) * 50;
+
+  // 連続ボーナス（7日ごとに10%加算）
+  const streakBonus = Math.floor(streak / 7) * 0.1;
+
+  // 基本スコア = 回数 + AI質的評価
+  const baseScore = countScore + qualityScore;
+
+  // 連続ボーナス適用
+  const kodomi = Math.round(baseScore * (1 + streakBonus));
+
+  return kodomi;
+}
+
+/**
+ * 貢献熱量スコアを計算（管理画面表示用 - 従来のheatScore）
+ * ※ Admin Dashboardの表示互換性のために残す
  */
 function calculateHeatScore(
   totalAmount: bigint,
@@ -201,23 +236,18 @@ function calculateHeatScore(
   avgSentiment: number,
   lastTipDate?: Date
 ): number {
-  // Tipスコア（0-400）
-  const amountScore = Math.min(400, Number(ethers.utils.formatUnits(totalAmount, 18)) / 10);
-  
-  // 頻度スコア（0-300）
-  const frequencyScore = Math.min(300, tipCount * 10);
-  
-  // 感情スコア（0-300）
-  const sentimentScore = (avgSentiment / 100) * 300;
-  
-  // 基本スコア計算
-  let baseScore = Math.round(amountScore + frequencyScore + sentimentScore);
-  
+  // 新しいkodomi算出を使用（streakは0として計算）
+  let baseScore = calculateKodomi(tipCount, avgSentiment, 0);
+
+  // 金額ボーナス（Admin表示用の追加評価）
+  const amountBonus = Math.min(200, Number(ethers.utils.formatUnits(totalAmount, 18)) / 20);
+  baseScore += amountBonus;
+
   // 時間減衰計算（最後のTipから経過時間に基づく）
   if (lastTipDate) {
     const now = new Date();
     const daysSinceLastTip = Math.floor((now.getTime() - lastTipDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     // 減衰係数計算（7日間で50%減衰、30日で25%まで減衰）
     let decayFactor = 1.0;
     if (daysSinceLastTip > 0) {
@@ -226,10 +256,10 @@ function calculateHeatScore(
       decayFactor = Math.exp(-decayRate * daysSinceLastTip / 7);
       decayFactor = Math.max(0.25, decayFactor); // 最低25%まで減衰
     }
-    
+
     baseScore = Math.round(baseScore * decayFactor);
   }
-  
+
   return baseScore;
 }
 

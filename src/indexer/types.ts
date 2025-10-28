@@ -73,11 +73,15 @@ export interface ResonanceScore extends AxisScore {
   actions: {
     tips: number;            // TIP回数（合計）
     utilityTokenTips: number; // ユーティリティトークン（tNHT等）のTIP回数（重み1.0）
-    economicTokenTips: number; // Economic軸トークン（JPYC等）のTIP回数（重み0.3）
+    economicTokenTips: number; // Economic軸トークン（JPYC等）のTIP回数（重み1.0）
     purchases: number;       // 特典受取回数（廃止予定）
     claims: number;          // 特典受取回数
     logins: number;          // ログイン日数（将来）
   };
+  // AI分析関連
+  aiQualityScore: number;    // AI質的スコア（メッセージ分析の累積）
+  avgSentiment: number;      // 平均感情スコア（0-100）
+  messageCount: number;      // メッセージ付きTIP回数
 }
 
 export interface CompositeScore {

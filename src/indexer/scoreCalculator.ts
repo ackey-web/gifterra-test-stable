@@ -156,28 +156,38 @@ export function updateStreak(
 /**
  * 共鳴スコア（kodomi）を正規化
  *
- * 【算出基準 - 案A: 回数のみカウント】
- * - 全トークン種別を同じ重み（1.0）で評価
- * - 金額は含まない（回数のみ）
- * - Economic軸と分離し、法務リスクを回避
+ * 【算出基準 - 案A + AI質的分析】
+ * kodomi = (回数スコア + AI質的スコア) × (1 + 連続ボーナス)
+ *
+ * - 回数スコア: 全トークン同じ重み（1.0）、金額は含まない
+ * - AI質的スコア: メッセージの文脈理解・感情分析（0-50）
+ * - 連続ボーナス: 7日ごとに10%加算
  *
  * @param utilityTokenCount ユーティリティトークン（tNHT等）のTIP回数
  * @param jpycTipCount JPYC（Economic軸トークン）のTIP回数
  * @param streak 連続日数
+ * @param avgSentiment 平均感情スコア（0-100）メッセージがない場合は50
  * @returns 正規化後のスコア（kodomi）
  */
 export function normalizeResonanceScore(
   utilityTokenCount: number,
   jpycTipCount: number,
-  streak: number
+  streak: number,
+  avgSentiment: number = 50
 ): number {
-  // ベーススコア = 全トークンの回数合計（同じ重み）
-  const baseScore = utilityTokenCount + jpycTipCount;
+  // 回数スコア（全トークン同じ重み）
+  const countScore = utilityTokenCount + jpycTipCount;
+
+  // AI質的スコア（0-100の感情スコアを0-50に正規化）
+  const qualityScore = (avgSentiment / 100) * 50;
+
+  // ベーススコア = 回数 + AI質的評価
+  const baseScore = countScore + qualityScore;
 
   // 連続ボーナス（7日ごとに10%加算）
   const streakBonus = Math.floor(streak / 7) * 0.1;
 
-  return baseScore * (1 + streakBonus);
+  return Math.round(baseScore * (1 + streakBonus));
 }
 
 // ========================================
@@ -328,6 +338,9 @@ export function createEmptyResonanceScore(): ResonanceScore {
       claims: 0,
       logins: 0,
     },
+    aiQualityScore: 0,
+    avgSentiment: 50,
+    messageCount: 0,
   };
 }
 
