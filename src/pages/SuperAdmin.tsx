@@ -18,6 +18,7 @@ import type { UserProfile, RankName } from '../types/user';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
+import ScoreProfilePage from './score-profile';
 
 type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue' | 'score-parameters' | 'token-axis' | 'system-monitoring';
 type PreviewMode = 'real' | 'mock';
@@ -670,7 +671,7 @@ function UserPreviewTab() {
         </div>
       </div>
 
-      {/* 右側: プレビュー */}
+      {/* 右側: リッチなマイページプレビュー */}
       <div>
         {isLoadingReal && previewMode === 'real' ? (
           <div style={{
@@ -684,8 +685,42 @@ function UserPreviewTab() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
             <div style={{ fontSize: 18 }}>プロフィールを読み込み中...</div>
           </div>
-        ) : profile ? (
-          <UserProfilePreview profile={profile} />
+        ) : previewAddress ? (
+          <div style={{
+            background: '#0a0a0f',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: 16,
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(102, 126, 234, 0.1)',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span>👁️ プレビュー:</span>
+              <span style={{ opacity: 0.7, fontSize: 12, fontFamily: 'monospace' }}>
+                {shortenAddress(previewAddress)}
+              </span>
+              <span style={{
+                marginLeft: 'auto',
+                padding: '4px 12px',
+                background: previewMode === 'real' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                border: `1px solid ${previewMode === 'real' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(251, 191, 36, 0.5)'}`,
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                {previewMode === 'real' ? '🔗 実データ' : '🎨 モック'}
+              </span>
+            </div>
+            <ScoreProfilePage previewUserId={previewAddress} />
+          </div>
         ) : (
           <div style={{
             background: 'rgba(255,255,255,0.05)',
@@ -696,9 +731,9 @@ function UserPreviewTab() {
             color: '#fff',
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-            <div style={{ fontSize: 18, marginBottom: 8 }}>プロフィールがありません</div>
+            <div style={{ fontSize: 18, marginBottom: 8 }}>アドレスを選択してください</div>
             <div style={{ fontSize: 14, opacity: 0.7 }}>
-              {previewMode === 'real' ? 'このアドレスのデータが見つかりません' : 'プリセットを選択してください'}
+              プリセットを選択するか、カスタムアドレスを入力してください
             </div>
           </div>
         )}
