@@ -50,6 +50,7 @@ contract Gifterra is ERC721Enumerable, Ownable {
     event NFTBurned(address indexed user, uint256 tokenId);
     event MaxRankLevelUpdated(uint256 oldLevel, uint256 newLevel);
     event RankThresholdUpdated(uint256 indexed level, uint256 amount);
+    event TipWalletUpdated(address indexed oldWallet, address indexed newWallet);
 
     // ========================================
     // コンストラクタ
@@ -73,6 +74,18 @@ contract Gifterra is ERC721Enumerable, Ownable {
 
     function setDailyRewardAmount(uint256 _amount) external onlyOwner {
         dailyRewardAmount = _amount;
+    }
+
+    /**
+     * @notice TIP受取ウォレットアドレス変更
+     * @dev テナントオーナーがTIP受取先を変更可能にする
+     * @param _newTipWallet 新しいTIP受取ウォレットアドレス
+     */
+    function setTipWallet(address _newTipWallet) external onlyOwner {
+        require(_newTipWallet != address(0), "Invalid tip wallet address");
+        address oldWallet = tipWallet;
+        tipWallet = _newTipWallet;
+        emit TipWalletUpdated(oldWallet, _newTipWallet);
     }
 
     /**
