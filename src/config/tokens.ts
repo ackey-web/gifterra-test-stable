@@ -249,7 +249,7 @@ export function formatTokenAmount(amountWei: string | bigint, tokenId: TokenId):
   const amount = typeof amountWei === 'string' ? BigInt(amountWei) : amountWei;
 
   // decimalsに応じて変換
-  const divisor = BigInt(10 ** config.decimals);
+  const divisor = BigInt(10) ** BigInt(config.decimals);
   const integerPart = amount / divisor;
   const fractionalPart = amount % divisor;
 
@@ -274,7 +274,7 @@ export function formatTokenAmount(amountWei: string | bigint, tokenId: TokenId):
  */
 export function toTokenWei(amount: number, tokenId: TokenId): string {
   const config = TOKEN_MASTER_DATA[tokenId];
-  const multiplier = BigInt(10 ** config.decimals);
+  const multiplier = BigInt(10) ** BigInt(config.decimals);
   const amountBigInt = BigInt(Math.floor(amount));
 
   return (amountBigInt * multiplier).toString();

@@ -472,7 +472,7 @@ export default function AdminDashboard() {
         } else {
           // 期間別の最適化されたブロック範囲
           const lookback = OPTIMIZED_LOOKBACK[period];
-          fb = BigInt(Math.max(0, latest - lookback));
+          fb = BigInt(Math.floor(Math.max(0, latest - lookback)));
         }
 
         if (!cancelled) setFromBlock(fb);

@@ -176,7 +176,7 @@ export function calculateRevenueSummary(
   }
 
   // フォーマット
-  const divisor = BigInt(10 ** tokenDecimals);
+  const divisor = BigInt(10) ** BigInt(tokenDecimals);
   const integerPart = totalDonations / divisor;
   const fractionalPart = totalDonations % divisor;
   const fractionalStr = fractionalPart.toString().padStart(tokenDecimals, '0').replace(/0+$/, '');
@@ -235,7 +235,7 @@ export function calculateProductRevenue(
   }
 
   // 配列に変換してソート
-  const divisor = BigInt(10 ** tokenDecimals);
+  const divisor = BigInt(10) ** BigInt(tokenDecimals);
 
   return Array.from(revenueMap.entries())
     .map(([sku, data]) => {

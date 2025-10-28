@@ -53,10 +53,10 @@ export function normalizeToJPYC(
   // decimalsが異なる場合の変換
   if (tokenDecimals < JPYC_DECIMALS) {
     const diff = JPYC_DECIMALS - tokenDecimals;
-    return amountRaw * BigInt(10 ** diff);
+    return amountRaw * (BigInt(10) ** BigInt(diff));
   } else {
     const diff = tokenDecimals - JPYC_DECIMALS;
-    return amountRaw / BigInt(10 ** diff);
+    return amountRaw / (BigInt(10) ** BigInt(diff));
   }
 }
 

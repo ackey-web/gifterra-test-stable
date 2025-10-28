@@ -121,7 +121,7 @@ function formatWeiAmount(weiAmount: string, tokenId: TokenId): string {
   if (!config) return weiAmount;
 
   const amount = BigInt(weiAmount);
-  const divisor = BigInt(10 ** config.decimals);
+  const divisor = BigInt(10) ** BigInt(config.decimals);
   const integerPart = amount / divisor;
   const fractionalPart = amount % divisor;
 

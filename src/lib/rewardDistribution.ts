@@ -147,7 +147,7 @@ function generateMockDistributionHistory(): RewardDistributionItem[] {
       const amountValue = trigger === 'DAILY_REWARD'
         ? 100
         : rarity === 'COMMON' ? 50 : rarity === 'RARE' ? 100 : rarity === 'SR' ? 300 : 1000;
-      tokenAmount = (BigInt(amountValue) * BigInt(10 ** 18)).toString();
+      tokenAmount = (BigInt(amountValue) * (BigInt(10) ** BigInt(18))).toString();
       tokenAmountFormatted = `${amountValue} ${TOKEN_MASTER_DATA[tokenId].symbol}`;
     } else {
       nftTokenId = Math.floor(Math.random() * 1000) + 1;
@@ -323,7 +323,7 @@ function formatTokenAmount(amountWei: string, tokenId: TokenId): string {
   if (!config) return amountWei;
 
   const amount = BigInt(amountWei);
-  const divisor = BigInt(10 ** config.decimals);
+  const divisor = BigInt(10) ** BigInt(config.decimals);
   const integerPart = amount / divisor;
   const fractionalPart = amount % divisor;
 
