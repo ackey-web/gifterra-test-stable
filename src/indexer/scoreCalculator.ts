@@ -22,6 +22,11 @@ const LEVEL_MAX = 100;
 const ECONOMIC_LEVEL_MULTIPLIER = 0.0001; // 10,000 JPYC で Lv.100
 const RESONANCE_LEVEL_MULTIPLIER = 1.0;   // 100回 で Lv.100
 
+// 貢献熱量度（kodomi）の重み調整
+// 案A: 全トークン同重み（回数のみでカウント、金額は含まない）
+const UTILITY_TOKEN_WEIGHT = 1.0;  // tNHT等のユーティリティトークン
+const JPYC_TIP_COUNT_WEIGHT = 1.0; // JPYCのTIP回数（金額は含まない）
+
 // ========================================
 // JPYC正規化
 // ========================================
@@ -149,13 +154,25 @@ export function updateStreak(
 // ========================================
 
 /**
- * 共鳴スコアを正規化（回数 + 連続ボーナス）
- * @param count 応援回数
+ * 共鳴スコア（kodomi）を正規化
+ *
+ * 【算出基準 - 案A: 回数のみカウント】
+ * - 全トークン種別を同じ重み（1.0）で評価
+ * - 金額は含まない（回数のみ）
+ * - Economic軸と分離し、法務リスクを回避
+ *
+ * @param utilityTokenCount ユーティリティトークン（tNHT等）のTIP回数
+ * @param jpycTipCount JPYC（Economic軸トークン）のTIP回数
  * @param streak 連続日数
- * @returns 正規化後のスコア
+ * @returns 正規化後のスコア（kodomi）
  */
-export function normalizeResonanceScore(count: number, streak: number): number {
-  const baseScore = count;
+export function normalizeResonanceScore(
+  utilityTokenCount: number,
+  jpycTipCount: number,
+  streak: number
+): number {
+  // ベーススコア = 全トークンの回数合計（同じ重み）
+  const baseScore = utilityTokenCount + jpycTipCount;
 
   // 連続ボーナス（7日ごとに10%加算）
   const streakBonus = Math.floor(streak / 7) * 0.1;
@@ -305,6 +322,8 @@ export function createEmptyResonanceScore(): ResonanceScore {
     lastDate: null,
     actions: {
       tips: 0,
+      utilityTokenTips: 0,
+      economicTokenTips: 0,
       purchases: 0,
       claims: 0,
       logins: 0,

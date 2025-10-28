@@ -32,6 +32,8 @@ export interface UserScoreData {
     lastDate?: string;
     actions: {
       tips: number;
+      utilityTokenTips: number;  // tNHT等のユーティリティトークン（重み1.0）
+      economicTokenTips: number; // JPYC等のEconomic軸トークン（重み0.3）
       purchases: number;
       claims: number;
       logins: number;

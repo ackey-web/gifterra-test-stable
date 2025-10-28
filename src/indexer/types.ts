@@ -66,12 +66,14 @@ export interface EconomicScore extends AxisScore {
 
 export interface ResonanceScore extends AxisScore {
   raw: number;               // 回数の累積
-  count: number;             // 応援回数
+  count: number;             // 応援回数（合計）
   streak: number;            // 連続日数
   longestStreak: number;     // 最長連続
   lastDate: Date | null;     // 最終応援日
   actions: {
-    tips: number;            // TIP回数
+    tips: number;            // TIP回数（合計）
+    utilityTokenTips: number; // ユーティリティトークン（tNHT等）のTIP回数（重み1.0）
+    economicTokenTips: number; // Economic軸トークン（JPYC等）のTIP回数（重み0.3）
     purchases: number;       // 特典受取回数（廃止予定）
     claims: number;          // 特典受取回数
     logins: number;          // ログイン日数（将来）

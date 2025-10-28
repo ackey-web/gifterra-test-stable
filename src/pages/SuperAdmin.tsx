@@ -736,6 +736,7 @@ function StatCard({ icon, label, value, subtitle, color }: {
  * ユーザープロフィールプレビュー（簡易版）
  */
 function UserProfilePreview({ profile }: { profile: UserProfile }) {
+  const [viewMode, setViewMode] = useState<'simple' | 'full'>('simple');
   const rankColor = getRankColor(profile.rank.name);
   const rankBadge = getRankBadge(profile.rank.name);
 
@@ -747,18 +748,105 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
       padding: 24,
       color: '#fff',
     }}>
+      {/* ビューモード切り替え */}
       <div style={{
+        display: 'flex',
+        gap: 8,
         marginBottom: 16,
-        padding: 8,
-        background: 'rgba(102, 126, 234, 0.2)',
-        border: '1px solid rgba(102, 126, 234, 0.5)',
-        borderRadius: 8,
-        fontSize: 12,
-        fontWeight: 600,
-        textAlign: 'center',
       }}>
-        👁️ プレビューモード
+        <button
+          onClick={() => setViewMode('simple')}
+          style={{
+            flex: 1,
+            padding: '10px 16px',
+            background: viewMode === 'simple'
+              ? 'linear-gradient(135deg, #667eea, #764ba2)'
+              : 'rgba(255,255,255,0.1)',
+            border: 'none',
+            borderRadius: 8,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          📊 簡易プレビュー
+        </button>
+        <button
+          onClick={() => setViewMode('full')}
+          style={{
+            flex: 1,
+            padding: '10px 16px',
+            background: viewMode === 'full'
+              ? 'linear-gradient(135deg, #667eea, #764ba2)'
+              : 'rgba(255,255,255,0.1)',
+            border: 'none',
+            borderRadius: 8,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🎨 実際のマイページ
+        </button>
       </div>
+
+      {viewMode === 'full' ? (
+        // 実際のマイページ（iframe）
+        <div>
+          <div style={{
+            marginBottom: 12,
+            padding: 8,
+            background: 'rgba(102, 126, 234, 0.2)',
+            border: '1px solid rgba(102, 126, 234, 0.5)',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+          }}>
+            👁️ 実際のマイページプレビュー（スコアプロフィール）
+          </div>
+          <iframe
+            src={`/score-profile?userId=${profile.address}`}
+            style={{
+              width: '100%',
+              height: '800px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 12,
+              background: '#fff',
+            }}
+            title="User My Page Preview"
+          />
+          <div style={{
+            marginTop: 12,
+            padding: 8,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 8,
+            fontSize: 11,
+            textAlign: 'center',
+            opacity: 0.7,
+          }}>
+            💡 ユーザーが実際に見ているマイページと同じレイアウトです
+          </div>
+        </div>
+      ) : (
+        // 簡易プレビュー
+        <>
+          <div style={{
+            marginBottom: 16,
+            padding: 8,
+            background: 'rgba(102, 126, 234, 0.2)',
+            border: '1px solid rgba(102, 126, 234, 0.5)',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            textAlign: 'center',
+          }}>
+            👁️ 簡易プレビューモード（Gifterraコントラクトデータ）
+          </div>
 
       {/* ヘッダー */}
       <div style={{
@@ -810,7 +898,7 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
               <div style={{ fontSize: 12, opacity: 0.8 }}>Level {profile.rank.level}</div>
             </div>
             <div style={{ fontSize: 14, marginBottom: 6 }}>
-              💎 貢献度: <span style={{ fontWeight: 700 }}>{profile.rank.points.toLocaleString()}</span> pt
+              💎 貢献度: <span style={{ fontWeight: 700 }}>{formatTokenAmount(profile.rank.points, 18, 0)}</span> JPYC
             </div>
           </div>
         </div>
@@ -839,6 +927,8 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
           <div style={{ fontSize: 18, fontWeight: 800 }}>{profile.stats.rewardClaimedCount}回</div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

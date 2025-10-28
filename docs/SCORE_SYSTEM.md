@@ -326,11 +326,15 @@ normalized = sum(token amounts in JPYC)
 level = min(100, floor(sqrt(jpycAmount) * 0.0001 * 100))
 ```
 
-### Resonance軸
+### Resonance軸（貢献熱量度 - kodomi）
 
 ```typescript
-// 1. 回数を累積
-resonanceScore.count += 1
+// 【案A: 回数のみカウント】
+// 全トークン種別を同じ重み（1.0）で評価
+
+// 1. トークン種別ごとの回数を累積
+utilityTokenTips += 1  // tNHT等でのTIP
+economicTokenTips += 1 // JPYC等でのTIP
 
 // 2. 連続日数ボーナス
 if (今日 === 昨日 + 1日) {
@@ -339,13 +343,20 @@ if (今日 === 昨日 + 1日) {
   streak = 1
 }
 
-// 3. 7日ごとに10%ボーナス
+// 3. ベーススコア = 全回数の合計 + 連続ボーナス
+baseScore = utilityTokenTips + economicTokenTips
 bonus = floor(streak / 7) * 0.1
-normalized = count * (1 + bonus)
+normalized = baseScore * (1 + bonus)
 
 // 4. レベル計算（線形）
 level = min(100, floor(normalized * 1.0))
 ```
+
+**⚠️ 法務リスク回避の設計（案A）**
+- JPYCはEconomic軸で「金額」として評価
+- Resonance軸（kodomi）では「回数」のみカウント（全トークン同じ重み）
+- 金額と回数を分離することで、tNHTに資産価値があると見なされるリスクを回避
+- シンプルな回数ベースで公平性を担保
 
 ### Composite軸
 

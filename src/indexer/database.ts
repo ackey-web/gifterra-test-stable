@@ -167,11 +167,18 @@ export class ScoreDatabase {
       userScore = this.createNewUserScore(userLower);
     }
 
+    // トークンがEconomic軸かResonance軸か判定
+    const isEconomicToken = axis === 'ECONOMIC';
+
     // 軸に応じてスコアを更新
     if (axis === 'ECONOMIC') {
+      // Economic軸: 金額をEconomicスコアに加算
       await this.updateEconomicScore(userScore, tokenLower, amountRaw);
+      // 加えて、回数をResonanceスコアに低重みで加算（kodomi）
+      await this.updateResonanceScore(userScore, timestamp, true); // isEconomicToken=true
     } else {
-      await this.updateResonanceScore(userScore, timestamp);
+      // Resonance軸: 回数のみResonanceスコアに加算
+      await this.updateResonanceScore(userScore, timestamp, false); // isEconomicToken=false
     }
 
     // 合成スコアを再計算
@@ -213,12 +220,20 @@ export class ScoreDatabase {
 
   private async updateResonanceScore(
     userScore: UserScore,
-    timestamp: Date
+    timestamp: Date,
+    isEconomicToken: boolean
   ): Promise<void> {
     // 回数を加算
     userScore.resonance.raw += 1;
     userScore.resonance.count += 1;
     userScore.resonance.actions.tips += 1;
+
+    // トークン種別に応じて回数をカウント
+    if (isEconomicToken) {
+      userScore.resonance.actions.economicTokenTips += 1;
+    } else {
+      userScore.resonance.actions.utilityTokenTips += 1;
+    }
 
     // 連続日数を更新
     userScore.resonance.streak = updateStreak(
@@ -233,9 +248,10 @@ export class ScoreDatabase {
 
     userScore.resonance.lastDate = timestamp;
 
-    // 正規化（回数 + 連続ボーナス）
+    // 正規化（kodomi算出: トークン種別ごとの重み付き回数 + 連続ボーナス）
     userScore.resonance.normalized = normalizeResonanceScore(
-      userScore.resonance.count,
+      userScore.resonance.actions.utilityTokenTips,  // tNHT等（重み1.0）
+      userScore.resonance.actions.economicTokenTips, // JPYC等（重み0.3）
       userScore.resonance.streak
     );
 
@@ -463,6 +479,8 @@ export class ScoreDatabase {
       resonance_streak: userScore.resonance.streak,
       resonance_longest_streak: userScore.resonance.longestStreak,
       resonance_last_date: userScore.resonance.lastDate?.toISOString(),
+      resonance_utility_tips: userScore.resonance.actions.utilityTokenTips,
+      resonance_economic_tips: userScore.resonance.actions.economicTokenTips,
       composite_score: userScore.composite.value,
       last_updated: userScore.lastUpdated.toISOString(),
     };
@@ -490,6 +508,8 @@ export class ScoreDatabase {
         lastDate: row.resonance_last_date ? new Date(row.resonance_last_date) : null,
         actions: {
           tips: row.resonance_count || 0,
+          utilityTokenTips: row.resonance_utility_tips || 0,
+          economicTokenTips: row.resonance_economic_tips || 0,
           purchases: 0,
           claims: 0,
           logins: 0,
