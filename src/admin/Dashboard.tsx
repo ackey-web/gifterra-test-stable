@@ -405,10 +405,6 @@ export default function AdminDashboard() {
   const [heatResults, setHeatResults] = useState<ContributionHeat[]>([]);
   const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
 
-  // 🔄 自動リフレッシュ用state
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
-
   /* ---------- 最新ブロック範囲取得（⚡ パフォーマンス最適化版） ---------- */
   useEffect(() => {
     let cancelled = false;
@@ -451,14 +447,11 @@ export default function AdminDashboard() {
 
   /* ---------- 自動リフレッシュ（30秒ごと・差分更新） ---------- */
   useEffect(() => {
-    if (!autoRefresh) return;
-
     const interval = setInterval(async () => {
       if (!lastFetchedBlock) return; // 初回ロードが完了していない場合はスキップ
 
       console.log("🔄 バックグラウンド更新: 差分データを取得中...");
       setIsRefreshing(true);
-      setLastRefreshTime(Date.now());
 
       try {
         const latest = await getLatestBlockNumber();
@@ -512,7 +505,7 @@ export default function AdminDashboard() {
     }, 30000); // 30秒ごと
 
     return () => clearInterval(interval);
-  }, [autoRefresh, period, lastFetchedBlock]);
+  }, [period, lastFetchedBlock]);
 
   /* ---------- ログ取得 ---------- */
   useEffect(() => {
@@ -2352,53 +2345,25 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* 🔄 自動リフレッシュトグル */}
-        <div style={{
-          marginTop: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10
-        }}>
-          <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 6,
-              border: "1px solid rgba(255,255,255,.16)",
-              background: autoRefresh ? "#10b981" : "#6b7280",
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.2s ease",
-            }}
-          >
-            {autoRefresh ? "🔄 自動更新: ON" : "⏸️ 自動更新: OFF"}
-          </button>
-          <div style={{ fontSize: 10, opacity: 0.6, color: "#9ca3af" }}>
-            (30秒ごと・差分更新)
+        {/* 🔄 自動更新インジケーター */}
+        {isRefreshing && (
+          <div style={{
+            marginTop: 12,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            fontSize: 12,
+            color: "#10b981",
+            animation: "pulse 1.5s ease-in-out infinite"
+          }}>
+            <span style={{
+              display: "inline-block",
+              animation: "spin 1s linear infinite"
+            }}>🔄</span>
+            自動更新中...
           </div>
-          {isRefreshing && (
-            <div style={{
-              fontSize: 12,
-              color: "#10b981",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              animation: "pulse 1.5s ease-in-out infinite"
-            }}>
-              <span style={{
-                display: "inline-block",
-                animation: "spin 1s linear infinite"
-              }}>🔄</span>
-              更新中...
-            </div>
-          )}
-        </div>
+        )}
         <style>{`
           @keyframes spin {
             from { transform: rotate(0deg); }
