@@ -173,12 +173,14 @@ async function getLogsInChunks(
   address: string,
   fromBlock: number,
   toBlock: number,
-  topics: string[]
+  topics: string[],
+  onProgress?: (progress: number) => void
 ): Promise<any[]> {
   const allLogs: any[] = [];
   const blockRange = toBlock - fromBlock;
 
   const numChunks = Math.ceil(blockRange / CHUNK_SIZE);
+  let completedChunks = 0;
 
   for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
     const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
@@ -195,6 +197,13 @@ async function getLogsInChunks(
       allLogs.push(...logs);
     } catch (error: any) {
       // 1つのチャンクが失敗しても続行
+    }
+
+    // 進捗を更新
+    completedChunks++;
+    if (onProgress) {
+      const progress = Math.round((completedChunks / numChunks) * 100);
+      onProgress(progress);
     }
 
     // レート制限対策: 小さな遅延
@@ -226,16 +235,16 @@ const TOPIC_TIPPED = ethers.utils.keccak256(
 );
 
 /* ---------- Loading Overlay ---------- */
-function LoadingOverlay({ period }: { period?: Period }) {
+function LoadingOverlay({ period, progress }: { period?: Period; progress?: number }) {
   const [dots, setDots] = useState(".");
-  
+
   React.useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => prev.length >= 3 ? "." : prev + ".");
     }, 500);
     return () => clearInterval(interval);
   }, []);
-  
+
   const getLoadingInfo = () => {
     switch (period) {
       case "day":
@@ -250,8 +259,9 @@ function LoadingOverlay({ period }: { period?: Period }) {
         return { time: "読み込み中", color: "#6366f1" };
     }
   };
-  
+
   const loadingInfo = getLoadingInfo();
+  const displayProgress = progress || 0;
   
   return (
     <div
@@ -285,6 +295,32 @@ function LoadingOverlay({ period }: { period?: Period }) {
         <div style={{ marginBottom: 12 }}>
           ⚡ データを読み込み中{dots}
         </div>
+
+        {/* プログレスバー */}
+        {displayProgress > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{
+              width: "100%",
+              height: 8,
+              background: "rgba(255,255,255,0.1)",
+              borderRadius: 4,
+              overflow: "hidden",
+              marginBottom: 8
+            }}>
+              <div style={{
+                width: `${displayProgress}%`,
+                height: "100%",
+                background: `linear-gradient(90deg, ${loadingInfo.color}, #60a5fa)`,
+                transition: "width 0.3s ease",
+                borderRadius: 4
+              }} />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: loadingInfo.color }}>
+              {displayProgress}%
+            </div>
+          </div>
+        )}
+
         {period && (
           <div style={{ fontSize: 12, opacity: 0.8, display: "flex", flexDirection: "column", gap: 4 }}>
             <div>期間: <strong>{period === "all" ? "全期間" : period}</strong></div>
@@ -344,6 +380,7 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false); // バックグラウンド更新中
   const [lastFetchedBlock, setLastFetchedBlock] = useState<bigint | undefined>(); // 差分更新用
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 初回ロードフラグ
+  const [loadingProgress, setLoadingProgress] = useState(0); // ロード進捗（0-100%）
 
   const [emergencyStop, setEmergencyStop] = useState(false);
   useEffect(() => {
@@ -522,12 +559,19 @@ export default function AdminDashboard() {
         // 最新ブロック番号を取得（Alchemy Free Tier対応）
         const latestBlock = await getLatestBlockNumber();
 
+        // 進捗をリセット
+        if (isInitialLoad) {
+          setLoadingProgress(0);
+        }
+
         // 10ブロックずつに分割してログを取得
         const logs: any[] = await getLogsInChunks(
           CONTRACT_ADDRESS,
           Number(fromBlock),
           latestBlock,
-          [TOPIC_TIPPED]
+          [TOPIC_TIPPED],
+          // 初回ロード時のみ進捗を更新
+          isInitialLoad ? (progress) => setLoadingProgress(progress) : undefined
         );
 
         const items: TipItem[] = logs.map((log) => {
@@ -3028,7 +3072,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {isLoading && <LoadingOverlay period={period} />}
+      {isLoading && <LoadingOverlay period={period} progress={loadingProgress} />}
     </AdminLayout>
   );
 }
