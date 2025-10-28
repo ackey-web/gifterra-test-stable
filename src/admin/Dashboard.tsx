@@ -402,6 +402,10 @@ export default function AdminDashboard() {
   const [heatResults, setHeatResults] = useState<ContributionHeat[]>([]);
   const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
 
+  // 🔄 自動リフレッシュ用state
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+
   /* ---------- 最新ブロック範囲取得（⚡ パフォーマンス最適化版） ---------- */
   useEffect(() => {
     let cancelled = false;
@@ -433,6 +437,38 @@ export default function AdminDashboard() {
       cancelled = true;
     };
   }, [period]);
+
+  /* ---------- 自動リフレッシュ（30秒ごと） ---------- */
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      console.log("🔄 自動リフレッシュ: 最新データを取得中...");
+      setLastRefreshTime(Date.now());
+
+      // ブロック範囲を再計算してログを再取得
+      (async () => {
+        try {
+          const latest = await getLatestBlockNumber();
+          let fb: bigint;
+
+          if (period === "all") {
+            const maxFrom = Math.max(0, latest - MAX_BLOCK_RANGE);
+            fb = BigInt(maxFrom);
+          } else {
+            const lookback = OPTIMIZED_LOOKBACK[period];
+            fb = BigInt(Math.max(0, latest - lookback));
+          }
+
+          setFromBlock(fb);
+        } catch (e: any) {
+          console.error("❌ 自動リフレッシュ失敗:", e);
+        }
+      })();
+    }, 30000); // 30秒ごと
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, period]);
 
   /* ---------- ログ取得 ---------- */
   useEffect(() => {
@@ -2251,11 +2287,44 @@ export default function AdminDashboard() {
             );
           })}
         </div>
-        <div style={{ 
-          marginTop: 8, 
-          fontSize: 11, 
-          opacity: 0.6, 
-          color: "#10b981" 
+
+        {/* 🔄 自動リフレッシュトグル */}
+        <div style={{
+          marginTop: 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10
+        }}>
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid rgba(255,255,255,.16)",
+              background: autoRefresh ? "#10b981" : "#6b7280",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.2s ease",
+            }}
+          >
+            {autoRefresh ? "🔄 自動更新: ON" : "⏸️ 自動更新: OFF"}
+          </button>
+          <div style={{ fontSize: 10, opacity: 0.6, color: "#9ca3af" }}>
+            (30秒ごと)
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: 8,
+          fontSize: 11,
+          opacity: 0.6,
+          color: "#10b981"
         }}>
           ⚡ パフォーマンス最適化済み - 期間別に読み込み範囲を制限
         </div>
@@ -2304,24 +2373,6 @@ export default function AdminDashboard() {
                 投稿ユーザー： <strong>{engagementTX.uniqueAuthors}</strong>
               </div>
             </div>
-            <button
-              onClick={handleAIAnalysis}
-              disabled={isAnalyzing || filtered.length === 0}
-              style={{
-                background: isAnalyzing ? "#6b7280" : "#8b5cf6",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                padding: "4px 10px",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: isAnalyzing || filtered.length === 0 ? "not-allowed" : "pointer",
-                width: "100%",
-                opacity: isAnalyzing || filtered.length === 0 ? 0.6 : 1,
-              }}
-            >
-              {isAnalyzing ? "🤖 分析中..." : "🤖 AI詳細分析"}
-            </button>
           </div>
         </div>
 
@@ -2667,8 +2718,27 @@ export default function AdminDashboard() {
             <div style={{ fontSize: 11, opacity: 0.7 }}>
               回数 + AI質的スコア + 連続ボーナス
             </div>
-            {!isAnalyzing && heatResults.length > 0 && (
-              <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleAIAnalysis}
+                disabled={isAnalyzing || filtered.length === 0}
+                style={{
+                  background: isAnalyzing ? "#6b7280" : "#8b5cf6",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: isAnalyzing || filtered.length === 0 ? "not-allowed" : "pointer",
+                  opacity: isAnalyzing || filtered.length === 0 ? 0.6 : 1,
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {isAnalyzing ? "🤖 分析中..." : "🤖 AI詳細分析"}
+              </button>
+              {!isAnalyzing && heatResults.length > 0 && (
+                <>
                 <button
                   onClick={exportAnalysisCSV}
                   style={{
@@ -2699,8 +2769,9 @@ export default function AdminDashboard() {
                 >
                   📄 JSON
                 </button>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
           
           {isAnalyzing && (
