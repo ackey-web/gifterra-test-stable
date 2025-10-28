@@ -810,7 +810,7 @@ function UserProfilePreview({ profile }: { profile: UserProfile }) {
             👁️ 実際のマイページプレビュー（スコアプロフィール）
           </div>
           <iframe
-            src={`/score-profile?userId=${profile.address}`}
+            src={`/user/${profile.address}`}
             style={{
               width: '100%',
               height: '800px',

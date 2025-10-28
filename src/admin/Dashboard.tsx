@@ -446,13 +446,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    // 初回のみローディングオーバーレイ表示、2回目以降はバックグラウンド更新
-    if (isInitialLoad) {
-      setIsLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
-
+    // 初回も期間変更も、ローディングオーバーレイを表示（%表示付き）
+    setIsLoading(true);
     setLastFetchedBlock(undefined); // 期間変更時にリセット
     (async () => {
       try {
@@ -549,20 +544,13 @@ export default function AdminDashboard() {
     let cancelled = false;
     if (fromBlock === undefined) return;
 
-    // 初回以外はsetIsLoadingを使わない（既にsetIsRefreshingが設定されている）
-    if (isInitialLoad) {
-      setIsLoading(true);
-    }
+    // 進捗をリセット（常に）
+    setLoadingProgress(0);
 
     (async () => {
       try {
         // 最新ブロック番号を取得（Alchemy Free Tier対応）
         const latestBlock = await getLatestBlockNumber();
-
-        // 進捗をリセット
-        if (isInitialLoad) {
-          setLoadingProgress(0);
-        }
 
         // 10ブロックずつに分割してログを取得
         const logs: any[] = await getLogsInChunks(
@@ -570,8 +558,8 @@ export default function AdminDashboard() {
           Number(fromBlock),
           latestBlock,
           [TOPIC_TIPPED],
-          // 初回ロード時のみ進捗を更新
-          isInitialLoad ? (progress) => setLoadingProgress(progress) : undefined
+          // 常に進捗を更新（初回も期間変更も）
+          (progress) => setLoadingProgress(progress)
         );
 
         const items: TipItem[] = logs.map((log) => {
@@ -590,13 +578,12 @@ export default function AdminDashboard() {
         if (!cancelled) {
           setRawTips(items);
           setLastFetchedBlock(BigInt(latestBlock)); // 差分更新用に保存
+          setIsLoading(false);
 
           if (isInitialLoad) {
-            setIsLoading(false);
             setIsInitialLoad(false);
             console.log(`✅ 初回ロード完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
           } else {
-            setIsRefreshing(false);
             console.log(`✅ 期間変更完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
           }
         }
@@ -633,12 +620,10 @@ export default function AdminDashboard() {
 
         if (!cancelled) {
           setRawTips([]); // エラー時は空配列を設定
+          setIsLoading(false);
 
           if (isInitialLoad) {
-            setIsLoading(false);
             setIsInitialLoad(false);
-          } else {
-            setIsRefreshing(false);
           }
         }
       }
