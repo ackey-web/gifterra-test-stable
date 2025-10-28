@@ -341,6 +341,8 @@ export default function AdminDashboard() {
   const [rawTips, setRawTips] = useState<TipItem[]>([]);
   const [blockTimeMap, setBlockTimeMap] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // バックグラウンド更新中
+  const [lastFetchedBlock, setLastFetchedBlock] = useState<bigint | undefined>(); // 差分更新用
 
   const [emergencyStop, setEmergencyStop] = useState(false);
   useEffect(() => {
@@ -410,12 +412,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
+    setLastFetchedBlock(undefined); // 期間変更時にリセット
     (async () => {
       try {
-        
+
         const latest = await getLatestBlockNumber();
         let fb: bigint;
-        
+
         if (period === "all") {
           // 全期間でも最大範囲を制限（パフォーマンス保護）
           const maxFrom = Math.max(0, latest - MAX_BLOCK_RANGE);
@@ -438,37 +441,70 @@ export default function AdminDashboard() {
     };
   }, [period]);
 
-  /* ---------- 自動リフレッシュ（30秒ごと） ---------- */
+  /* ---------- 自動リフレッシュ（30秒ごと・差分更新） ---------- */
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const interval = setInterval(() => {
-      console.log("🔄 自動リフレッシュ: 最新データを取得中...");
+    const interval = setInterval(async () => {
+      if (!lastFetchedBlock) return; // 初回ロードが完了していない場合はスキップ
+
+      console.log("🔄 バックグラウンド更新: 差分データを取得中...");
+      setIsRefreshing(true);
       setLastRefreshTime(Date.now());
 
-      // ブロック範囲を再計算してログを再取得
-      (async () => {
-        try {
-          const latest = await getLatestBlockNumber();
-          let fb: bigint;
+      try {
+        const latest = await getLatestBlockNumber();
 
-          if (period === "all") {
-            const maxFrom = Math.max(0, latest - MAX_BLOCK_RANGE);
-            fb = BigInt(maxFrom);
+        // 差分更新: lastFetchedBlock + 1 から最新まで
+        if (latest > lastFetchedBlock) {
+          const fromBlockNum = Number(lastFetchedBlock) + 1;
+
+          console.log(`📊 差分取得: ブロック ${fromBlockNum} → ${latest} (${latest - fromBlockNum + 1}個)`);
+
+          const logs: any[] = await getLogsInChunks(
+            CONTRACT_ADDRESS,
+            fromBlockNum,
+            latest,
+            [TOPIC_TIPPED]
+          );
+
+          if (logs.length > 0) {
+            const newItems: TipItem[] = logs.map((log) => {
+              const topic1: string = log.topics?.[1] || "0x";
+              const from = "0x" + topic1.slice(-40).toLowerCase();
+              const amount = BigInt(log.data);
+              const blockNumber = BigInt(parseInt(log.blockNumber, 16));
+              const txHash = (log.transactionHash || "").toLowerCase();
+              return { from, amount, blockNumber, txHash };
+            });
+
+            // 既存データに新しいイベントを追加してソート
+            setRawTips(prev => {
+              const merged = [...prev, ...newItems];
+              merged.sort((a, b) =>
+                a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0
+              );
+              return merged;
+            });
+
+            console.log(`✅ 新しいTIPイベント ${newItems.length}件を追加`);
           } else {
-            const lookback = OPTIMIZED_LOOKBACK[period];
-            fb = BigInt(Math.max(0, latest - lookback));
+            console.log("✓ 新しいイベントなし");
           }
 
-          setFromBlock(fb);
-        } catch (e: any) {
-          console.error("❌ 自動リフレッシュ失敗:", e);
+          setLastFetchedBlock(BigInt(latest));
+        } else {
+          console.log("✓ 最新ブロックまで取得済み");
         }
-      })();
+      } catch (e: any) {
+        console.error("❌ バックグラウンド更新失敗:", e);
+      } finally {
+        setIsRefreshing(false);
+      }
     }, 30000); // 30秒ごと
 
     return () => clearInterval(interval);
-  }, [autoRefresh, period]);
+  }, [autoRefresh, period, lastFetchedBlock]);
 
   /* ---------- ログ取得 ---------- */
   useEffect(() => {
@@ -503,7 +539,9 @@ export default function AdminDashboard() {
 
         if (!cancelled) {
           setRawTips(items);
+          setLastFetchedBlock(BigInt(latestBlock)); // 差分更新用に保存
           setIsLoading(false);
+          console.log(`✅ 初回ロード完了: ${items.length}件取得 (最新ブロック: ${latestBlock})`);
         }
       } catch (e: any) {
         const errorMsg = e?.message || e?.data?.message || "Unknown error";
@@ -2316,9 +2354,35 @@ export default function AdminDashboard() {
             {autoRefresh ? "🔄 自動更新: ON" : "⏸️ 自動更新: OFF"}
           </button>
           <div style={{ fontSize: 10, opacity: 0.6, color: "#9ca3af" }}>
-            (30秒ごと)
+            (30秒ごと・差分更新)
           </div>
+          {isRefreshing && (
+            <div style={{
+              fontSize: 12,
+              color: "#10b981",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              animation: "pulse 1.5s ease-in-out infinite"
+            }}>
+              <span style={{
+                display: "inline-block",
+                animation: "spin 1s linear infinite"
+              }}>🔄</span>
+              更新中...
+            </div>
+          )}
         </div>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
 
         <div style={{
           marginTop: 8,
