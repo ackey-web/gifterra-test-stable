@@ -22,7 +22,7 @@ import { fetchTxMessages } from "../lib/annotations_tx";
 import { setEmergencyFlag, readEmergencyFlag } from "../lib/emergency";
 import { analyzeContributionHeat, isOpenAIConfigured, type ContributionHeat } from "../lib/ai_analysis.ts";
 import VendingDashboardNew from "./vending/VendingDashboardNew";
-import DiagnosticsPage from "./DiagnosticsPage";
+import InitialSetupPage from "./InitialSetupPage";
 import { uploadImage, deleteFileFromUrl } from "../lib/supabase";
 import { RewardUIManagementPage, type AdData } from "./reward/RewardUIManagementPage";
 import { useTenant } from "./contexts/TenantContext";
@@ -2379,8 +2379,8 @@ export default function AdminDashboard() {
         <VendingDashboardNew />
       ) : currentPage === "flag-nft-management" ? (
         <FlagNFTManagementPage />
-      ) : currentPage === "diagnostics" ? (
-        <DiagnosticsPage />
+      ) : currentPage === "initial-setup" ? (
+        <InitialSetupPage />
       ) : currentPage === "tenant-management" ? (
         <TenantManagementPage />
       ) : (
@@ -2463,33 +2463,6 @@ export default function AdminDashboard() {
             50% { opacity: 0.5; }
           }
         `}</style>
-
-        <div style={{
-          marginTop: 8,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap"
-        }}>
-          <div style={{
-            fontSize: 11,
-            opacity: 0.6,
-            color: "#10b981"
-          }}>
-            ⚡ パフォーマンス最適化済み - 期間別に読み込み範囲を制限
-          </div>
-          <div style={{
-            fontSize: 11,
-            opacity: 0.7,
-            color: "#8b5cf6",
-            padding: "4px 8px",
-            borderRadius: 6,
-            background: "rgba(139, 92, 246, 0.1)",
-            border: "1px solid rgba(139, 92, 246, 0.3)"
-          }}>
-            💎 トークン: {TOKEN.SYMBOL}
-          </div>
-        </div>
       </header>
 
       <section

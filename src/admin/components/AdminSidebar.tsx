@@ -7,7 +7,7 @@ export type PageType =
   | "reward-ui-management"
   | "vending-management"
   | "flag-nft-management"
-  | "diagnostics"
+  | "initial-setup"
   | "tenant-management";
 
 interface MenuItem {
@@ -52,7 +52,7 @@ const MENU_GROUPS: MenuGroup[] = [
     title: "システム",
     icon: "⚙️",
     items: [
-      { id: "diagnostics", label: "診断", icon: "🔧", color: "#6b7280" },
+      { id: "initial-setup", label: "初期設定", icon: "⚙️", color: "#6b7280" },
       // { id: "tenant-management", label: "テナント管理", icon: "🏢", color: "#7c2d12" },
     ]
   }
