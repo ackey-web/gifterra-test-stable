@@ -446,8 +446,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     let cancelled = false;
 
-    // 初回も期間変更も、ローディングオーバーレイを表示（%表示付き）
-    setIsLoading(true);
+    // 初回のみローディングオーバーレイを表示（期間変更時は非表示）
+    if (!lastFetchedBlock) {
+      setIsLoading(true);
+    }
     setLastFetchedBlock(undefined); // 期間変更時にリセット
     (async () => {
       try {

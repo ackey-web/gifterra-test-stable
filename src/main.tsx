@@ -125,10 +125,10 @@ root.render(
         <MyPurchasesPage />
       ) : wantsClaimHistory ? (
         <ClaimHistory />
-      ) : wantsUserProfile ? (
-        <ScoreProfilePage />
       ) : wantsSuperAdmin ? (
         <SuperAdminPage />
+      ) : wantsUserProfile ? (
+        <ScoreProfilePage />
       ) : wantsAdminMobile ? (
         <TenantProvider>
           <AdminDashboardMobile />
