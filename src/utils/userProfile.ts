@@ -1,7 +1,8 @@
 // src/utils/userProfile.ts
 // ユーザープロフィール関連のユーティリティ関数
 
-import { RankName, RankConfig, Rank, DEFAULT_RANK_CONFIGS } from '../types/user';
+import type { RankName, RankConfig, Rank } from '../types/user';
+import { DEFAULT_RANK_CONFIGS } from '../types/user';
 
 /**
  * 貢献度ポイントから現在のランクを計算

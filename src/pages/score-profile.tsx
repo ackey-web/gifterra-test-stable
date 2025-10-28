@@ -3,9 +3,8 @@
  * @description ユーザーの二軸スコアプロフィールを表示
  */
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useAccount } from 'wagmi';
+import React, { useState, useMemo } from 'react';
+import { useAddress } from '@thirdweb-dev/react';
 import DualAxisTank from '../components/score/DualAxisTank';
 import RankingPanel from '../components/score/RankingPanel';
 import TenantScoreCard from '../components/score/TenantScoreCard';
@@ -24,12 +23,14 @@ import {
 // ========================================
 
 export default function ScoreProfilePage() {
-  const router = useRouter();
-  const { address: connectedAddress } = useAccount();
+  const connectedAddress = useAddress();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'rankings' | 'tenants'>('overview');
 
   // URLパラメータまたは接続アドレスからユーザーIDを取得
-  const userIdFromQuery = router.query.userId as string | undefined;
+  const userIdFromQuery = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('userId') || undefined;
+  }, []);
   const userId = userIdFromQuery || connectedAddress;
   const isOwnProfile = !userIdFromQuery || userIdFromQuery === connectedAddress;
 
@@ -152,7 +153,7 @@ export default function ScoreProfilePage() {
           <div className="error-message">
             {scoreError?.message || 'このユーザーのスコアデータはまだ作成されていません'}
           </div>
-          <button className="error-button" onClick={() => router.push('/')}>
+          <button className="error-button" onClick={() => window.location.href = '/'}>
             ホームに戻る
           </button>
         </div>
@@ -401,7 +402,7 @@ export default function ScoreProfilePage() {
               currentUserAddress={userId}
               onUserClick={(clickedUserId) => {
                 if (clickedUserId !== userId) {
-                  router.push(`/score-profile?userId=${clickedUserId}`);
+                  window.location.href = `/score-profile?userId=${clickedUserId}`;
                 }
               }}
             />
@@ -434,7 +435,7 @@ export default function ScoreProfilePage() {
                     key={tenant.tenantId}
                     tenant={tenant}
                     onTenantClick={(tenantId) => {
-                      router.push(`/tenant/${tenantId}`);
+                      window.location.href = `/tenant/${tenantId}`;
                     }}
                     onFavoriteToggle={toggleFavorite}
                     size="medium"
