@@ -107,7 +107,6 @@ export function useUserScore(userId: string | undefined) {
       setData(result.data);
     } catch (err) {
       setError(err as Error);
-      console.error('Error fetching user score:', err);
     } finally {
       setLoading(false);
     }
@@ -163,7 +162,6 @@ export function useUserRank(userId: string | undefined) {
         setData(result.data);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching user rank:', err);
       } finally {
         setLoading(false);
       }
@@ -206,7 +204,6 @@ export function useRankings(axis: 'economic' | 'resonance' | 'composite', limit 
       setPagination(result.data.pagination);
     } catch (err) {
       setError(err as Error);
-      console.error('Error fetching rankings:', err);
     } finally {
       setLoading(false);
     }
@@ -253,7 +250,6 @@ export function useAllRankings(limit = 100) {
       setData(result.data);
     } catch (err) {
       setError(err as Error);
-      console.error('Error fetching all rankings:', err);
     } finally {
       setLoading(false);
     }
@@ -408,7 +404,6 @@ export function useLatestSnapshot() {
         setData(result.data);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching snapshot:', err);
       } finally {
         setLoading(false);
       }

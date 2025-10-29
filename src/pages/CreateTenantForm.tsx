@@ -72,15 +72,6 @@ export default function CreateTenantForm({ factoryAddress, onSuccess, onCancel }
       const fee = await factory.call('deploymentFee');
       const rankPlanNumber = RANK_PLANS.find(p => p.value === formData.rankPlan)?.number ?? 1;
 
-      console.log('Creating tenant with params:', {
-        tenantName: formData.tenantName,
-        admin: formData.adminAddress,
-        rewardToken: TNHT_TOKEN.ADDRESS,
-        tipWallet: formData.tipWalletAddress,
-        rankPlan: rankPlanNumber,
-        fee: ethers.formatEther(fee),
-      });
-
       const tx = await factory.call(
         'createTenant',
         [
@@ -92,8 +83,6 @@ export default function CreateTenantForm({ factoryAddress, onSuccess, onCancel }
         ],
         { value: fee }
       );
-
-      console.log('Transaction sent:', tx);
 
       // イベントからテナント情報を取得
       const receipt = await tx.receipt;

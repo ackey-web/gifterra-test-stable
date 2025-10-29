@@ -25,21 +25,12 @@ export async function saveTipMessageToSupabase(
     const msg = message.trim();
 
     if (!tx || !addr || !msg) {
-      console.warn('[saveTipMessage] Invalid parameters', { tx, addr, msgLen: msg.length });
       return;
     }
 
     // sentiment_scoreとsentiment_labelを準備
     const sentimentScore = sentiment ? sentiment.score : 50; // デフォルト中立
     const sentimentLabel = sentiment ? sentiment.label : 'neutral';
-
-    console.log('[saveTipMessage] Saving to Supabase:', {
-      txHash: tx,
-      address: addr,
-      messageLength: msg.length,
-      sentiment: sentimentLabel,
-      score: sentimentScore,
-    });
 
     // score_transactionsテーブルを更新
     // trace_idでマッチするレコードを検索してメッセージとsentimentを更新
@@ -56,8 +47,6 @@ export async function saveTipMessageToSupabase(
       console.error('[saveTipMessage] Supabase error:', error);
       throw error;
     }
-
-    console.log('[saveTipMessage] Successfully saved:', data);
 
     // ユーザーのai_quality_scoreを再計算して更新
     await updateUserAIQualityScore(addr);
@@ -91,7 +80,6 @@ async function updateUserAIQualityScore(userAddress: string): Promise<void> {
     }
 
     if (!transactions || transactions.length === 0) {
-      console.log('[updateUserAIQualityScore] No messages found for user:', addr);
       return;
     }
 
@@ -100,13 +88,6 @@ async function updateUserAIQualityScore(userAddress: string): Promise<void> {
 
     // AI質的スコアを計算（0-100の感情スコアを0-50に正規化）
     const aiQualityScore = (avgSentiment / 100) * 50;
-
-    console.log('[updateUserAIQualityScore] Calculated:', {
-      address: addr,
-      messageCount: transactions.length,
-      avgSentiment,
-      aiQualityScore,
-    });
 
     // user_scoresテーブルを更新
     const { error: updateError } = await supabase
@@ -120,8 +101,6 @@ async function updateUserAIQualityScore(userAddress: string): Promise<void> {
       console.error('[updateUserAIQualityScore] Update error:', updateError);
       return;
     }
-
-    console.log('[updateUserAIQualityScore] Successfully updated ai_quality_score:', aiQualityScore);
 
   } catch (error) {
     console.error('[updateUserAIQualityScore] Failed:', error);

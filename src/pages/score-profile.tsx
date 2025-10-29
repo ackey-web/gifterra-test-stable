@@ -451,7 +451,6 @@ export default function ScoreProfilePage({ userId: propsUserId }: { userId?: str
           <GiftyAssistant
             userScore={userScore}
             onSuggestionClick={(suggestion) => {
-              console.log('Suggestion clicked:', suggestion);
               // TODO: 提案に応じたアクションを実装
             }}
           />

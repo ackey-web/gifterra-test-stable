@@ -56,7 +56,6 @@ export class ScoreEventListener {
    * イベントリスナーを開始
    */
   async start(): Promise<void> {
-    console.log('🎧 ScoreEventListener: Starting...');
 
     // ScoreIncremented イベント
     this.contract.on(
@@ -115,7 +114,6 @@ export class ScoreEventListener {
       }
     );
 
-    console.log('✅ ScoreEventListener: Started successfully');
   }
 
   /**
@@ -123,7 +121,6 @@ export class ScoreEventListener {
    */
   stop(): void {
     this.contract.removeAllListeners();
-    console.log('🛑 ScoreEventListener: Stopped');
   }
 
   /**
@@ -135,7 +132,6 @@ export class ScoreEventListener {
     fromBlock: number,
     toBlock: number | 'latest'
   ): Promise<HistoricalEvents> {
-    console.log(`📜 Fetching historical events from ${fromBlock} to ${toBlock}...`);
 
     const scoreIncrementedEvents: ScoreIncrementedEvent[] = [];
     const scoreParamsUpdatedEvents: ScoreParamsUpdatedEvent[] = [];
@@ -182,10 +178,6 @@ export class ScoreEventListener {
       );
       tokenAxisUpdatedEvents.push(parsed);
     }
-
-    console.log(`✅ Fetched ${scoreIncrementedEvents.length} ScoreIncremented events`);
-    console.log(`✅ Fetched ${scoreParamsUpdatedEvents.length} ScoreParamsUpdated events`);
-    console.log(`✅ Fetched ${tokenAxisUpdatedEvents.length} TokenAxisUpdated events`);
 
     return {
       scoreIncremented: scoreIncrementedEvents,
@@ -394,7 +386,6 @@ export class GifterraEventListener {
    * イベントリスナーを開始
    */
   async start(): Promise<void> {
-    console.log('🎧 GifterraEventListener: Starting...');
 
     // Tipped イベント
     this.contract.on(
@@ -409,7 +400,6 @@ export class GifterraEventListener {
       }
     );
 
-    console.log('✅ GifterraEventListener: Started successfully');
   }
 
   /**
@@ -417,7 +407,6 @@ export class GifterraEventListener {
    */
   stop(): void {
     this.contract.removeAllListeners();
-    console.log('🛑 GifterraEventListener: Stopped');
   }
 
   /**
@@ -427,7 +416,6 @@ export class GifterraEventListener {
     fromBlock: number,
     toBlock: number | 'latest'
   ): Promise<TippedEvent[]> {
-    console.log(`📜 Fetching Tipped events from ${fromBlock} to ${toBlock}...`);
 
     const tippedEvents: TippedEvent[] = [];
 
@@ -442,8 +430,6 @@ export class GifterraEventListener {
       );
       tippedEvents.push(parsed);
     }
-
-    console.log(`✅ Fetched ${tippedEvents.length} Tipped events`);
 
     return tippedEvents;
   }
@@ -483,7 +469,6 @@ export async function backfillGifterraEvents(
   const allEvents: TippedEvent[] = [];
 
   for (const range of ranges) {
-    console.log(`📦 Backfilling Tipped events blocks ${range.from} - ${range.to}...`);
 
     const events = await listener.fetchHistoricalEvents(range.from, range.to);
     allEvents.push(...events);

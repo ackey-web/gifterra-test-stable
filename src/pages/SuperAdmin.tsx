@@ -709,7 +709,6 @@ function TenantsTab() {
         <CreateTenantForm
           factoryAddress={factoryAddress}
           onSuccess={(tenantId, contracts) => {
-            console.log('Tenant created:', tenantId, contracts);
             setShowCreateForm(false);
             // テナント一覧を再読み込み（将来的にrefetch機能を実装）
           }}

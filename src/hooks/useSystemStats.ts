@@ -140,7 +140,6 @@ export function useSystemStats() {
     fetchStats();
 
     // 🔄 Supabase Realtimeでリアルタイム更新
-    console.log('🔄 Supabase Realtimeをサブスクライブ中...');
 
     // purchase_historyテーブルの変更を監視
     const purchaseChannel = supabase
@@ -148,7 +147,6 @@ export function useSystemStats() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'purchase_history' },
         (payload) => {
-          console.log('🔔 purchase_history更新:', payload);
           fetchStats(); // データを再取得
         }
       )
@@ -160,14 +158,12 @@ export function useSystemStats() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'vending_machines' },
         (payload) => {
-          console.log('🔔 vending_machines更新:', payload);
           fetchStats(); // データを再取得
         }
       )
       .subscribe();
 
     return () => {
-      console.log('🔄 Supabase Realtimeサブスクリプション解除');
       supabase.removeChannel(purchaseChannel);
       supabase.removeChannel(vmChannel);
     };
