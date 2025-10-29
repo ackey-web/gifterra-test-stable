@@ -333,8 +333,59 @@ function TankVisual({ label, value, count, percentage, color }: {
   return (
     <div style={{
       position: 'relative',
-      height: 500,
+      height: 520,
     }}>
+      {/* CSSアニメーション定義 */}
+      <style>{`
+        @keyframes liquidWave {
+          0%, 100% {
+            transform: translateX(-50%) translateY(0px);
+            border-radius: 45%;
+          }
+          50% {
+            transform: translateX(-50%) translateY(-8px);
+            border-radius: 48%;
+          }
+        }
+        @keyframes bubbleRise {
+          0% {
+            bottom: 0;
+            opacity: 0.6;
+            transform: translateX(0);
+          }
+          50% {
+            opacity: 0.8;
+            transform: translateX(10px);
+          }
+          100% {
+            bottom: 100%;
+            opacity: 0;
+            transform: translateX(0);
+          }
+        }
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) translateY(0) rotate(10deg);
+            opacity: 0;
+          }
+          50% {
+            opacity: 0.4;
+          }
+          100% {
+            transform: translateX(200%) translateY(20px) rotate(10deg);
+            opacity: 0;
+          }
+        }
+        @keyframes glowPulse {
+          0%, 100% {
+            filter: drop-shadow(0 0 20px ${color}66) drop-shadow(0 0 40px ${color}33);
+          }
+          50% {
+            filter: drop-shadow(0 0 30px ${color}99) drop-shadow(0 0 60px ${color}66);
+          }
+        }
+      `}</style>
+
       {/* ラベル */}
       <div style={{
         fontSize: 14,
@@ -347,62 +398,178 @@ function TankVisual({ label, value, count, percentage, color }: {
         {label}
       </div>
 
-      {/* タンク本体 */}
+      {/* タンク本体 - 円筒形デザイン */}
       <div style={{
         position: 'relative',
-        height: 380,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 16,
-        overflow: 'hidden',
+        height: 400,
+        perspective: 1000,
       }}>
-        {/* 液体 */}
+        {/* タンクコンテナ（ガラス瓶のような形状） */}
         <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: `${percentage}%`,
-          background: `linear-gradient(to top, ${color}, ${color}aa)`,
-          transition: 'height 2.5s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          height: '100%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+          border: '2px solid rgba(255,255,255,0.12)',
+          borderRadius: '50% 50% 40% 40% / 10% 10% 40% 40%',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 0 60px rgba(0,0,0,0.4), 0 10px 40px rgba(0,0,0,0.5)',
         }}>
-          {/* 波 */}
+          {/* タンク上部の楕円（蓋） */}
           <div style={{
             position: 'absolute',
-            top: -5,
+            top: 0,
+            left: '10%',
+            right: '10%',
+            height: 40,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.15)',
+            zIndex: 2,
+          }} />
+
+          {/* 液体コンテナ */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
             left: 0,
             right: 0,
-            height: 10,
-            background: `linear-gradient(90deg, transparent, ${color}ee, transparent)`,
-            animation: 'wave 4s ease-in-out infinite',
-          }} />
-        </div>
+            height: `${percentage}%`,
+            transition: 'height 2.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            animation: 'glowPulse 3s ease-in-out infinite',
+          }}>
+            {/* 液体本体 */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(to top, ${color} 0%, ${color}dd 50%, ${color}aa 100%)`,
+              overflow: 'hidden',
+            }}>
+              {/* 波打つ液体表面 */}
+              <div style={{
+                position: 'absolute',
+                top: -20,
+                left: '50%',
+                width: '200%',
+                height: 40,
+                background: `radial-gradient(ellipse at center, ${color} 0%, ${color}ee 50%, transparent 70%)`,
+                animation: 'liquidWave 3s ease-in-out infinite',
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: -15,
+                left: '50%',
+                width: '200%',
+                height: 40,
+                background: `radial-gradient(ellipse at center, ${color}aa 0%, ${color}66 50%, transparent 70%)`,
+                animation: 'liquidWave 3.5s ease-in-out infinite reverse',
+              }} />
 
-        {/* 数値（中央） */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1,
-        }}>
-          <div style={{
-            fontSize: 72,
-            fontWeight: 900,
-            letterSpacing: '-0.02em',
-            marginBottom: 8,
-            textShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          }}>
-            {value}
+              {/* バブル1 */}
+              <div style={{
+                position: 'absolute',
+                left: '20%',
+                width: 8,
+                height: 8,
+                background: 'rgba(255,255,255,0.4)',
+                borderRadius: '50%',
+                animation: 'bubbleRise 4s ease-in-out infinite',
+                animationDelay: '0s',
+              }} />
+
+              {/* バブル2 */}
+              <div style={{
+                position: 'absolute',
+                left: '40%',
+                width: 6,
+                height: 6,
+                background: 'rgba(255,255,255,0.4)',
+                borderRadius: '50%',
+                animation: 'bubbleRise 5s ease-in-out infinite',
+                animationDelay: '1s',
+              }} />
+
+              {/* バブル3 */}
+              <div style={{
+                position: 'absolute',
+                left: '65%',
+                width: 10,
+                height: 10,
+                background: 'rgba(255,255,255,0.3)',
+                borderRadius: '50%',
+                animation: 'bubbleRise 6s ease-in-out infinite',
+                animationDelay: '2s',
+              }} />
+
+              {/* バブル4 */}
+              <div style={{
+                position: 'absolute',
+                left: '80%',
+                width: 7,
+                height: 7,
+                background: 'rgba(255,255,255,0.4)',
+                borderRadius: '50%',
+                animation: 'bubbleRise 4.5s ease-in-out infinite',
+                animationDelay: '0.5s',
+              }} />
+
+              {/* 光の反射（動く） */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: '-50%',
+                width: '60%',
+                height: '100%',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                transform: 'skewX(-20deg)',
+                animation: 'shimmer 5s ease-in-out infinite',
+              }} />
+            </div>
           </div>
+
+          {/* 数値（中央） */}
           <div style={{
-            fontSize: 20,
-            opacity: 0.6,
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3,
           }}>
-            JPYC
+            <div style={{
+              fontSize: 72,
+              fontWeight: 900,
+              letterSpacing: '-0.02em',
+              marginBottom: 8,
+              textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.6)',
+              background: 'linear-gradient(180deg, #ffffff 0%, #ffffffdd 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              {value}
+            </div>
+            <div style={{
+              fontSize: 20,
+              opacity: 0.8,
+              fontWeight: 600,
+              textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            }}>
+              JPYC
+            </div>
           </div>
+
+          {/* ガラス反射エフェクト（前面） */}
+          <div style={{
+            position: 'absolute',
+            top: '15%',
+            left: '8%',
+            width: '30%',
+            height: '40%',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%)',
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 4,
+          }} />
         </div>
       </div>
 
@@ -411,11 +578,17 @@ function TankVisual({ label, value, count, percentage, color }: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 16,
+        marginTop: 20,
         fontSize: 14,
       }}>
         <span style={{ opacity: 0.5 }}>{count} 回</span>
-        <span style={{ fontWeight: 700, color }}>{percentage.toFixed(0)}%</span>
+        <span style={{
+          fontWeight: 700,
+          color,
+          textShadow: `0 0 10px ${color}66`,
+        }}>
+          {percentage.toFixed(0)}%
+        </span>
       </div>
     </div>
   );
