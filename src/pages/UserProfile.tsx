@@ -92,18 +92,28 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
     <div style={{
       minHeight: '100vh',
       background: '#0a0a0f',
-      color: '#fff',
+      color: '#EAF2FF',
       position: 'relative',
       overflow: 'hidden',
     }}>
+      {/* 前景オーバーレイ（背景画像との統合用） */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(12, 16, 28, 0.44)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+
       {/* グリッド背景 */}
       <div style={{
         position: 'fixed',
         inset: 0,
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(234, 242, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(234, 242, 255, 0.02) 1px, transparent 1px)',
         backgroundSize: '50px 50px',
         opacity: 0.5,
         pointerEvents: 'none',
+        zIndex: 0,
       }} />
 
       {/* グラデーションアクセント */}
@@ -115,6 +125,7 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
         height: '100%',
         background: 'radial-gradient(circle, rgba(102, 126, 234, 0.15), transparent 70%)',
         pointerEvents: 'none',
+        zIndex: 0,
       }} />
 
       <div style={{
@@ -353,7 +364,7 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
       position: 'relative',
       height: isMobile ? 360 : 520,
     }}>
-      {/* CSSアニメーション定義 */}
+      {/* CSSアニメーション定義 - 静かで有機的 */}
       <style>{`
         @keyframes liquidWave {
           0%, 100% {
@@ -361,45 +372,25 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
             border-radius: 45%;
           }
           50% {
-            transform: translateX(-50%) translateY(-8px);
-            border-radius: 48%;
+            transform: translateX(-50%) translateY(-1.5px);
+            border-radius: 46%;
           }
         }
-        @keyframes bubbleRise {
-          0% {
-            bottom: 0;
-            opacity: 0.6;
-            transform: translateX(0);
-          }
-          50% {
-            opacity: 0.8;
-            transform: translateX(10px);
-          }
-          100% {
-            bottom: 100%;
-            opacity: 0;
-            transform: translateX(0);
-          }
-        }
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%) translateY(0) rotate(10deg);
-            opacity: 0;
-          }
-          50% {
-            opacity: 0.4;
-          }
-          100% {
-            transform: translateX(200%) translateY(20px) rotate(10deg);
-            opacity: 0;
-          }
-        }
-        @keyframes glowPulse {
+        @keyframes breatheGlow {
           0%, 100% {
-            filter: drop-shadow(0 0 20px ${color}66) drop-shadow(0 0 40px ${color}33);
+            opacity: 0.00;
           }
           50% {
-            filter: drop-shadow(0 0 30px ${color}99) drop-shadow(0 0 60px ${color}66);
+            opacity: 0.06;
+          }
+        }
+
+        /* モーション軽減設定に従う */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
           }
         }
       `}</style>
@@ -453,7 +444,6 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
             right: 0,
             height: `${percentage}%`,
             transition: 'height 2.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            animation: 'glowPulse 3s ease-in-out infinite',
           }}>
             {/* 液体本体 */}
             <div style={{
@@ -462,7 +452,7 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
               background: `linear-gradient(to top, ${color} 0%, ${color}dd 50%, ${color}aa 100%)`,
               overflow: 'hidden',
             }}>
-              {/* 波打つ液体表面 */}
+              {/* 波打つ液体表面（2層・穏やか） */}
               <div style={{
                 position: 'absolute',
                 top: -20,
@@ -470,7 +460,7 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
                 width: '200%',
                 height: 40,
                 background: `radial-gradient(ellipse at center, ${color} 0%, ${color}ee 50%, transparent 70%)`,
-                animation: 'liquidWave 3s ease-in-out infinite',
+                animation: 'liquidWave 10s ease-in-out infinite',
               }} />
               <div style={{
                 position: 'absolute',
@@ -479,67 +469,16 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
                 width: '200%',
                 height: 40,
                 background: `radial-gradient(ellipse at center, ${color}aa 0%, ${color}66 50%, transparent 70%)`,
-                animation: 'liquidWave 3.5s ease-in-out infinite reverse',
+                animation: 'liquidWave 12s ease-in-out infinite reverse',
               }} />
 
-              {/* バブル1 */}
+              {/* 呼吸発光オーバーレイ */}
               <div style={{
                 position: 'absolute',
-                left: '20%',
-                width: 8,
-                height: 8,
-                background: 'rgba(255,255,255,0.4)',
-                borderRadius: '50%',
-                animation: 'bubbleRise 4s ease-in-out infinite',
-                animationDelay: '0s',
-              }} />
-
-              {/* バブル2 */}
-              <div style={{
-                position: 'absolute',
-                left: '40%',
-                width: 6,
-                height: 6,
-                background: 'rgba(255,255,255,0.4)',
-                borderRadius: '50%',
-                animation: 'bubbleRise 5s ease-in-out infinite',
-                animationDelay: '1s',
-              }} />
-
-              {/* バブル3 */}
-              <div style={{
-                position: 'absolute',
-                left: '65%',
-                width: 10,
-                height: 10,
-                background: 'rgba(255,255,255,0.3)',
-                borderRadius: '50%',
-                animation: 'bubbleRise 6s ease-in-out infinite',
-                animationDelay: '2s',
-              }} />
-
-              {/* バブル4 */}
-              <div style={{
-                position: 'absolute',
-                left: '80%',
-                width: 7,
-                height: 7,
-                background: 'rgba(255,255,255,0.4)',
-                borderRadius: '50%',
-                animation: 'bubbleRise 4.5s ease-in-out infinite',
-                animationDelay: '0.5s',
-              }} />
-
-              {/* 光の反射（動く） */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: '-50%',
-                width: '60%',
-                height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                transform: 'skewX(-20deg)',
-                animation: 'shimmer 5s ease-in-out infinite',
+                inset: 0,
+                background: `radial-gradient(ellipse at center, ${color}ff 0%, transparent 70%)`,
+                animation: 'breatheGlow 12s ease-in-out infinite',
+                pointerEvents: 'none',
               }} />
             </div>
           </div>
