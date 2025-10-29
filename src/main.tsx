@@ -128,7 +128,7 @@ root.render(
       ) : wantsSuperAdmin ? (
         <SuperAdminPage />
       ) : wantsUserProfile ? (
-        <ScoreProfilePage />
+        <UserProfilePage />
       ) : wantsAdminMobile ? (
         <TenantProvider>
           <AdminDashboardMobile />
