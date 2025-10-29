@@ -385,15 +385,15 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
-            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
+            background: selectedToken === 'JPYC' ? '#ffffff' : 'rgba(102, 126, 234, 0.2)',
+            border: selectedToken === 'JPYC' ? '2px solid #667eea' : '1px solid rgba(102, 126, 234, 0.3)',
             borderRadius: 8,
-            color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
+            color: selectedToken === 'JPYC' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
             fontSize: isMobile ? 13 : 14,
-            fontWeight: 600,
+            fontWeight: selectedToken === 'JPYC' ? 700 : 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: selectedToken === 'JPYC' ? '0 2px 8px rgba(102, 126, 234, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: selectedToken === 'JPYC' ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           JPYC
@@ -403,15 +403,15 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
-            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
+            background: selectedToken === 'NHT' ? '#ffffff' : 'rgba(118, 75, 162, 0.2)',
+            border: selectedToken === 'NHT' ? '2px solid #764ba2' : '1px solid rgba(118, 75, 162, 0.3)',
             borderRadius: 8,
-            color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
+            color: selectedToken === 'NHT' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
             fontSize: isMobile ? 13 : 14,
-            fontWeight: 600,
+            fontWeight: selectedToken === 'NHT' ? 700 : 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: selectedToken === 'NHT' ? '0 2px 8px rgba(118, 75, 162, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: selectedToken === 'NHT' ? '0 4px 12px rgba(118, 75, 162, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           NHT
@@ -503,7 +503,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       )}
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
           宛先アドレス {sendMode === 'tenant' && '（自動入力済み）'}
         </label>
         <div style={{ position: 'relative' }}>
@@ -556,7 +556,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
           数量
         </label>
 
@@ -601,6 +601,8 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             placeholder={`0 ${currentToken.symbol}`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            min="0"
+            step="0.01"
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
@@ -634,7 +636,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       {/* メッセージ欄（テナントチップと一括送金のみ） */}
       {sendMode && sendMode !== 'simple' && (
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
+          <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
             メッセージ（任意）
           </label>
           <textarea
@@ -1124,15 +1126,15 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
-            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
+            background: selectedToken === 'JPYC' ? '#ffffff' : 'rgba(102, 126, 234, 0.2)',
+            border: selectedToken === 'JPYC' ? '2px solid #667eea' : '1px solid rgba(102, 126, 234, 0.3)',
             borderRadius: 8,
-            color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
+            color: selectedToken === 'JPYC' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
             fontSize: isMobile ? 13 : 14,
-            fontWeight: 600,
+            fontWeight: selectedToken === 'JPYC' ? 700 : 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: selectedToken === 'JPYC' ? '0 2px 8px rgba(102, 126, 234, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: selectedToken === 'JPYC' ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           JPYC
@@ -1142,15 +1144,15 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
-            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
+            background: selectedToken === 'NHT' ? '#ffffff' : 'rgba(118, 75, 162, 0.2)',
+            border: selectedToken === 'NHT' ? '2px solid #764ba2' : '1px solid rgba(118, 75, 162, 0.3)',
             borderRadius: 8,
-            color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
+            color: selectedToken === 'NHT' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
             fontSize: isMobile ? 13 : 14,
-            fontWeight: 600,
+            fontWeight: selectedToken === 'NHT' ? 700 : 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: selectedToken === 'NHT' ? '0 2px 8px rgba(118, 75, 162, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: selectedToken === 'NHT' ? '0 4px 12px rgba(118, 75, 162, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           NHT
@@ -1183,7 +1185,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
       {/* 送金先リスト */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 12 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 12 }}>
           送金先（{recipients.length}件）
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1341,7 +1343,7 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         受取アドレス
       </h2>
-      <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6, margin: '0 0 16px 0' }}>
+      <p style={{ fontSize: isMobile ? 13 : 14, color: '#a0aec0', margin: '0 0 16px 0' }}>
         接続後にQR/コピー可能
       </p>
       <button style={{
@@ -1658,7 +1660,7 @@ function HistorySection({ isMobile }: { isMobile: boolean }) {
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         履歴
       </h2>
-      <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6, margin: 0 }}>
+      <p style={{ fontSize: isMobile ? 13 : 14, color: '#a0aec0', margin: 0 }}>
         最近の送受信履歴
       </p>
       <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.4, marginTop: 16 }}>
