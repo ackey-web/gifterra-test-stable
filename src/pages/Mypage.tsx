@@ -385,7 +385,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
             border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
@@ -403,7 +403,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
             border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
@@ -517,14 +517,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: sendMode !== 'tenant' ? (isMobile ? '50px' : '60px') : (isMobile ? '10px 12px' : '12px 14px'),
-              background: sendMode === 'tenant' ? '#f5f5f5' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
-              border: '1px solid rgba(0,0,0,0.08)',
+              background: sendMode === 'tenant' ? '#f5f5f5' : '#ffffff',
+              border: '2px solid #3b82f6',
               borderRadius: 8,
-              color: '#ffffff',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
               opacity: sendMode === 'tenant' ? 0.6 : 1,
               cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
             }}
           />
           {sendMode !== 'tenant' && (
@@ -576,10 +576,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
                   padding: isMobile ? '8px 10px' : '10px 12px',
                   background: amount === presetAmount.toString()
                     ? `${currentToken.color}33`
-                    : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                    : '#ffffff',
                   border: amount === presetAmount.toString()
-                    ? `1px solid ${currentToken.color}55`
-                    : '1px solid rgba(0,0,0,0.08)',
+                    ? `2px solid ${currentToken.color}`
+                    : '2px solid #3b82f6',
                   borderRadius: 8,
                   color: amount === presetAmount.toString() ? currentToken.color : '#1a1a1a',
                   fontSize: isMobile ? 12 : 13,
@@ -605,12 +605,12 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: isMobile ? '60px' : '70px',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff',
+              border: '2px solid #3b82f6',
               borderRadius: 8,
-              color: '#ffffff',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
             }}
           />
           <div style={{
@@ -643,10 +643,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff',
+              border: '2px solid #3b82f6',
               borderRadius: 8,
-              color: '#ffffff',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
               fontFamily: 'inherit',
               resize: 'vertical',
@@ -849,7 +849,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)';
+                e.currentTarget.style.background = '#ffffff';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
@@ -986,7 +986,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)';
+                e.currentTarget.style.background = '#ffffff';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
@@ -1122,7 +1122,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
             border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
@@ -1140,7 +1140,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
             border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
