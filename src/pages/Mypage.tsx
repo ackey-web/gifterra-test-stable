@@ -424,21 +424,21 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       <div style={{
         marginBottom: 20,
         padding: isMobile ? '12px' : '14px',
-        background: `${currentToken.color}11`,
-        border: `1px solid ${currentToken.color}33`,
+        background: `${currentToken.color}20`,
+        border: `2px solid ${currentToken.color}`,
         borderRadius: 8,
       }}>
         <div style={{
-          fontSize: isMobile ? 12 : 13,
-          fontWeight: 600,
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 700,
           marginBottom: 4,
-          color: currentToken.color,
+          color: '#1a1a1a',
         }}>
           {currentToken.description}
         </div>
         <div style={{
           fontSize: isMobile ? 12 : 13,
-          color: '#e0e0e0',
+          color: '#1a1a1a',
           fontWeight: 500,
         }}>
           {currentToken.detail}
@@ -506,7 +506,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       )}
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 13 : 14, color: '#1a1a1a', fontWeight: 700, marginBottom: 8 }}>
           宛先アドレス {sendMode === 'tenant' && '（自動入力済み）'}
         </label>
         <div style={{ position: 'relative' }}>
@@ -559,7 +559,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 13 : 14, color: '#1a1a1a', fontWeight: 700, marginBottom: 8 }}>
           数量
         </label>
 
@@ -643,7 +643,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       {/* メッセージ欄（テナントチップと一括送金のみ） */}
       {sendMode && sendMode !== 'simple' && (
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 8 }}>
+          <label style={{ display: 'block', fontSize: isMobile ? 13 : 14, color: '#1a1a1a', fontWeight: 700, marginBottom: 8 }}>
             メッセージ（任意）
           </label>
           <textarea
@@ -672,16 +672,16 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           onClick={() => setShowModeModal(true)}
           style={{
             width: '100%',
-            padding: isMobile ? '12px' : '14px',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-            border: `1px solid rgba(0,0,0,0.08)`,
+            padding: isMobile ? '14px' : '16px',
+            background: '#ffffff',
+            border: `3px solid #3b82f6`,
             borderRadius: 12,
-            color: currentToken.color,
-            fontSize: isMobile ? 14 : 15,
-            fontWeight: 600,
+            color: '#1a1a1a',
+            fontSize: isMobile ? 15 : 16,
+            fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
           }}
         >
           送金タイプを選択
@@ -1172,21 +1172,21 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
       <div style={{
         marginBottom: 20,
         padding: isMobile ? '12px' : '14px',
-        background: `${currentToken.color}11`,
-        border: `1px solid ${currentToken.color}33`,
+        background: `${currentToken.color}20`,
+        border: `2px solid ${currentToken.color}`,
         borderRadius: 8,
       }}>
         <div style={{
-          fontSize: isMobile ? 12 : 13,
-          fontWeight: 600,
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 700,
           marginBottom: 4,
-          color: currentToken.color,
+          color: '#1a1a1a',
         }}>
           {currentToken.description}
         </div>
         <div style={{
           fontSize: isMobile ? 12 : 13,
-          color: '#e0e0e0',
+          color: '#1a1a1a',
           fontWeight: 500,
         }}>
           {currentToken.detail}
@@ -1195,7 +1195,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
       {/* 送金先リスト */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, color: '#a0aec0', fontWeight: 600, marginBottom: 12 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 13 : 14, color: '#1a1a1a', fontWeight: 700, marginBottom: 12 }}>
           送金先（{recipients.length}件）
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1353,7 +1353,7 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         受取アドレス
       </h2>
-      <p style={{ fontSize: isMobile ? 13 : 14, color: '#a0aec0', margin: '0 0 16px 0' }}>
+      <p style={{ fontSize: isMobile ? 13 : 14, color: '#4a5568', margin: '0 0 16px 0' }}>
         接続後にQR/コピー可能
       </p>
       <button style={{
@@ -1670,7 +1670,7 @@ function HistorySection({ isMobile }: { isMobile: boolean }) {
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         履歴
       </h2>
-      <p style={{ fontSize: isMobile ? 13 : 14, color: '#a0aec0', margin: 0 }}>
+      <p style={{ fontSize: isMobile ? 13 : 14, color: '#4a5568', margin: 0 }}>
         最近の送受信履歴
       </p>
       <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.4, marginTop: 16 }}>
