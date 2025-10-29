@@ -49,8 +49,8 @@ export function MypagePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#ffffff',
-      color: '#1a1a1a',
+      background: '#0a0a0f',
+      color: '#e0e0e0',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -187,7 +187,7 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 80 : 160,
+          height: isMobile ? 120 : 240,
           opacity: 1,
         }}
       />
@@ -360,7 +360,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -375,7 +375,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
         borderRadius: 12,
         padding: 4,
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -520,7 +520,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               background: sendMode === 'tenant' ? '#f5f5f5' : 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
-              color: '#1a1a1a',
+              color: '#ffffff',
               fontSize: isMobile ? 14 : 15,
               opacity: sendMode === 'tenant' ? 0.6 : 1,
               cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
@@ -605,10 +605,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: isMobile ? '60px' : '70px',
-              background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
-              color: '#1a1a1a',
+              color: '#ffffff',
               fontSize: isMobile ? 14 : 15,
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
@@ -643,10 +643,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
-              color: '#1a1a1a',
+              color: '#ffffff',
               fontSize: isMobile ? 14 : 15,
               fontFamily: 'inherit',
               resize: 'vertical',
@@ -662,7 +662,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             width: '100%',
             padding: isMobile ? '12px' : '14px',
-            background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
             border: `1px solid rgba(0,0,0,0.08)`,
             borderRadius: 12,
             color: currentToken.color,
@@ -834,7 +834,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
               key={mode.id}
               onClick={() => onSelectMode(mode.id)}
               style={{
-                background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 16,
                 padding: isMobile ? 16 : 20,
@@ -859,7 +859,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 margin: '0 0 8px 0',
                 fontSize: isMobile ? 16 : 18,
                 fontWeight: 700,
-                color: '#1a1a1a',
+                color: '#ffffff',
               }}>
                 {mode.title}
               </h4>
@@ -867,7 +867,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 margin: '0 0 12px 0',
                 fontSize: isMobile ? 13 : 14,
                 opacity: 0.7,
-                color: '#1a1a1a',
+                color: '#ffffff',
               }}>
                 {mode.description}
               </p>
@@ -876,7 +876,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 padding: '0 0 0 20px',
                 fontSize: isMobile ? 12 : 13,
                 opacity: 0.6,
-                color: '#1a1a1a',
+                color: '#ffffff',
               }}>
                 {mode.features.map((feature, i) => (
                   <li key={i}>{feature}</li>
@@ -969,7 +969,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
               key={tenant.id}
               onClick={() => onSelectTenant(tenant)}
               style={{
-                background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 14,
                 padding: isMobile ? 12 : 16,
@@ -997,7 +997,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                   fontSize: isMobile ? 14 : 16,
                   fontWeight: 700,
                   marginBottom: 4,
-                  color: '#1a1a1a',
+                  color: '#ffffff',
                 }}>
                   {tenant.name}
                 </div>
@@ -1005,7 +1005,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                   fontSize: isMobile ? 11 : 12,
                   opacity: 0.6,
                   fontFamily: 'monospace',
-                  color: '#1a1a1a',
+                  color: '#ffffff',
                 }}>
                   {tenant.walletAddress}
                 </div>
@@ -1017,7 +1017,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 borderRadius: 999,
                 fontSize: isMobile ? 10 : 11,
                 fontWeight: 600,
-                color: '#1a1a1a',
+                color: '#ffffff',
               }}>
                 {tenant.rank}
               </div>
@@ -1081,7 +1081,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1112,7 +1112,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
         borderRadius: 12,
         padding: 4,
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1189,7 +1189,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
             <div
               key={recipient.id}
               style={{
-                background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: 12,
                 padding: isMobile ? 12 : 14,
@@ -1230,10 +1230,10 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                   border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
-                  color: '#1a1a1a',
+                  color: '#ffffff',
                   fontSize: isMobile ? 13 : 14,
                   marginBottom: 8,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1247,10 +1247,10 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                   border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
-                  color: '#1a1a1a',
+                  color: '#ffffff',
                   fontSize: isMobile ? 13 : 14,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
@@ -1266,10 +1266,10 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         style={{
           width: '100%',
           padding: isMobile ? '10px' : '12px',
-          background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
           border: '1px dashed rgba(0,0,0,0.2)',
           borderRadius: 12,
-          color: '#1a1a1a',
+          color: '#ffffff',
           fontSize: isMobile ? 13 : 14,
           fontWeight: 600,
           cursor: 'pointer',
@@ -1330,7 +1330,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1345,10 +1345,10 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       <button style={{
         width: '100%',
         padding: isMobile ? '12px' : '14px',
-        background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
         border: '1px solid rgba(0,0,0,0.08)',
         borderRadius: 12,
-        color: '#1a1a1a',
+        color: '#ffffff',
         fontSize: isMobile ? 14 : 15,
         fontWeight: 600,
         cursor: 'pointer',
@@ -1589,7 +1589,7 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
             key={i}
             style={{
               minWidth: isMobile ? 160 : 200,
-              background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: isMobile ? 12 : 16,
               padding: isMobile ? 16 : 20,
@@ -1646,7 +1646,7 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
 function HistorySection({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1791,7 +1791,7 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
         marginBottom: isMobile ? 40 : 48,
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
@@ -1805,7 +1805,7 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
           </p>
         </div>
         <div style={{
-          background: 'linear-gradient(135deg, #bfdbfe 0%, #a7f3d0 100%)',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
