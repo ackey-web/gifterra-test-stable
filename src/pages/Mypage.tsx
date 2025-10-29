@@ -5,9 +5,17 @@ import { useState, useEffect } from 'react';
 
 type ViewMode = 'flow' | 'tenant';
 
+// テナントランク定義
+// R0: 非テナント（一般ユーザー）
+// R1: 申請中
+// R2: 審査中
+// R3: 承認済みテナント
+type TenantRank = 'R0' | 'R1' | 'R2' | 'R3';
+
 export function MypagePage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewMode, setViewMode] = useState<ViewMode>('flow');
+  const [tenantRank, setTenantRank] = useState<TenantRank>('R0'); // TODO: 実データから取得
 
   useEffect(() => {
     const handleResize = () => {
@@ -21,10 +29,20 @@ export function MypagePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
-    if (view === 'tenant') {
-      // TODO: R3（承認済み）チェック
+    if (view === 'tenant' && tenantRank === 'R3') {
+      // R3（承認済み）のみTenantモード切り替え可能
       setViewMode('tenant');
     }
+  }, [tenantRank]);
+
+  // TODO: 実際のテナントランク取得ロジック
+  useEffect(() => {
+    // const fetchTenantRank = async () => {
+    //   const address = await getConnectedAddress();
+    //   const rank = await getTenantRankFromContract(address);
+    //   setTenantRank(rank);
+    // };
+    // fetchTenantRank();
   }, []);
 
   return (
@@ -116,11 +134,12 @@ export function MypagePage() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           isMobile={isMobile}
+          tenantRank={tenantRank}
         />
 
         {/* [B] コンテンツ */}
         {viewMode === 'flow' ? (
-          <FlowModeContent isMobile={isMobile} />
+          <FlowModeContent isMobile={isMobile} tenantRank={tenantRank} />
         ) : (
           <TenantModeContent isMobile={isMobile} />
         )}
@@ -135,11 +154,15 @@ export function MypagePage() {
 // ========================================
 // [A] ヘッダー
 // ========================================
-function Header({ viewMode, setViewMode, isMobile }: {
+function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   isMobile: boolean;
+  tenantRank: TenantRank;
 }) {
+  // R3（承認済みテナント）のみトグル表示
+  const showToggle = tenantRank === 'R3';
+
   return (
     <div style={{
       display: 'flex',
@@ -157,47 +180,49 @@ function Header({ viewMode, setViewMode, isMobile }: {
         GIFTERRA
       </div>
 
-      {/* 中央：ロール切替 */}
-      <div style={{
-        display: 'flex',
-        gap: 8,
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: 999,
-        padding: 4,
-      }}>
-        <button
-          onClick={() => setViewMode('flow')}
-          style={{
-            padding: isMobile ? '6px 16px' : '8px 20px',
-            background: viewMode === 'flow' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
-            border: 'none',
-            borderRadius: 999,
-            color: '#EAF2FF',
-            fontSize: isMobile ? 12 : 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          個人
-        </button>
-        <button
-          onClick={() => setViewMode('tenant')}
-          style={{
-            padding: isMobile ? '6px 16px' : '8px 20px',
-            background: viewMode === 'tenant' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
-            border: 'none',
-            borderRadius: 999,
-            color: '#EAF2FF',
-            fontSize: isMobile ? 12 : 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          テナント
-        </button>
-      </div>
+      {/* 中央：ロール切替（R3のみ表示） */}
+      {showToggle && (
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 999,
+          padding: 4,
+        }}>
+          <button
+            onClick={() => setViewMode('flow')}
+            style={{
+              padding: isMobile ? '6px 16px' : '8px 20px',
+              background: viewMode === 'flow' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
+              border: 'none',
+              borderRadius: 999,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 12 : 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            個人
+          </button>
+          <button
+            onClick={() => setViewMode('tenant')}
+            style={{
+              padding: isMobile ? '6px 16px' : '8px 20px',
+              background: viewMode === 'tenant' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
+              border: 'none',
+              borderRadius: 999,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 12 : 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            テナント
+          </button>
+        </div>
+      )}
 
       {/* 右：設定・シェア・Admin */}
       <div style={{ display: 'flex', gap: isMobile ? 8 : 12, alignItems: 'center' }}>
@@ -238,7 +263,10 @@ function Header({ viewMode, setViewMode, isMobile }: {
 // ========================================
 // [B] Flowモードコンテンツ
 // ========================================
-function FlowModeContent({ isMobile }: { isMobile: boolean }) {
+function FlowModeContent({ isMobile, tenantRank }: { isMobile: boolean; tenantRank: TenantRank }) {
+  // R3（承認済みテナント）の場合はLock Cardを非表示
+  const showLockCard = tenantRank !== 'R3';
+
   return (
     <>
       {/* 1. 送金・受信（横並び） */}
@@ -261,15 +289,25 @@ function FlowModeContent({ isMobile }: { isMobile: boolean }) {
       {/* 4. 履歴 */}
       <HistorySection isMobile={isMobile} />
 
-      {/* 5. ロックカード */}
-      <LockCard isMobile={isMobile} />
+      {/* 5. ロックカード（R0/R1/R2のみ表示） */}
+      {showLockCard && <LockCard isMobile={isMobile} />}
     </>
   );
 }
 
+// 送金モード定義
+type SendMode = 'simple' | 'tenant' | 'bulk';
+
 // 1. 送金フォーム
 function SendForm({ isMobile }: { isMobile: boolean }) {
   const [selectedToken, setSelectedToken] = useState<'JPYC' | 'NHT'>('JPYC');
+  const [sendMode, setSendMode] = useState<SendMode | null>(null); // null = 未選択
+  const [showModeModal, setShowModeModal] = useState(false);
+  const [showTenantModal, setShowTenantModal] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [address, setAddress] = useState('');
+  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState('');
 
   const tokenInfo = {
     JPYC: {
@@ -287,6 +325,25 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
   };
 
   const currentToken = tokenInfo[selectedToken];
+
+  // テナント選択時の処理
+  const handleTenantSelect = (tenant: any) => {
+    setSelectedTenant(tenant);
+    setAddress(tenant.walletAddress);
+    setShowTenantModal(false);
+  };
+
+  // 一括送金モードの場合は専用UIを表示
+  if (sendMode === 'bulk') {
+    return (
+      <BulkSendForm
+        isMobile={isMobile}
+        selectedToken={selectedToken}
+        setSelectedToken={setSelectedToken}
+        onChangeMode={() => setSendMode(null)}
+      />
+    );
+  }
 
   return (
     <div style={{
@@ -368,13 +425,99 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         </div>
       </div>
 
+      {/* 送金モード表示 */}
+      {sendMode && (
+        <div style={{
+          marginBottom: 16,
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          background: sendMode === 'tenant' ? 'rgba(118, 75, 162, 0.15)' : 'rgba(102, 126, 234, 0.15)',
+          border: sendMode === 'tenant' ? '1px solid rgba(118, 75, 162, 0.3)' : '1px solid rgba(102, 126, 234, 0.3)',
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, marginBottom: 4 }}>
+              {sendMode === 'simple' && '💸 シンプル送金'}
+              {sendMode === 'tenant' && '🎁 テナントへチップ'}
+              {sendMode === 'bulk' && '📤 一括送金'}
+            </div>
+            {sendMode === 'tenant' && selectedTenant && (
+              <div style={{ fontSize: isMobile ? 11 : 12, opacity: 0.7 }}>
+                {selectedTenant.icon} {selectedTenant.name}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setSendMode(null);
+              setSelectedTenant(null);
+              setAddress('');
+            }}
+            style={{
+              padding: '4px 8px',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 6,
+              color: '#EAF2FF',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
+          >
+            変更
+          </button>
+        </div>
+      )}
+
+      {/* テナントチップ時の説明 */}
+      {sendMode === 'tenant' && (
+        <div style={{
+          marginBottom: 16,
+          padding: isMobile ? '10px 12px' : '12px 14px',
+          background: 'rgba(255, 215, 0, 0.1)',
+          border: '1px solid rgba(255, 215, 0, 0.2)',
+          borderRadius: 8,
+          fontSize: isMobile ? 11 : 12,
+          lineHeight: 1.5,
+        }}>
+          💡 メッセージを書くとkodomi算出に有利になります
+        </div>
+      )}
+
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
-          宛先アドレス
+          宛先アドレス {sendMode === 'tenant' && '（自動入力済み）'}
         </label>
         <input
           type="text"
-          placeholder="0x..."
+          placeholder={sendMode === 'tenant' ? 'テナントを選択してください' : '0x...'}
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          disabled={sendMode === 'tenant'}
+          style={{
+            width: '100%',
+            padding: isMobile ? '10px 12px' : '12px 14px',
+            background: sendMode === 'tenant' ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 8,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 14 : 15,
+            opacity: sendMode === 'tenant' ? 0.6 : 1,
+            cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
+          }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
+          数量
+        </label>
+        <input
+          type="number"
+          placeholder="0"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
           style={{
             width: '100%',
             padding: isMobile ? '10px 12px' : '12px 14px',
@@ -389,11 +532,13 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
 
       <div style={{ marginBottom: 20 }}>
         <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
-          数量
+          メッセージ（任意）
         </label>
-        <input
-          type="number"
-          placeholder="0"
+        <textarea
+          placeholder="メッセージを入力..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={3}
           style={{
             width: '100%',
             padding: isMobile ? '10px 12px' : '12px 14px',
@@ -402,23 +547,648 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             borderRadius: 8,
             color: '#EAF2FF',
             fontSize: isMobile ? 14 : 15,
+            fontFamily: 'inherit',
+            resize: 'vertical',
           }}
         />
       </div>
 
-      <button style={{
-        width: '100%',
-        padding: isMobile ? '12px' : '14px',
-        background: `${currentToken.color}33`,
-        border: `1px solid ${currentToken.color}55`,
+      {!sendMode ? (
+        <button
+          onClick={() => setShowModeModal(true)}
+          style={{
+            width: '100%',
+            padding: isMobile ? '12px' : '14px',
+            background: `${currentToken.color}33`,
+            border: `1px solid ${currentToken.color}55`,
+            borderRadius: 12,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 14 : 15,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          利用方法を選ぶ
+        </button>
+      ) : (
+        <button
+          style={{
+            width: '100%',
+            padding: isMobile ? '12px' : '14px',
+            background: `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
+            border: 'none',
+            borderRadius: 12,
+            color: '#fff',
+            fontSize: isMobile ? 14 : 15,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          送金する
+        </button>
+      )}
+
+      {/* 送金モード選択モーダル */}
+      {showModeModal && (
+        <SendModeModal
+          isMobile={isMobile}
+          onClose={() => setShowModeModal(false)}
+          onSelectMode={(mode) => {
+            setSendMode(mode);
+            setShowModeModal(false);
+            if (mode === 'tenant') {
+              setShowTenantModal(true);
+            }
+          }}
+        />
+      )}
+
+      {/* テナント選択モーダル */}
+      {showTenantModal && (
+        <TenantSelectModal
+          isMobile={isMobile}
+          onClose={() => {
+            setShowTenantModal(false);
+            if (!selectedTenant) {
+              setSendMode(null); // テナント未選択でキャンセルした場合はモードもリセット
+            }
+          }}
+          onSelectTenant={handleTenantSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+// 送金モード選択モーダル
+function SendModeModal({ isMobile, onClose, onSelectMode }: {
+  isMobile: boolean;
+  onClose: () => void;
+  onSelectMode: (mode: SendMode) => void;
+}) {
+  const modes = [
+    {
+      id: 'simple' as SendMode,
+      icon: '💸',
+      title: 'シンプル送金',
+      description: '個人アドレスへ自由に送金',
+      features: ['自由なアドレス入力', 'kodomi記録なし', 'メッセージ任意'],
+    },
+    {
+      id: 'tenant' as SendMode,
+      icon: '🎁',
+      title: 'テナントへチップ',
+      description: 'テナントを選んで応援',
+      features: ['テナント一覧から選択', 'kodomi記録される', 'メッセージ推奨'],
+    },
+    {
+      id: 'bulk' as SendMode,
+      icon: '📤',
+      title: '一括送金',
+      description: '複数人へ同時に送金',
+      features: ['複数アドレス対応', 'シンプルな操作', '効率的な送金'],
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 16 : 24,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#1a1a24',
+          borderRadius: isMobile ? 16 : 24,
+          padding: isMobile ? 20 : 32,
+          maxWidth: isMobile ? '100%' : 600,
+          width: '100%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: isMobile ? 20 : 24,
+        }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: isMobile ? 18 : 22,
+            fontWeight: 700,
+          }}>
+            利用方法を選択
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: 20,
+              width: 32,
+              height: 32,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+          {modes.map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => onSelectMode(mode.id)}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: isMobile ? 12 : 16,
+                padding: isMobile ? 16 : 20,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 12 }}>{mode.icon}</div>
+              <h4 style={{
+                margin: '0 0 8px 0',
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: 700,
+                color: '#EAF2FF',
+              }}>
+                {mode.title}
+              </h4>
+              <p style={{
+                margin: '0 0 12px 0',
+                fontSize: isMobile ? 13 : 14,
+                opacity: 0.7,
+                color: '#EAF2FF',
+              }}>
+                {mode.description}
+              </p>
+              <ul style={{
+                margin: 0,
+                padding: '0 0 0 20px',
+                fontSize: isMobile ? 12 : 13,
+                opacity: 0.6,
+                color: '#EAF2FF',
+              }}>
+                {mode.features.map((feature, i) => (
+                  <li key={i}>{feature}</li>
+                ))}
+              </ul>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// テナント選択モーダル
+function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
+  isMobile: boolean;
+  onClose: () => void;
+  onSelectTenant: (tenant: any) => void;
+}) {
+  // TODO: 実データから取得
+  const tenants = [
+    { id: 1, name: 'カフェX', icon: '🏪', walletAddress: '0x1234...5678', kodomi: 2000, rank: 'Silver' },
+    { id: 2, name: 'アーティストY', icon: '🎨', walletAddress: '0xabcd...ef01', kodomi: 1500, rank: 'Bronze' },
+    { id: 3, name: 'ショップZ', icon: '☕', walletAddress: '0x9876...5432', kodomi: 1734, rank: 'Bronze' },
+    { id: 4, name: 'クリエイターA', icon: '🎭', walletAddress: '0xfedc...ba98', kodomi: 3200, rank: 'Gold' },
+  ];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 16 : 24,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#1a1a24',
+          borderRadius: isMobile ? 16 : 24,
+          padding: isMobile ? 20 : 32,
+          maxWidth: isMobile ? '100%' : 500,
+          width: '100%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: isMobile ? 20 : 24,
+        }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: isMobile ? 18 : 22,
+            fontWeight: 700,
+          }}>
+            テナントを選択
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: 20,
+              width: 32,
+              height: 32,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 12 }}>
+          {tenants.map((tenant) => (
+            <button
+              key={tenant.id}
+              onClick={() => onSelectTenant(tenant)}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: isMobile ? 12 : 14,
+                padding: isMobile ? 12 : 16,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              }}
+            >
+              <div style={{ fontSize: 32 }}>{tenant.icon}</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{
+                  fontSize: isMobile ? 14 : 16,
+                  fontWeight: 700,
+                  marginBottom: 4,
+                  color: '#EAF2FF',
+                }}>
+                  {tenant.name}
+                </div>
+                <div style={{
+                  fontSize: isMobile ? 11 : 12,
+                  opacity: 0.6,
+                  fontFamily: 'monospace',
+                  color: '#EAF2FF',
+                }}>
+                  {tenant.walletAddress}
+                </div>
+              </div>
+              <div style={{
+                padding: '4px 10px',
+                background: 'rgba(192, 192, 192, 0.2)',
+                border: '1px solid rgba(192, 192, 192, 0.3)',
+                borderRadius: 999,
+                fontSize: isMobile ? 10 : 11,
+                fontWeight: 600,
+                color: '#EAF2FF',
+              }}>
+                {tenant.rank}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 一括送金フォーム
+function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode }: {
+  isMobile: boolean;
+  selectedToken: 'JPYC' | 'NHT';
+  setSelectedToken: (token: 'JPYC' | 'NHT') => void;
+  onChangeMode: () => void;
+}) {
+  const [recipients, setRecipients] = useState([
+    { id: 1, address: '', amount: '' },
+  ]);
+
+  const tokenInfo = {
+    JPYC: {
+      name: 'JPYC',
+      description: 'ステーブルコイン',
+      detail: '日本円と同価値、送金ツールとして利用',
+      color: '#667eea',
+    },
+    NHT: {
+      name: 'NHT',
+      description: 'ユーティリティトークン',
+      detail: 'GIFTERRAエコシステムで流通',
+      color: '#764ba2',
+    },
+  };
+
+  const currentToken = tokenInfo[selectedToken];
+
+  const addRecipient = () => {
+    const newId = Math.max(...recipients.map(r => r.id)) + 1;
+    setRecipients([...recipients, { id: newId, address: '', amount: '' }]);
+  };
+
+  const removeRecipient = (id: number) => {
+    if (recipients.length > 1) {
+      setRecipients(recipients.filter(r => r.id !== id));
+    }
+  };
+
+  const updateRecipient = (id: number, field: 'address' | 'amount', value: string) => {
+    setRecipients(recipients.map(r =>
+      r.id === id ? { ...r, [field]: value } : r
+    ));
+  };
+
+  const totalAmount = recipients.reduce((sum, r) => {
+    const amount = parseFloat(r.amount) || 0;
+    return sum + amount;
+  }, 0);
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: isMobile ? 16 : 24,
+      padding: isMobile ? 20 : 28,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
+          一括送金
+        </h2>
+        <button
+          onClick={onChangeMode}
+          style={{
+            padding: '4px 8px',
+            background: 'rgba(255,255,255,0.1)',
+            border: 'none',
+            borderRadius: 6,
+            color: '#EAF2FF',
+            fontSize: 11,
+            cursor: 'pointer',
+          }}
+        >
+          変更
+        </button>
+      </div>
+
+      {/* トークン選択タブ */}
+      <div style={{
+        display: 'flex',
+        gap: 8,
+        marginBottom: 16,
+        background: 'rgba(255,255,255,0.03)',
         borderRadius: 12,
-        color: '#EAF2FF',
-        fontSize: isMobile ? 14 : 15,
-        fontWeight: 600,
-        cursor: 'pointer',
-        transition: 'all 0.2s',
+        padding: 4,
       }}>
-        利用方法を選ぶ
+        <button
+          onClick={() => setSelectedToken('JPYC')}
+          style={{
+            flex: 1,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
+            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid transparent',
+            borderRadius: 8,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          JPYC
+        </button>
+        <button
+          onClick={() => setSelectedToken('NHT')}
+          style={{
+            flex: 1,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
+            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid transparent',
+            borderRadius: 8,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          NHT
+        </button>
+      </div>
+
+      {/* トークン説明 */}
+      <div style={{
+        marginBottom: 20,
+        padding: isMobile ? '12px' : '14px',
+        background: `${currentToken.color}11`,
+        border: `1px solid ${currentToken.color}33`,
+        borderRadius: 8,
+      }}>
+        <div style={{
+          fontSize: isMobile ? 12 : 13,
+          fontWeight: 600,
+          marginBottom: 4,
+          color: currentToken.color,
+        }}>
+          {currentToken.description}
+        </div>
+        <div style={{
+          fontSize: isMobile ? 11 : 12,
+          opacity: 0.7,
+        }}>
+          {currentToken.detail}
+        </div>
+      </div>
+
+      {/* 送金先リスト */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 12 }}>
+          送金先（{recipients.length}件）
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {recipients.map((recipient, index) => (
+            <div
+              key={recipient.id}
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12,
+                padding: isMobile ? 12 : 14,
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 10,
+              }}>
+                <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, opacity: 0.6 }}>
+                  #{index + 1}
+                </span>
+                {recipients.length > 1 && (
+                  <button
+                    onClick={() => removeRecipient(recipient.id)}
+                    style={{
+                      background: 'rgba(255, 100, 100, 0.2)',
+                      border: '1px solid rgba(255, 100, 100, 0.3)',
+                      borderRadius: 6,
+                      color: '#ff6666',
+                      fontSize: 11,
+                      padding: '4px 8px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="0x..."
+                value={recipient.address}
+                onChange={(e) => updateRecipient(recipient.id, 'address', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '8px 10px' : '10px 12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#EAF2FF',
+                  fontSize: isMobile ? 13 : 14,
+                  marginBottom: 8,
+                }}
+              />
+              <input
+                type="number"
+                placeholder="数量"
+                value={recipient.amount}
+                onChange={(e) => updateRecipient(recipient.id, 'amount', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '8px 10px' : '10px 12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#EAF2FF',
+                  fontSize: isMobile ? 13 : 14,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 追加ボタン */}
+      <button
+        onClick={addRecipient}
+        style={{
+          width: '100%',
+          padding: isMobile ? '10px' : '12px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px dashed rgba(255,255,255,0.2)',
+          borderRadius: 12,
+          color: '#EAF2FF',
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 600,
+          cursor: 'pointer',
+          marginBottom: 20,
+          transition: 'all 0.2s',
+        }}
+      >
+        + 送金先を追加
+      </button>
+
+      {/* 合計金額 */}
+      <div style={{
+        marginBottom: 20,
+        padding: isMobile ? '12px' : '14px',
+        background: `${currentToken.color}11`,
+        border: `1px solid ${currentToken.color}33`,
+        borderRadius: 8,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <span style={{ fontSize: isMobile ? 13 : 14, opacity: 0.7 }}>
+          合計送金額
+        </span>
+        <span style={{
+          fontSize: isMobile ? 18 : 22,
+          fontWeight: 900,
+          color: currentToken.color,
+        }}>
+          {totalAmount.toLocaleString()} {selectedToken}
+        </span>
+      </div>
+
+      {/* 送金ボタン */}
+      <button
+        style={{
+          width: '100%',
+          padding: isMobile ? '12px' : '14px',
+          background: `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
+          border: 'none',
+          borderRadius: 12,
+          color: '#fff',
+          fontSize: isMobile ? 14 : 15,
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
+      >
+        一括送金する
       </button>
     </div>
   );
@@ -714,19 +1484,104 @@ function HistorySection({ isMobile }: { isMobile: boolean }) {
 function LockCard({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+      border: '1px solid rgba(102, 126, 234, 0.2)',
       borderRadius: isMobile ? 16 : 24,
-      padding: isMobile ? 20 : 28,
-      opacity: 0.6,
+      padding: isMobile ? 24 : 32,
     }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>🔒</div>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>
-        テナント申請で解放
+      <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 16, textAlign: 'center' }}>✨</div>
+      <h3 style={{
+        margin: '0 0 16px 0',
+        fontSize: isMobile ? 18 : 22,
+        fontWeight: 700,
+        textAlign: 'center',
+      }}>
+        もっと活用しませんか？
       </h3>
-      <p style={{ fontSize: isMobile ? 12 : 13, opacity: 0.7, margin: 0 }}>
-        自動配布 / GIFT HUB / フラグNFT
+      <p style={{
+        fontSize: isMobile ? 13 : 14,
+        opacity: 0.8,
+        margin: '0 0 20px 0',
+        textAlign: 'center',
+      }}>
+        テナント申請で解放される機能
       </p>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        marginBottom: 24,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8,
+        }}>
+          <div style={{ fontSize: 20 }}>🎁</div>
+          <div>
+            <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600 }}>自動配布</div>
+            <div style={{ fontSize: isMobile ? 11 : 12, opacity: 0.6 }}>送金時に特典を自動付与</div>
+          </div>
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8,
+        }}>
+          <div style={{ fontSize: 20 }}>🏪</div>
+          <div>
+            <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600 }}>GIFT HUB</div>
+            <div style={{ fontSize: isMobile ? 11 : 12, opacity: 0.6 }}>特典管理システム</div>
+          </div>
+        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 8,
+        }}>
+          <div style={{ fontSize: 20 }}>🚩</div>
+          <div>
+            <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600 }}>フラグNFT</div>
+            <div style={{ fontSize: isMobile ? 11 : 12, opacity: 0.6 }}>到達証明の発行</div>
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          window.location.href = '/tenant/apply';
+        }}
+        style={{
+          width: '100%',
+          padding: isMobile ? '14px' : '16px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          border: 'none',
+          borderRadius: 12,
+          color: '#fff',
+          fontSize: isMobile ? 15 : 16,
+          fontWeight: 700,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(102, 126, 234, 0.3)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        テナント申請する
+      </button>
     </div>
   );
 }
