@@ -179,8 +179,8 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: isMobile ? 24 : 40,
-      padding: isMobile ? '12px 0' : '16px 0',
+      marginBottom: isMobile ? 12 : 20,
+      padding: isMobile ? '8px 0' : '12px 0',
     }}>
       {/* 左：ロゴ画像 */}
       <img
