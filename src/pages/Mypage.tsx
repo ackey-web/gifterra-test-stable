@@ -269,6 +269,25 @@ function FlowModeContent({ isMobile }: { isMobile: boolean }) {
 
 // 1. 送金フォーム
 function SendForm({ isMobile }: { isMobile: boolean }) {
+  const [selectedToken, setSelectedToken] = useState<'JPYC' | 'NHT'>('JPYC');
+
+  const tokenInfo = {
+    JPYC: {
+      name: 'JPYC',
+      description: 'ステーブルコイン',
+      detail: '日本円と同価値、送金ツールとして利用',
+      color: '#667eea',
+    },
+    NHT: {
+      name: 'NHT',
+      description: 'ユーティリティトークン',
+      detail: 'GIFTERRAエコシステムで流通',
+      color: '#764ba2',
+    },
+  };
+
+  const currentToken = tokenInfo[selectedToken];
+
   return (
     <div style={{
       background: 'rgba(255,255,255,0.03)',
@@ -279,6 +298,75 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       <h2 style={{ margin: '0 0 20px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         送金
       </h2>
+
+      {/* トークン選択タブ */}
+      <div style={{
+        display: 'flex',
+        gap: 8,
+        marginBottom: 16,
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: 12,
+        padding: 4,
+      }}>
+        <button
+          onClick={() => setSelectedToken('JPYC')}
+          style={{
+            flex: 1,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
+            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid transparent',
+            borderRadius: 8,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          JPYC
+        </button>
+        <button
+          onClick={() => setSelectedToken('NHT')}
+          style={{
+            flex: 1,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
+            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid transparent',
+            borderRadius: 8,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          NHT
+        </button>
+      </div>
+
+      {/* トークン説明 */}
+      <div style={{
+        marginBottom: 20,
+        padding: isMobile ? '12px' : '14px',
+        background: `${currentToken.color}11`,
+        border: `1px solid ${currentToken.color}33`,
+        borderRadius: 8,
+      }}>
+        <div style={{
+          fontSize: isMobile ? 12 : 13,
+          fontWeight: 600,
+          marginBottom: 4,
+          color: currentToken.color,
+        }}>
+          {currentToken.description}
+        </div>
+        <div style={{
+          fontSize: isMobile ? 11 : 12,
+          opacity: 0.7,
+        }}>
+          {currentToken.detail}
+        </div>
+      </div>
 
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
@@ -297,23 +385,6 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             fontSize: isMobile ? 14 : 15,
           }}
         />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
-          トークン
-        </label>
-        <select style={{
-          width: '100%',
-          padding: isMobile ? '10px 12px' : '12px 14px',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8,
-          color: '#EAF2FF',
-          fontSize: isMobile ? 14 : 15,
-        }}>
-          <option>JPYC</option>
-        </select>
       </div>
 
       <div style={{ marginBottom: 20 }}>
@@ -338,13 +409,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       <button style={{
         width: '100%',
         padding: isMobile ? '12px' : '14px',
-        background: 'rgba(102, 126, 234, 0.2)',
-        border: '1px solid rgba(102, 126, 234, 0.3)',
+        background: `${currentToken.color}33`,
+        border: `1px solid ${currentToken.color}55`,
         borderRadius: 12,
         color: '#EAF2FF',
         fontSize: isMobile ? 14 : 15,
         fontWeight: 600,
         cursor: 'pointer',
+        transition: 'all 0.2s',
       }}>
         利用方法を選ぶ
       </button>
