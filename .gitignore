@@ -30,6 +30,7 @@ dist-ssr
 *.sw?
 .vercel
 node_modules/
+node_modules.old/
 .vercel/
 dist/
 .cache/

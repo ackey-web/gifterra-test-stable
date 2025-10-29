@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GIFTERRA</string>
+    <string name="title_activity_main">GIFTERRA</string>
+    <string name="package_name">com.metatron.gifterra</string>
+    <string name="custom_url_scheme">com.metatron.gifterra</string>
+</resources>

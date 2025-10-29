@@ -14,6 +14,10 @@
     "indexer:backfill": "ENABLE_BACKFILL=true USE_GIFTERRA=true tsx src/indexer/index.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4",
     "@supabase/supabase-js": "^2.75.1",
     "@tanstack/react-query": "^5.90.5",
     "@thirdweb-dev/chains": "^0.1.120",
