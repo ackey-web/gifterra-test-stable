@@ -598,13 +598,13 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         <div style={{ position: 'relative' }}>
           <input
             type="number"
-            placeholder="0"
+            placeholder={`0 ${currentToken.symbol}`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              paddingRight: isMobile ? '60px' : '70px',
+              paddingRight: isMobile ? '80px' : '90px',
               background: '#ffffff',
               border: '2px solid #3b82f6',
               borderRadius: 8,
@@ -615,13 +615,15 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           />
           <div style={{
             position: 'absolute',
-            right: isMobile ? 12 : 14,
+            right: isMobile ? 8 : 10,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: 600,
-            color: currentToken.color,
-            opacity: 0.9,
+            fontSize: isMobile ? 14 : 16,
+            fontWeight: 700,
+            color: '#ffffff',
+            background: currentToken.color,
+            padding: isMobile ? '4px 10px' : '6px 12px',
+            borderRadius: 6,
             pointerEvents: 'none',
           }}>
             {currentToken.symbol}
