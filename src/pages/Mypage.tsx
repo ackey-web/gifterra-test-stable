@@ -48,7 +48,12 @@ export function MypagePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0a0a0f',
+      background: `
+        radial-gradient(circle at 20% 30%, rgba(118, 75, 162, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(102, 126, 234, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(80, 60, 140, 0.08) 0%, transparent 70%),
+        linear-gradient(135deg, #0a0a0f 0%, #0d0d14 50%, #0a0a0f 100%)
+      `,
       color: '#EAF2FF',
       position: 'relative',
       overflow: 'hidden',
@@ -80,15 +85,25 @@ export function MypagePage() {
             transform: translateX(0);
           }
           10% {
-            opacity: 0.2;
+            opacity: 0.35;
           }
           90% {
-            opacity: 0.2;
+            opacity: 0.35;
           }
           100% {
             bottom: 100%;
             opacity: 0;
-            transform: translateX(8px);
+            transform: translateX(12px);
+          }
+        }
+        @keyframes liquidShimmer {
+          0%, 100% {
+            transform: translateX(-10%);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateX(10%);
+            opacity: 0.6;
           }
         }
 
@@ -171,14 +186,15 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
       marginBottom: isMobile ? 24 : 40,
       padding: isMobile ? '12px 0' : '16px 0',
     }}>
-      {/* 左：ミニロゴ */}
-      <div style={{
-        fontSize: isMobile ? 18 : 24,
-        fontWeight: 900,
-        opacity: 0.9,
-      }}>
-        GIFTERRA
-      </div>
+      {/* 左：ロゴ画像 */}
+      <img
+        src="/GIFTERRA.sidelogo.png"
+        alt="GIFTERRA"
+        style={{
+          height: isMobile ? 24 : 32,
+          opacity: 0.9,
+        }}
+      />
 
       {/* 中央：ロール切替（R3のみ表示） */}
       {showToggle && (
@@ -513,45 +529,99 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
           数量
         </label>
-        <input
-          type="number"
-          placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{
-            width: '100%',
-            padding: isMobile ? '10px 12px' : '12px 14px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            color: '#EAF2FF',
-            fontSize: isMobile ? 14 : 15,
-          }}
-        />
+
+        {/* テナントチップ時は固定金額ボタン表示 */}
+        {sendMode === 'tenant' && selectedToken === 'JPYC' && (
+          <div style={{
+            display: 'flex',
+            gap: isMobile ? 6 : 8,
+            marginBottom: 12,
+          }}>
+            {[100, 500, 1000].map((presetAmount) => (
+              <button
+                key={presetAmount}
+                onClick={() => setAmount(presetAmount.toString())}
+                style={{
+                  flex: 1,
+                  padding: isMobile ? '8px 10px' : '10px 12px',
+                  background: amount === presetAmount.toString()
+                    ? `${currentToken.color}33`
+                    : 'rgba(255,255,255,0.05)',
+                  border: amount === presetAmount.toString()
+                    ? `1px solid ${currentToken.color}55`
+                    : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  color: '#EAF2FF',
+                  fontSize: isMobile ? 12 : 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {presetAmount}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ position: 'relative' }}>
+          <input
+            type="number"
+            placeholder="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{
+              width: '100%',
+              padding: isMobile ? '10px 12px' : '12px 14px',
+              paddingRight: isMobile ? '60px' : '70px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 14 : 15,
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            right: isMobile ? 12 : 14,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            color: currentToken.color,
+            opacity: 0.8,
+            pointerEvents: 'none',
+          }}>
+            {currentToken.symbol}
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
-          メッセージ（任意）
-        </label>
-        <textarea
-          placeholder="メッセージを入力..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows={3}
-          style={{
-            width: '100%',
-            padding: isMobile ? '10px 12px' : '12px 14px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            color: '#EAF2FF',
-            fontSize: isMobile ? 14 : 15,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-          }}
-        />
-      </div>
+      {/* メッセージ欄（テナントチップと一括送金のみ） */}
+      {sendMode && sendMode !== 'simple' && (
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
+            メッセージ（任意）
+          </label>
+          <textarea
+            placeholder="メッセージを入力..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+            style={{
+              width: '100%',
+              padding: isMobile ? '10px 12px' : '12px 14px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 14 : 15,
+              fontFamily: 'inherit',
+              resize: 'vertical',
+            }}
+          />
+        </div>
+      )}
 
       {!sendMode ? (
         <button
@@ -569,7 +639,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             transition: 'all 0.2s',
           }}
         >
-          利用方法を選ぶ
+          送金タイプを選択
         </button>
       ) : (
         <button
@@ -689,7 +759,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
             fontSize: isMobile ? 18 : 22,
             fontWeight: 700,
           }}>
-            利用方法を選択
+            送金タイプを選択
           </h3>
           <button
             onClick={onClose}
@@ -1289,34 +1359,80 @@ function OverallKodomiTank({ isMobile }: { isMobile: boolean }) {
                 animation: 'liquidWave 12s ease-in-out infinite reverse',
               }} />
 
-              {/* 微細なバブル */}
+              {/* バブルアニメーション（複数） */}
               <div style={{
                 position: 'absolute',
-                left: '35%',
+                left: '20%',
+                width: 8,
+                height: 8,
+                background: 'rgba(255,255,255,0.35)',
+                borderRadius: '50%',
+                animation: 'subtleBubbleRise 10s ease-in-out infinite',
+                animationDelay: '0s',
+                boxShadow: '0 0 10px rgba(255,255,255,0.3)',
+              }} />
+              <div style={{
+                position: 'absolute',
+                left: '45%',
+                width: 6,
+                height: 6,
+                background: 'rgba(255,255,255,0.3)',
+                borderRadius: '50%',
+                animation: 'subtleBubbleRise 12s ease-in-out infinite',
+                animationDelay: '3s',
+                boxShadow: '0 0 8px rgba(255,255,255,0.25)',
+              }} />
+              <div style={{
+                position: 'absolute',
+                left: '70%',
+                width: 7,
+                height: 7,
+                background: 'rgba(255,255,255,0.32)',
+                borderRadius: '50%',
+                animation: 'subtleBubbleRise 11s ease-in-out infinite',
+                animationDelay: '6s',
+                boxShadow: '0 0 9px rgba(255,255,255,0.28)',
+              }} />
+              <div style={{
+                position: 'absolute',
+                left: '85%',
                 width: 5,
                 height: 5,
-                background: 'rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.28)',
                 borderRadius: '50%',
-                animation: 'subtleBubbleRise 14s ease-in-out infinite',
-                animationDelay: '0s',
-              }} />
-              <div style={{
-                position: 'absolute',
-                left: '65%',
-                width: 4,
-                height: 4,
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '50%',
-                animation: 'subtleBubbleRise 16s ease-in-out infinite',
-                animationDelay: '7s',
+                animation: 'subtleBubbleRise 13s ease-in-out infinite',
+                animationDelay: '9s',
+                boxShadow: '0 0 7px rgba(255,255,255,0.23)',
               }} />
 
-              {/* 呼吸発光 */}
+              {/* 液体の揺らぎエフェクト */}
               <div style={{
                 position: 'absolute',
                 inset: 0,
-                background: `radial-gradient(ellipse at center, ${color}ff 0%, transparent 70%)`,
-                animation: 'breatheGlow 12s ease-in-out infinite',
+                background: `linear-gradient(45deg, transparent 30%, ${color}33 50%, transparent 70%)`,
+                animation: 'liquidShimmer 8s ease-in-out infinite',
+                pointerEvents: 'none',
+              }} />
+
+              {/* 呼吸発光（強化） */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: `radial-gradient(ellipse at center, ${color}ff 0%, transparent 60%)`,
+                animation: 'breatheGlow 10s ease-in-out infinite',
+                pointerEvents: 'none',
+              }} />
+
+              {/* 光の反射エフェクト */}
+              <div style={{
+                position: 'absolute',
+                top: '10%',
+                left: '10%',
+                width: '30%',
+                height: '20%',
+                background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.25) 0%, transparent 70%)',
+                borderRadius: '50%',
+                animation: 'breatheGlow 7s ease-in-out infinite',
                 pointerEvents: 'none',
               }} />
             </div>
@@ -1333,13 +1449,19 @@ function OverallKodomiTank({ isMobile }: { isMobile: boolean }) {
             zIndex: 3,
           }}>
             <div style={{
-              fontSize: isMobile ? 14 : 16,
+              fontSize: isMobile ? 13 : 15,
               opacity: 0.6,
-              marginBottom: 8,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
+              marginBottom: 4,
+              letterSpacing: '0.05em',
             }}>
               全体kodomi
+            </div>
+            <div style={{
+              fontSize: isMobile ? 10 : 11,
+              opacity: 0.4,
+              marginBottom: 12,
+            }}>
+              貢献熱量ポイント
             </div>
             <div style={{
               fontSize: isMobile ? 48 : 64,
@@ -1785,20 +1907,20 @@ function Footer({ isMobile }: { isMobile: boolean }) {
         opacity: 0.5,
         marginBottom: 12,
       }}>
-        これは送受信ツールです。特典の自動配布は行われません。
-      </div>
-      <div style={{
-        fontSize: isMobile ? 11 : 12,
-        opacity: 0.5,
-        marginBottom: 12,
-      }}>
         GIFTERRAは資産の保管・両替・投資の勧誘を行いません。
       </div>
       <div style={{
         fontSize: isMobile ? 10 : 11,
         opacity: 0.3,
+        marginBottom: 8,
       }}>
         Patent pending / 特許出願中
+      </div>
+      <div style={{
+        fontSize: isMobile ? 10 : 11,
+        opacity: 0.4,
+      }}>
+        Presented by METATRON.
       </div>
     </div>
   );
