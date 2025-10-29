@@ -2,6 +2,7 @@
 // GIFTERRAマイページ - 送受信ツール（Flowモード）+ テナント運用（Tenantモード）
 
 import { useState, useEffect } from 'react';
+import { QRScanner } from '../components/QRScanner';
 
 type ViewMode = 'flow' | 'tenant';
 
@@ -324,6 +325,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
   const [address, setAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   const tokenInfo = {
     JPYC: {
@@ -505,24 +507,52 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         <label style={{ display: 'block', fontSize: isMobile ? 12 : 13, opacity: 0.6, marginBottom: 8 }}>
           宛先アドレス {sendMode === 'tenant' && '（自動入力済み）'}
         </label>
-        <input
-          type="text"
-          placeholder={sendMode === 'tenant' ? 'テナントを選択してください' : '0x...'}
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          disabled={sendMode === 'tenant'}
-          style={{
-            width: '100%',
-            padding: isMobile ? '10px 12px' : '12px 14px',
-            background: sendMode === 'tenant' ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            color: '#EAF2FF',
-            fontSize: isMobile ? 14 : 15,
-            opacity: sendMode === 'tenant' ? 0.6 : 1,
-            cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
-          }}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            placeholder={sendMode === 'tenant' ? 'テナントを選択してください' : '0x...'}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            disabled={sendMode === 'tenant'}
+            style={{
+              width: '100%',
+              padding: isMobile ? '10px 12px' : '12px 14px',
+              paddingRight: sendMode !== 'tenant' ? (isMobile ? '50px' : '60px') : (isMobile ? '10px 12px' : '12px 14px'),
+              background: sendMode === 'tenant' ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 14 : 15,
+              opacity: sendMode === 'tenant' ? 0.6 : 1,
+              cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
+            }}
+          />
+          {sendMode !== 'tenant' && (
+            <button
+              onClick={() => setShowQRScanner(true)}
+              style={{
+                position: 'absolute',
+                right: isMobile ? 8 : 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: isMobile ? '6px 10px' : '8px 12px',
+                background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
+                border: 'none',
+                borderRadius: 6,
+                color: '#fff',
+                fontSize: isMobile ? 18 : 20,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+              }}
+              title="QRコードスキャン"
+            >
+              📷
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -1887,6 +1917,18 @@ function ReceiveTank({ isMobile }: { isMobile: boolean }) {
           </div>
         </div>
       </div>
+
+      {/* QRスキャナーモーダル */}
+      {showQRScanner && (
+        <QRScanner
+          onScan={(scannedAddress) => {
+            setAddress(scannedAddress);
+            setShowQRScanner(false);
+          }}
+          onClose={() => setShowQRScanner(false)}
+          placeholder="ウォレットアドレスを入力"
+        />
+      )}
     </div>
   );
 }
