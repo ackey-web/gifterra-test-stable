@@ -588,7 +588,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
                   transition: 'all 0.2s',
                 }}
               >
-                {presetAmount}
+                {presetAmount} {currentToken.symbol}
               </button>
             ))}
           </div>
