@@ -362,13 +362,13 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-      border: '1px solid rgba(0,0,0,0.08)',
+      background: '#ffffff',
+      border: '2px solid rgba(59, 130, 246, 0.2)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
     }}>
-      <h2 style={{ margin: '0 0 20px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
+      <h2 style={{ margin: '0 0 20px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#1a1a1a' }}>
         送金
       </h2>
 
@@ -377,10 +377,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+        background: '#f3f4f6',
         borderRadius: 12,
         padding: 4,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}>
         <button
           onClick={() => setSelectedToken('JPYC')}
@@ -1094,14 +1094,14 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-      border: '1px solid rgba(0,0,0,0.08)',
+      background: '#ffffff',
+      border: '2px solid rgba(59, 130, 246, 0.2)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
+        <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#1a1a1a' }}>
           一括送金
         </h2>
         <button
@@ -1125,10 +1125,10 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+        background: '#f3f4f6',
         borderRadius: 12,
         padding: 4,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}>
         <button
           onClick={() => setSelectedToken('JPYC')}
