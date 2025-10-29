@@ -384,6 +384,24 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
             opacity: 0.06;
           }
         }
+        @keyframes subtleBubbleRise {
+          0% {
+            bottom: 0;
+            opacity: 0;
+            transform: translateX(0);
+          }
+          10% {
+            opacity: 0.2;
+          }
+          90% {
+            opacity: 0.2;
+          }
+          100% {
+            bottom: 100%;
+            opacity: 0;
+            transform: translateX(8px);
+          }
+        }
 
         /* モーション軽減設定に従う */
         @media (prefers-reduced-motion: reduce) {
@@ -470,6 +488,30 @@ function TankVisual({ label, value, count, percentage, color, isMobile }: {
                 height: 40,
                 background: `radial-gradient(ellipse at center, ${color}aa 0%, ${color}66 50%, transparent 70%)`,
                 animation: 'liquidWave 12s ease-in-out infinite reverse',
+              }} />
+
+              {/* 微細なバブル1 */}
+              <div style={{
+                position: 'absolute',
+                left: '35%',
+                width: 5,
+                height: 5,
+                background: 'rgba(255,255,255,0.2)',
+                borderRadius: '50%',
+                animation: 'subtleBubbleRise 14s ease-in-out infinite',
+                animationDelay: '0s',
+              }} />
+
+              {/* 微細なバブル2 */}
+              <div style={{
+                position: 'absolute',
+                left: '65%',
+                width: 4,
+                height: 4,
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: '50%',
+                animation: 'subtleBubbleRise 16s ease-in-out infinite',
+                animationDelay: '7s',
               }} />
 
               {/* 呼吸発光オーバーレイ */}
