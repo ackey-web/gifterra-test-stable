@@ -192,7 +192,7 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 24 : 32,
+          height: isMobile ? 48 : 80,
           opacity: 0.9,
         }}
       />
