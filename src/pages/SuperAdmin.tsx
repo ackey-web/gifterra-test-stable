@@ -13,6 +13,7 @@ import { GIFTERRA_FACTORY_ABI, TOKEN, TNHT_TOKEN } from '../contract';
 
 // ユーザープロフィールプレビュー用のインポート
 import { UserProfilePage } from './UserProfile';
+import { generateMockUserProfile } from '../utils/mockUserProfile';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
@@ -416,11 +417,39 @@ function DashboardTab() {
 }
 
 /**
- * ユーザープレビュータブ - 実際のユーザーマイページをプレビュー
+ * ユーザープレビュータブ - デザインプレビュー（モックデータ使用）
  */
 function UserPreviewTabSimple() {
   const connectedAddress = useAddress();
   const [previewAddress, setPreviewAddress] = useState('');
+
+  // モックプロフィールを生成（デザイン確認用）
+  const mockProfile = useMemo(() => {
+    if (!previewAddress) return null;
+    return generateMockUserProfile({
+      address: previewAddress,
+      rank: 'Gold',
+      contributionPoints: BigInt(5000),
+      totalTipsSent: BigInt('10000000000000000000'), // 10 JPYC
+      totalTipsReceived: BigInt('5000000000000000000'), // 5 JPYC
+      purchaseCount: 12,
+      rewardClaimedCount: 8,
+      activityCount: 25,
+      sbtCount: 3,
+    });
+  }, [previewAddress]);
+
+  // モックアクティビティを生成
+  const mockActivities = useMemo(() => {
+    if (!previewAddress) return [];
+    const now = Date.now();
+    return [
+      { id: '1', type: 'tip_sent' as const, timestamp: new Date(now - 86400000), txHash: '0x123...' },
+      { id: '2', type: 'tip_received' as const, timestamp: new Date(now - 172800000), txHash: '0x456...' },
+      { id: '3', type: 'purchase' as const, timestamp: new Date(now - 259200000), txHash: '0x789...' },
+      { id: '4', type: 'reward_claimed' as const, timestamp: new Date(now - 345600000), txHash: '0xabc...' },
+    ];
+  }, [previewAddress]);
 
   return (
     <div style={{
@@ -489,7 +518,7 @@ function UserPreviewTabSimple() {
           borderRadius: 8,
           fontSize: 12,
         }}>
-          💡 <strong>ヒント:</strong> アドレスを入力すると、そのユーザーのマイページをプレビューできます
+          💡 <strong>デザインプレビュー:</strong> モックデータで表示されます。実データではありません。
         </div>
       </div>
 
@@ -501,7 +530,11 @@ function UserPreviewTabSimple() {
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         {previewAddress ? (
-          <UserProfilePage address={previewAddress} />
+          <UserProfilePage
+            address={previewAddress}
+            mockProfile={mockProfile}
+            mockActivities={mockActivities}
+          />
         ) : (
           <div style={{
             minHeight: 500,

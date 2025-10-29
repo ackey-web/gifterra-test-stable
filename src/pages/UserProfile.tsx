@@ -3,14 +3,25 @@
 
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getRankColor, getRankBadge, shortenAddress, formatRelativeTime, generateTwitterShareText } from '../utils/userProfile';
+import type { UserProfile } from '../types/user';
 
-export function UserProfilePage({ address: propsAddress }: { address?: string } = {}) {
+export function UserProfilePage({ address: propsAddress, mockProfile, mockActivities }: {
+  address?: string;
+  mockProfile?: UserProfile | null;
+  mockActivities?: any[];
+} = {}) {
   // URLからアドレスを取得（props優先）
   const pathParts = window.location.pathname.split('/');
   const addressFromUrl = pathParts[pathParts.indexOf('user') + 1];
   const targetAddress = propsAddress || addressFromUrl;
 
-  const { profile, activities, isLoading, isError } = useUserProfile(targetAddress);
+  // モックデータがある場合はそれを使用、なければコントラクトから取得
+  const { profile: realProfile, activities: realActivities, isLoading, isError } = useUserProfile(
+    mockProfile ? undefined : targetAddress
+  );
+
+  const profile = mockProfile || realProfile;
+  const activities = mockActivities || realActivities || [];
 
   if (isLoading) {
     return (
