@@ -325,12 +325,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
   const tokenInfo = {
     JPYC: {
       name: 'JPYC',
+      symbol: 'JPYC',
       description: 'ステーブルコイン',
       detail: '日本円と同価値、送金ツールとして利用',
       color: '#667eea',
     },
     NHT: {
       name: 'NHT',
+      symbol: 'NHT',
       description: 'ユーティリティトークン',
       detail: 'GIFTERRAエコシステムで流通',
       color: '#764ba2',
@@ -607,7 +609,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              paddingRight: isMobile ? '80px' : '90px',
+              paddingRight: isMobile ? '90px' : '110px',
               background: '#ffffff',
               border: '2px solid #3b82f6',
               borderRadius: 8,
@@ -621,13 +623,17 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             right: isMobile ? 8 : 10,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: isMobile ? 14 : 16,
-            fontWeight: 700,
+            fontSize: isMobile ? 16 : 18,
+            fontWeight: 800,
             color: '#ffffff',
             background: currentToken.color,
-            padding: isMobile ? '4px 10px' : '6px 12px',
-            borderRadius: 6,
+            padding: isMobile ? '6px 12px' : '8px 16px',
+            borderRadius: 8,
+            border: `2px solid ${currentToken.color}`,
+            boxShadow: `0 4px 12px ${currentToken.color}66`,
             pointerEvents: 'none',
+            zIndex: 10,
+            letterSpacing: '0.5px',
           }}>
             {currentToken.symbol}
           </div>
@@ -1048,12 +1054,14 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
   const tokenInfo = {
     JPYC: {
       name: 'JPYC',
+      symbol: 'JPYC',
       description: 'ステーブルコイン',
       detail: '日本円と同価値、送金ツールとして利用',
       color: '#667eea',
     },
     NHT: {
       name: 'NHT',
+      symbol: 'NHT',
       description: 'ユーティリティトークン',
       detail: 'GIFTERRAエコシステムで流通',
       color: '#764ba2',
