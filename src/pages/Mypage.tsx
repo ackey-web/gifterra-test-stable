@@ -623,17 +623,17 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             right: isMobile ? 8 : 10,
             top: '50%',
             transform: 'translateY(-50%)',
-            fontSize: isMobile ? 16 : 18,
-            fontWeight: 800,
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 700,
             color: '#ffffff',
             background: currentToken.color,
-            padding: isMobile ? '6px 12px' : '8px 16px',
-            borderRadius: 8,
-            border: `2px solid ${currentToken.color}`,
-            boxShadow: `0 4px 12px ${currentToken.color}66`,
+            padding: isMobile ? '4px 8px' : '5px 10px',
+            borderRadius: 6,
+            border: `1.5px solid ${currentToken.color}`,
+            boxShadow: `0 2px 8px ${currentToken.color}66`,
             pointerEvents: 'none',
             zIndex: 10,
-            letterSpacing: '0.5px',
+            letterSpacing: '0.3px',
           }}>
             {currentToken.symbol}
           </div>
@@ -1344,13 +1344,13 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-      border: '1px solid rgba(0,0,0,0.08)',
+      background: '#ffffff',
+      border: '2px solid rgba(59, 130, 246, 0.2)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
     }}>
-      <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
+      <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#1a1a1a' }}>
         受取アドレス
       </h2>
       <p style={{ fontSize: isMobile ? 13 : 14, color: '#4a5568', margin: '0 0 16px 0' }}>
@@ -1358,15 +1358,15 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       </p>
       <button style={{
         width: '100%',
-        padding: isMobile ? '12px' : '14px',
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-        border: '1px solid rgba(0,0,0,0.08)',
+        padding: isMobile ? '14px' : '16px',
+        background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
+        border: 'none',
         borderRadius: 12,
         color: '#ffffff',
-        fontSize: isMobile ? 14 : 15,
-        fontWeight: 600,
+        fontSize: isMobile ? 15 : 16,
+        fontWeight: 700,
         cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
       }}>
         接続する
       </button>
