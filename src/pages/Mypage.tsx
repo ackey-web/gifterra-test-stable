@@ -50,12 +50,11 @@ export function MypagePage() {
     <div style={{
       minHeight: '100vh',
       background: `
-        radial-gradient(circle at 20% 30%, rgba(118, 75, 162, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(102, 126, 234, 0.12) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(80, 60, 140, 0.08) 0%, transparent 70%),
-        linear-gradient(135deg, #0a0a0f 0%, #0d0d14 50%, #0a0a0f 100%)
+        radial-gradient(circle at 20% 30%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(102, 126, 234, 0.06) 0%, transparent 50%),
+        linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%)
       `,
-      color: '#EAF2FF',
+      color: '#1a1a1a',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -192,8 +191,8 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 48 : 80,
-          opacity: 0.9,
+          height: isMobile ? 64 : 120,
+          opacity: 0.95,
         }}
       />
 
@@ -604,10 +603,10 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: isMobile ? '60px' : '70px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(0,0,0,0.03)',
+              border: '1px solid rgba(0,0,0,0.1)',
               borderRadius: 8,
-              color: '#EAF2FF',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
             }}
           />
@@ -619,7 +618,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             fontSize: isMobile ? 13 : 14,
             fontWeight: 600,
             color: currentToken.color,
-            opacity: 0.8,
+            opacity: 0.9,
             pointerEvents: 'none',
           }}>
             {currentToken.symbol}
