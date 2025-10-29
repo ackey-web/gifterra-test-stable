@@ -1,6 +1,7 @@
 // src/pages/UserProfile.tsx
-// ユーザープロフィールページ - 洗練されたシームレスデザイン
+// ユーザープロフィールページ - モバイルファーストのレスポンシブデザイン
 
+import { useState, useEffect } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getRankColor, getRankBadge, shortenAddress, formatRelativeTime, generateTwitterShareText } from '../utils/userProfile';
 import type { UserProfile } from '../types/user';
@@ -13,6 +14,17 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
   const pathParts = window.location.pathname.split('/');
   const addressFromUrl = pathParts[pathParts.indexOf('user') + 1];
   const targetAddress = propsAddress || addressFromUrl;
+
+  // レスポンシブ対応：画面幅を検知
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const { profile: realProfile, activities: realActivities, isLoading, isError } = useUserProfile(
     mockProfile ? undefined : targetAddress
@@ -108,30 +120,31 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
       <div style={{
         position: 'relative',
         zIndex: 1,
-        maxWidth: 1600,
+        maxWidth: isMobile ? '100%' : 1600,
         margin: '0 auto',
-        padding: '80px 40px',
+        padding: isMobile ? '24px 16px' : '80px 40px',
       }}>
         {/* ヘッダー - シームレス */}
         <div style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           alignItems: 'center',
-          gap: 60,
-          marginBottom: 120,
-          paddingBottom: 60,
+          gap: isMobile ? 24 : 60,
+          marginBottom: isMobile ? 48 : 120,
+          paddingBottom: isMobile ? 24 : 60,
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}>
           {/* プロフィールアイコン */}
           <div style={{ position: 'relative' }}>
             <div style={{
-              width: 180,
-              height: 180,
+              width: isMobile ? 100 : 180,
+              height: isMobile ? 100 : 180,
               borderRadius: '50%',
               background: `linear-gradient(135deg, ${rankColor}, ${rankColor}dd)`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 80,
+              fontSize: isMobile ? 48 : 80,
               position: 'relative',
             }}>
               {rankBadge}
@@ -142,10 +155,10 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
               bottom: -10,
               left: '50%',
               transform: 'translateX(-50%)',
-              padding: '8px 24px',
+              padding: isMobile ? '6px 16px' : '8px 24px',
               background: rankColor,
               borderRadius: 999,
-              fontSize: 14,
+              fontSize: isMobile ? 12 : 14,
               fontWeight: 800,
               whiteSpace: 'nowrap',
             }}>
@@ -154,36 +167,36 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
           </div>
 
           {/* ユーザー情報 */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, textAlign: isMobile ? 'center' : 'left', width: isMobile ? '100%' : 'auto' }}>
             {profile.ensName && (
               <h1 style={{
                 margin: 0,
-                fontSize: 56,
+                fontSize: isMobile ? 28 : 56,
                 fontWeight: 900,
                 letterSpacing: '-0.02em',
-                marginBottom: 16,
+                marginBottom: isMobile ? 8 : 16,
               }}>
                 {profile.ensName}
               </h1>
             )}
             <div style={{
-              fontSize: 18,
+              fontSize: isMobile ? 14 : 18,
               fontFamily: 'monospace',
               opacity: 0.5,
-              marginBottom: 32,
+              marginBottom: isMobile ? 16 : 32,
             }}>
-              {shortenAddress(profile.address, 10)}
+              {shortenAddress(profile.address, isMobile ? 6 : 10)}
             </div>
 
             {/* 貢献度 */}
             <div style={{
               display: 'inline-flex',
               alignItems: 'baseline',
-              gap: 12,
+              gap: isMobile ? 8 : 12,
             }}>
-              <span style={{ fontSize: 18, opacity: 0.6 }}>貢献度</span>
+              <span style={{ fontSize: isMobile ? 14 : 18, opacity: 0.6 }}>貢献度</span>
               <span style={{
-                fontSize: 64,
+                fontSize: isMobile ? 36 : 64,
                 fontWeight: 900,
                 background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
                 WebkitBackgroundClip: 'text',
@@ -192,12 +205,12 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
               }}>
                 {profile.rank.points.toLocaleString()}
               </span>
-              <span style={{ fontSize: 24, opacity: 0.6 }}>pt</span>
+              <span style={{ fontSize: isMobile ? 16 : 24, opacity: 0.6 }}>pt</span>
             </div>
           </div>
 
           {/* アクション */}
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: isMobile ? 8 : 16, width: isMobile ? '100%' : 'auto' }}>
             <button
               onClick={() => {
                 const text = generateTwitterShareText(
@@ -209,15 +222,16 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
               }}
               style={{
-                padding: '16px 32px',
+                padding: isMobile ? '12px 24px' : '16px 32px',
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12,
+                borderRadius: isMobile ? 8 : 12,
                 color: '#fff',
-                fontSize: 15,
+                fontSize: isMobile ? 14 : 15,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
+                flex: isMobile ? 1 : 'none',
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
@@ -236,9 +250,9 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
         {/* メイン：タンク（主役） */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 80,
-          marginBottom: 120,
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? 40 : 80,
+          marginBottom: isMobile ? 48 : 120,
         }}>
           {/* Tip送信タンク */}
           <TankVisual
@@ -247,6 +261,7 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
             count={profile.stats.tipSentCount}
             percentage={tipSentPercentage}
             color="#667eea"
+            isMobile={isMobile}
           />
 
           {/* Tip受取タンク */}
@@ -256,59 +271,61 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
             count={profile.stats.tipReceivedCount}
             percentage={tipReceivedPercentage}
             color="#764ba2"
+            isMobile={isMobile}
           />
         </div>
 
         {/* 統計 - シンプル */}
         <div style={{
-          display: 'flex',
-          gap: 80,
-          marginBottom: 120,
-          paddingBottom: 80,
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)',
+          gap: isMobile ? 24 : 80,
+          marginBottom: isMobile ? 48 : 120,
+          paddingBottom: isMobile ? 32 : 80,
           borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}>
-          <StatItem icon="🎁" label="特典受取" value={profile.stats.purchaseCount} />
-          <StatItem icon="🎉" label="Reward" value={profile.stats.rewardClaimedCount} />
-          <StatItem icon="🖼️" label="SBT" value={profile.sbts.length} />
+          <StatItem icon="🎁" label="特典受取" value={profile.stats.purchaseCount} isMobile={isMobile} />
+          <StatItem icon="🎉" label="Reward" value={profile.stats.rewardClaimedCount} isMobile={isMobile} />
+          <StatItem icon="🖼️" label="SBT" value={profile.sbts.length} isMobile={isMobile} />
         </div>
 
         {/* アクティビティ */}
         {activities.length > 0 && (
           <div>
             <h2 style={{
-              fontSize: 28,
+              fontSize: isMobile ? 20 : 28,
               fontWeight: 700,
-              marginBottom: 40,
+              marginBottom: isMobile ? 24 : 40,
               opacity: 0.9,
             }}>
               最近のアクティビティ
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 8 : 16 }}>
               {activities.slice(0, 5).map((activity) => (
                 <div
                   key={activity.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 24,
-                    padding: '20px 0',
+                    gap: isMobile ? 12 : 24,
+                    padding: isMobile ? '16px 0' : '20px 0',
                     borderBottom: '1px solid rgba(255,255,255,0.05)',
                   }}
                 >
-                  <div style={{ fontSize: 28, opacity: 0.8 }}>
+                  <div style={{ fontSize: isMobile ? 20 : 28, opacity: 0.8 }}>
                     {activity.type === 'tip_sent' ? '💸' :
                      activity.type === 'tip_received' ? '💰' :
                      activity.type === 'purchase' ? '🎁' :
                      activity.type === 'reward_claimed' ? '🎉' : '📝'}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>
+                    <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 600, marginBottom: 4 }}>
                       {activity.type === 'tip_sent' ? 'Tip送信' :
                        activity.type === 'tip_received' ? 'Tip受取' :
                        activity.type === 'purchase' ? '特典受取' :
                        activity.type === 'reward_claimed' ? 'Reward受取' : activity.type}
                     </div>
-                    <div style={{ fontSize: 13, opacity: 0.5 }}>
+                    <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.5 }}>
                       {formatRelativeTime(activity.timestamp)}
                     </div>
                   </div>
@@ -323,17 +340,18 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
 }
 
 // タンクビジュアル（主役）
-function TankVisual({ label, value, count, percentage, color }: {
+function TankVisual({ label, value, count, percentage, color, isMobile }: {
   label: string;
   value: string;
   count: number;
   percentage: number;
   color: string;
+  isMobile: boolean;
 }) {
   return (
     <div style={{
       position: 'relative',
-      height: 520,
+      height: isMobile ? 360 : 520,
     }}>
       {/* CSSアニメーション定義 */}
       <style>{`
@@ -388,10 +406,10 @@ function TankVisual({ label, value, count, percentage, color }: {
 
       {/* ラベル */}
       <div style={{
-        fontSize: 14,
+        fontSize: isMobile ? 12 : 14,
         fontWeight: 600,
         opacity: 0.5,
-        marginBottom: 24,
+        marginBottom: isMobile ? 16 : 24,
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
       }}>
@@ -401,7 +419,7 @@ function TankVisual({ label, value, count, percentage, color }: {
       {/* タンク本体 - 円筒形デザイン */}
       <div style={{
         position: 'relative',
-        height: 400,
+        height: isMobile ? 280 : 400,
         perspective: 1000,
       }}>
         {/* タンクコンテナ（ガラス瓶のような形状） */}
@@ -537,10 +555,10 @@ function TankVisual({ label, value, count, percentage, color }: {
             zIndex: 3,
           }}>
             <div style={{
-              fontSize: 72,
+              fontSize: isMobile ? 48 : 72,
               fontWeight: 900,
               letterSpacing: '-0.02em',
-              marginBottom: 8,
+              marginBottom: isMobile ? 4 : 8,
               textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.6)',
               background: 'linear-gradient(180deg, #ffffff 0%, #ffffffdd 100%)',
               WebkitBackgroundClip: 'text',
@@ -549,7 +567,7 @@ function TankVisual({ label, value, count, percentage, color }: {
               {value}
             </div>
             <div style={{
-              fontSize: 20,
+              fontSize: isMobile ? 14 : 20,
               opacity: 0.8,
               fontWeight: 600,
               textShadow: '0 2px 8px rgba(0,0,0,0.5)',
@@ -578,8 +596,8 @@ function TankVisual({ label, value, count, percentage, color }: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 20,
-        fontSize: 14,
+        marginTop: isMobile ? 12 : 20,
+        fontSize: isMobile ? 12 : 14,
       }}>
         <span style={{ opacity: 0.5 }}>{count} 回</span>
         <span style={{
@@ -595,29 +613,30 @@ function TankVisual({ label, value, count, percentage, color }: {
 }
 
 // 統計アイテム
-function StatItem({ icon, label, value }: {
+function StatItem({ icon, label, value, isMobile }: {
   icon: string;
   label: string;
   value: number;
+  isMobile: boolean;
 }) {
   return (
-    <div>
+    <div style={{ textAlign: 'center' }}>
       <div style={{
-        fontSize: 32,
-        marginBottom: 12,
+        fontSize: isMobile ? 24 : 32,
+        marginBottom: isMobile ? 8 : 12,
       }}>
         {icon}
       </div>
       <div style={{
-        fontSize: 48,
+        fontSize: isMobile ? 28 : 48,
         fontWeight: 900,
-        marginBottom: 8,
+        marginBottom: isMobile ? 4 : 8,
         letterSpacing: '-0.02em',
       }}>
         {value}
       </div>
       <div style={{
-        fontSize: 14,
+        fontSize: isMobile ? 11 : 14,
         opacity: 0.5,
       }}>
         {label}
