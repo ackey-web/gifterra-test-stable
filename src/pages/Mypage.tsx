@@ -187,7 +187,7 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 120 : 240,
+          height: isMobile ? 60 : 120,
           opacity: 1,
         }}
       />
@@ -435,8 +435,9 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           {currentToken.description}
         </div>
         <div style={{
-          fontSize: isMobile ? 11 : 12,
-          opacity: 0.7,
+          fontSize: isMobile ? 12 : 13,
+          color: '#e0e0e0',
+          fontWeight: 500,
         }}>
           {currentToken.detail}
         </div>
@@ -461,7 +462,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               {sendMode === 'bulk' && '📤 一括送金'}
             </div>
             {sendMode === 'tenant' && selectedTenant && (
-              <div style={{ fontSize: isMobile ? 11 : 12, opacity: 0.7 }}>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: '#e0e0e0', fontWeight: 500 }}>
                 {selectedTenant.icon} {selectedTenant.name}
               </div>
             )}
@@ -602,7 +603,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             min="0"
-            step="0.01"
+            step="1"
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
@@ -1176,8 +1177,9 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           {currentToken.description}
         </div>
         <div style={{
-          fontSize: isMobile ? 11 : 12,
-          opacity: 0.7,
+          fontSize: isMobile ? 12 : 13,
+          color: '#e0e0e0',
+          fontWeight: 500,
         }}>
           {currentToken.detail}
         </div>
