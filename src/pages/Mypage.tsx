@@ -49,11 +49,7 @@ export function MypagePage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: `
-        radial-gradient(circle at 20% 30%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(102, 126, 234, 0.06) 0%, transparent 50%),
-        linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%)
-      `,
+      background: '#ffffff',
       color: '#1a1a1a',
       position: 'relative',
       overflow: 'hidden',
@@ -191,8 +187,8 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 64 : 120,
-          opacity: 0.95,
+          height: isMobile ? 80 : 160,
+          opacity: 1,
         }}
       />
 
@@ -364,10 +360,11 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#ffffff',
+      border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     }}>
       <h2 style={{ margin: '0 0 20px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         送金
@@ -378,23 +375,25 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'rgba(255,255,255,0.03)',
+        background: '#ffffff',
         borderRadius: 12,
         padding: 4,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}>
         <button
           onClick={() => setSelectedToken('JPYC')}
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
-            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid transparent',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
+            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
-            color: '#EAF2FF',
+            color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
             fontSize: isMobile ? 13 : 14,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: selectedToken === 'JPYC' ? '0 2px 8px rgba(102, 126, 234, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           JPYC
@@ -404,14 +403,15 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
-            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid transparent',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
+            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
-            color: '#EAF2FF',
+            color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
             fontSize: isMobile ? 13 : 14,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: selectedToken === 'NHT' ? '0 2px 8px rgba(118, 75, 162, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           NHT
@@ -517,13 +517,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: sendMode !== 'tenant' ? (isMobile ? '50px' : '60px') : (isMobile ? '10px 12px' : '12px 14px'),
-              background: sendMode === 'tenant' ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: sendMode === 'tenant' ? '#f5f5f5' : '#ffffff',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
-              color: '#EAF2FF',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
               opacity: sendMode === 'tenant' ? 0.6 : 1,
               cursor: sendMode === 'tenant' ? 'not-allowed' : 'text',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           />
           {sendMode !== 'tenant' && (
@@ -575,16 +576,17 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
                   padding: isMobile ? '8px 10px' : '10px 12px',
                   background: amount === presetAmount.toString()
                     ? `${currentToken.color}33`
-                    : 'rgba(255,255,255,0.05)',
+                    : '#ffffff',
                   border: amount === presetAmount.toString()
                     ? `1px solid ${currentToken.color}55`
-                    : '1px solid rgba(255,255,255,0.1)',
+                    : '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
-                  color: '#EAF2FF',
+                  color: amount === presetAmount.toString() ? currentToken.color : '#1a1a1a',
                   fontSize: isMobile ? 12 : 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               >
                 {presetAmount} {currentToken.symbol}
@@ -603,11 +605,12 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: isMobile ? '60px' : '70px',
-              background: 'rgba(0,0,0,0.03)',
-              border: '1px solid rgba(0,0,0,0.1)',
+              background: '#ffffff',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
               color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           />
           <div style={{
@@ -640,13 +643,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: '#ffffff',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
-              color: '#EAF2FF',
+              color: '#1a1a1a',
               fontSize: isMobile ? 14 : 15,
               fontFamily: 'inherit',
               resize: 'vertical',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           />
         </div>
@@ -658,14 +662,15 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             width: '100%',
             padding: isMobile ? '12px' : '14px',
-            background: `${currentToken.color}33`,
-            border: `1px solid ${currentToken.color}55`,
+            background: '#ffffff',
+            border: `1px solid rgba(0,0,0,0.08)`,
             borderRadius: 12,
-            color: '#EAF2FF',
+            color: currentToken.color,
             fontSize: isMobile ? 14 : 15,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           送金タイプを選択
@@ -683,6 +688,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           }}
         >
           送金する
@@ -715,6 +721,18 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             }
           }}
           onSelectTenant={handleTenantSelect}
+        />
+      )}
+
+      {/* QRスキャナーモーダル */}
+      {showQRScanner && (
+        <QRScanner
+          onScan={(scannedAddress) => {
+            setAddress(scannedAddress);
+            setShowQRScanner(false);
+          }}
+          onClose={() => setShowQRScanner(false)}
+          placeholder="ウォレットアドレスを入力"
         />
       )}
     </div>
@@ -816,21 +834,24 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
               key={mode.id}
               onClick={() => onSelectMode(mode.id)}
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 16,
                 padding: isMobile ? 16 : 20,
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                e.currentTarget.style.background = '#f5f5f5';
+                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
             >
               <div style={{ fontSize: 32, marginBottom: 12 }}>{mode.icon}</div>
@@ -838,7 +859,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 margin: '0 0 8px 0',
                 fontSize: isMobile ? 16 : 18,
                 fontWeight: 700,
-                color: '#EAF2FF',
+                color: '#1a1a1a',
               }}>
                 {mode.title}
               </h4>
@@ -846,7 +867,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 margin: '0 0 12px 0',
                 fontSize: isMobile ? 13 : 14,
                 opacity: 0.7,
-                color: '#EAF2FF',
+                color: '#1a1a1a',
               }}>
                 {mode.description}
               </p>
@@ -855,7 +876,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 padding: '0 0 0 20px',
                 fontSize: isMobile ? 12 : 13,
                 opacity: 0.6,
-                color: '#EAF2FF',
+                color: '#1a1a1a',
               }}>
                 {mode.features.map((feature, i) => (
                   <li key={i}>{feature}</li>
@@ -948,8 +969,8 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
               key={tenant.id}
               onClick={() => onSelectTenant(tenant)}
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 14,
                 padding: isMobile ? 12 : 16,
                 cursor: 'pointer',
@@ -957,14 +978,17 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 alignItems: 'center',
                 gap: 12,
                 transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                e.currentTarget.style.background = '#f5f5f5';
+                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
             >
               <div style={{ fontSize: 32 }}>{tenant.icon}</div>
@@ -973,7 +997,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                   fontSize: isMobile ? 14 : 16,
                   fontWeight: 700,
                   marginBottom: 4,
-                  color: '#EAF2FF',
+                  color: '#1a1a1a',
                 }}>
                   {tenant.name}
                 </div>
@@ -981,7 +1005,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                   fontSize: isMobile ? 11 : 12,
                   opacity: 0.6,
                   fontFamily: 'monospace',
-                  color: '#EAF2FF',
+                  color: '#1a1a1a',
                 }}>
                   {tenant.walletAddress}
                 </div>
@@ -993,7 +1017,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 borderRadius: 999,
                 fontSize: isMobile ? 10 : 11,
                 fontWeight: 600,
-                color: '#EAF2FF',
+                color: '#1a1a1a',
               }}>
                 {tenant.rank}
               </div>
@@ -1057,10 +1081,11 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#ffffff',
+      border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
@@ -1087,23 +1112,25 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: 'rgba(255,255,255,0.03)',
+        background: '#ffffff',
         borderRadius: 12,
         padding: 4,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}>
         <button
           onClick={() => setSelectedToken('JPYC')}
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : 'transparent',
-            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid transparent',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
+            border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
-            color: '#EAF2FF',
+            color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
             fontSize: isMobile ? 13 : 14,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: selectedToken === 'JPYC' ? '0 2px 8px rgba(102, 126, 234, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           JPYC
@@ -1113,14 +1140,15 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : 'transparent',
-            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid transparent',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
+            border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
-            color: '#EAF2FF',
+            color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
             fontSize: isMobile ? 13 : 14,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.2s',
+            boxShadow: selectedToken === 'NHT' ? '0 2px 8px rgba(118, 75, 162, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
           NHT
@@ -1161,10 +1189,11 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
             <div
               key={recipient.id}
               style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: '#ffffff',
+                border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: 12,
                 padding: isMobile ? 12 : 14,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
             >
               <div style={{
@@ -1201,12 +1230,13 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
-                  color: '#EAF2FF',
+                  color: '#1a1a1a',
                   fontSize: isMobile ? 13 : 14,
                   marginBottom: 8,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               />
               <input
@@ -1217,11 +1247,12 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
-                  color: '#EAF2FF',
+                  color: '#1a1a1a',
                   fontSize: isMobile ? 13 : 14,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               />
             </div>
@@ -1235,15 +1266,16 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         style={{
           width: '100%',
           padding: isMobile ? '10px' : '12px',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px dashed rgba(255,255,255,0.2)',
+          background: '#ffffff',
+          border: '1px dashed rgba(0,0,0,0.2)',
           borderRadius: 12,
-          color: '#EAF2FF',
+          color: '#1a1a1a',
           fontSize: isMobile ? 13 : 14,
           fontWeight: 600,
           cursor: 'pointer',
           marginBottom: 20,
           transition: 'all 0.2s',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
       >
         + 送金先を追加
@@ -1285,6 +1317,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'all 0.2s',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         }}
       >
         一括送金する
@@ -1297,10 +1330,11 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#ffffff',
+      border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     }}>
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         受取アドレス
@@ -1311,13 +1345,14 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       <button style={{
         width: '100%',
         padding: isMobile ? '12px' : '14px',
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: '#ffffff',
+        border: '1px solid rgba(0,0,0,0.08)',
         borderRadius: 12,
-        color: '#EAF2FF',
+        color: '#1a1a1a',
         fontSize: isMobile ? 14 : 15,
         fontWeight: 600,
         cursor: 'pointer',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}>
         接続する
       </button>
@@ -1554,10 +1589,11 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
             key={i}
             style={{
               minWidth: isMobile ? 160 : 200,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: '#ffffff',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: isMobile ? 12 : 16,
               padding: isMobile ? 16 : 20,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
             <div style={{ fontSize: 32, marginBottom: 12 }}>{tenant.icon}</div>
@@ -1610,11 +1646,12 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
 function HistorySection({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#ffffff',
+      border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
       marginBottom: isMobile ? 24 : 32,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     }}>
       <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>
         履歴
@@ -1754,10 +1791,11 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
         marginBottom: isMobile ? 40 : 48,
       }}>
         <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#ffffff',
+          border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>
             キャンペーン稼働状況
@@ -1767,10 +1805,11 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
           </p>
         </div>
         <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#ffffff',
+          border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>
             サポーター動向
@@ -1916,18 +1955,6 @@ function ReceiveTank({ isMobile }: { isMobile: boolean }) {
           </div>
         </div>
       </div>
-
-      {/* QRスキャナーモーダル */}
-      {showQRScanner && (
-        <QRScanner
-          onScan={(scannedAddress) => {
-            setAddress(scannedAddress);
-            setShowQRScanner(false);
-          }}
-          onClose={() => setShowQRScanner(false)}
-          placeholder="ウォレットアドレスを入力"
-        />
-      )}
     </div>
   );
 }
