@@ -4,12 +4,13 @@
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getRankColor, getRankBadge, shortenAddress, formatTokenAmount, formatRelativeTime, generateTwitterShareText } from '../utils/userProfile';
 
-export function UserProfilePage() {
-  // URLからアドレスを取得
+export function UserProfilePage({ address: propsAddress }: { address?: string } = {}) {
+  // URLからアドレスを取得（props優先）
   const pathParts = window.location.pathname.split('/');
   const addressFromUrl = pathParts[pathParts.indexOf('user') + 1];
+  const targetAddress = propsAddress || addressFromUrl;
 
-  const { profile, activities, isLoading, isError } = useUserProfile(addressFromUrl);
+  const { profile, activities, isLoading, isError } = useUserProfile(targetAddress);
 
   if (isLoading) {
     return (

@@ -12,18 +12,13 @@ import { formatTokenAmount } from '../utils/userProfile';
 import { GIFTERRA_FACTORY_ABI, TOKEN, TNHT_TOKEN } from '../contract';
 
 // ユーザープロフィールプレビュー用のインポート
-import { MOCK_PROFILE_PRESETS, generateMockUserProfile } from '../utils/mockUserProfile';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { getRankColor, getRankBadge, shortenAddress, formatRelativeTime } from '../utils/userProfile';
-import type { UserProfile, RankName } from '../types/user';
+import { UserProfilePage } from './UserProfile';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
 import CreateTenantForm from './CreateTenantForm';
 
 type TabType = 'dashboard' | 'user-preview' | 'tenants' | 'revenue' | 'score-parameters' | 'token-axis' | 'system-monitoring';
-type PreviewMode = 'real' | 'mock';
-type PresetName = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'legend' | 'custom';
 
 export function SuperAdminPage() {
   const connectedAddress = useAddress();
@@ -118,7 +113,7 @@ export function SuperAdminPage() {
             active={activeTab === 'user-preview'}
             onClick={() => setActiveTab('user-preview')}
             icon="👤"
-            label="ユーザープロフィール"
+            label="ユーザーマイページ"
           />
           <TabButton
             active={activeTab === 'tenants'}
@@ -421,44 +416,112 @@ function DashboardTab() {
 }
 
 /**
- * ユーザープレビュータブ（既存機能）
+ * ユーザープレビュータブ - 実際のユーザーマイページをプレビュー
  */
-// UserPreviewTab is temporarily disabled due to BigInt errors
-// Will be re-enabled after fixing the issues
 function UserPreviewTabSimple() {
+  const connectedAddress = useAddress();
+  const [previewAddress, setPreviewAddress] = useState('');
+
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 16,
-      padding: 60,
-      textAlign: 'center',
-      color: '#fff',
-      minHeight: 400,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: 'grid',
+      gridTemplateColumns: '350px 1fr',
+      gap: 24,
     }}>
-      <div style={{ fontSize: 64, marginBottom: 24 }}>🔧</div>
-      <h2 style={{ margin: '0 0 16px 0', fontSize: 24, fontWeight: 800 }}>メンテナンス中</h2>
-      <p style={{ fontSize: 16, opacity: 0.8, margin: 0, maxWidth: 500 }}>
-        ユーザープロフィールプレビュー機能は現在メンテナンス中です。
-        <br />
-        BigIntエラーの修正後に再度有効化されます。
-      </p>
+      {/* 左側: コントロールパネル */}
       <div style={{
-        marginTop: 32,
-        padding: 16,
-        background: 'rgba(251, 191, 36, 0.1)',
-        border: '1px solid rgba(251, 191, 36, 0.3)',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 12,
-        fontSize: 14,
-        maxWidth: 500,
+        padding: 20,
+        color: '#fff',
+        height: 'fit-content',
       }}>
-        <strong>他のタブは正常に動作しています</strong>
-        <br />
-        ダッシュボード、テナント管理、収益管理などをご利用ください。
+        <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
+          🔍 プレビュー対象
+        </h3>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 12, marginBottom: 8, opacity: 0.8 }}>
+            ウォレットアドレス
+          </label>
+          <input
+            type="text"
+            value={previewAddress}
+            onChange={(e) => setPreviewAddress(e.target.value)}
+            placeholder="0x..."
+            style={{
+              width: '100%',
+              padding: 10,
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 13,
+              fontFamily: 'monospace',
+            }}
+          />
+        </div>
+
+        <button
+          onClick={() => setPreviewAddress(connectedAddress || '')}
+          disabled={!connectedAddress}
+          style={{
+            width: '100%',
+            padding: 10,
+            background: connectedAddress ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${connectedAddress ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 8,
+            color: connectedAddress ? '#fff' : 'rgba(255,255,255,0.4)',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: connectedAddress ? 'pointer' : 'not-allowed',
+          }}
+        >
+          接続中のウォレットを使用
+        </button>
+
+        <div style={{
+          marginTop: 20,
+          padding: 12,
+          background: 'rgba(251, 191, 36, 0.1)',
+          border: '1px solid rgba(251, 191, 36, 0.3)',
+          borderRadius: 8,
+          fontSize: 12,
+        }}>
+          💡 <strong>ヒント:</strong> アドレスを入力すると、そのユーザーのマイページをプレビューできます
+        </div>
+      </div>
+
+      {/* 右側: プレビュー */}
+      <div style={{
+        background: 'rgba(0,0,0,0.3)',
+        borderRadius: 16,
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.1)',
+      }}>
+        {previewAddress ? (
+          <UserProfilePage address={previewAddress} />
+        ) : (
+          <div style={{
+            minHeight: 500,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            padding: 40,
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 64, marginBottom: 16 }}>📭</div>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: 20, fontWeight: 700 }}>
+              アドレスを入力してください
+            </h2>
+            <p style={{ margin: 0, fontSize: 14, opacity: 0.7, maxWidth: 400 }}>
+              プレビューしたいユーザーのウォレットアドレスを入力するか、接続中のウォレットを使用してください
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
