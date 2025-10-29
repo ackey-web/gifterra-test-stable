@@ -360,7 +360,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
 
   return (
     <div style={{
-      background: '#ffffff',
+      background: '#f8f9fa',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -375,7 +375,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: '#ffffff',
+        background: '#f8f9fa',
         borderRadius: 12,
         padding: 4,
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -385,7 +385,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#f8f9fa',
             border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
@@ -403,7 +403,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#f8f9fa',
             border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
@@ -517,7 +517,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: sendMode !== 'tenant' ? (isMobile ? '50px' : '60px') : (isMobile ? '10px 12px' : '12px 14px'),
-              background: sendMode === 'tenant' ? '#f5f5f5' : '#ffffff',
+              background: sendMode === 'tenant' ? '#f5f5f5' : '#f8f9fa',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
               color: '#1a1a1a',
@@ -576,7 +576,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
                   padding: isMobile ? '8px 10px' : '10px 12px',
                   background: amount === presetAmount.toString()
                     ? `${currentToken.color}33`
-                    : '#ffffff',
+                    : '#f8f9fa',
                   border: amount === presetAmount.toString()
                     ? `1px solid ${currentToken.color}55`
                     : '1px solid rgba(0,0,0,0.08)',
@@ -605,7 +605,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
               paddingRight: isMobile ? '60px' : '70px',
-              background: '#ffffff',
+              background: '#f8f9fa',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
               color: '#1a1a1a',
@@ -643,7 +643,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
             style={{
               width: '100%',
               padding: isMobile ? '10px 12px' : '12px 14px',
-              background: '#ffffff',
+              background: '#f8f9fa',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: 8,
               color: '#1a1a1a',
@@ -662,7 +662,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           style={{
             width: '100%',
             padding: isMobile ? '12px' : '14px',
-            background: '#ffffff',
+            background: '#f8f9fa',
             border: `1px solid rgba(0,0,0,0.08)`,
             borderRadius: 12,
             color: currentToken.color,
@@ -834,7 +834,7 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
               key={mode.id}
               onClick={() => onSelectMode(mode.id)}
               style={{
-                background: '#ffffff',
+                background: '#f8f9fa',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 16,
                 padding: isMobile ? 16 : 20,
@@ -844,12 +844,12 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = '#f5f5f5';
+                e.currentTarget.style.background = '#e9ecef';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.background = '#f8f9fa';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
@@ -969,7 +969,7 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
               key={tenant.id}
               onClick={() => onSelectTenant(tenant)}
               style={{
-                background: '#ffffff',
+                background: '#f8f9fa',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: isMobile ? 12 : 14,
                 padding: isMobile ? 12 : 16,
@@ -981,12 +981,12 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = '#f5f5f5';
+                e.currentTarget.style.background = '#e9ecef';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.background = '#f8f9fa';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
@@ -1081,7 +1081,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
   return (
     <div style={{
-      background: '#ffffff',
+      background: '#f8f9fa',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1112,7 +1112,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         display: 'flex',
         gap: 8,
         marginBottom: 16,
-        background: '#ffffff',
+        background: '#f8f9fa',
         borderRadius: 12,
         padding: 4,
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -1122,7 +1122,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#ffffff',
+            background: selectedToken === 'JPYC' ? 'rgba(102, 126, 234, 0.3)' : '#f8f9fa',
             border: selectedToken === 'JPYC' ? '1px solid rgba(102, 126, 234, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'JPYC' ? '#667eea' : '#1a1a1a',
@@ -1140,7 +1140,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           style={{
             flex: 1,
             padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#ffffff',
+            background: selectedToken === 'NHT' ? 'rgba(118, 75, 162, 0.3)' : '#f8f9fa',
             border: selectedToken === 'NHT' ? '1px solid rgba(118, 75, 162, 0.5)' : '1px solid rgba(0,0,0,0.08)',
             borderRadius: 8,
             color: selectedToken === 'NHT' ? '#764ba2' : '#1a1a1a',
@@ -1189,7 +1189,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
             <div
               key={recipient.id}
               style={{
-                background: '#ffffff',
+                background: '#f8f9fa',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: 12,
                 padding: isMobile ? 12 : 14,
@@ -1230,7 +1230,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: '#ffffff',
+                  background: '#f8f9fa',
                   border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
                   color: '#1a1a1a',
@@ -1247,7 +1247,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
                 style={{
                   width: '100%',
                   padding: isMobile ? '8px 10px' : '10px 12px',
-                  background: '#ffffff',
+                  background: '#f8f9fa',
                   border: '1px solid rgba(0,0,0,0.08)',
                   borderRadius: 8,
                   color: '#1a1a1a',
@@ -1266,7 +1266,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         style={{
           width: '100%',
           padding: isMobile ? '10px' : '12px',
-          background: '#ffffff',
+          background: '#f8f9fa',
           border: '1px dashed rgba(0,0,0,0.2)',
           borderRadius: 12,
           color: '#1a1a1a',
@@ -1330,7 +1330,7 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: '#ffffff',
+      background: '#f8f9fa',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1345,7 +1345,7 @@ function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
       <button style={{
         width: '100%',
         padding: isMobile ? '12px' : '14px',
-        background: '#ffffff',
+        background: '#f8f9fa',
         border: '1px solid rgba(0,0,0,0.08)',
         borderRadius: 12,
         color: '#1a1a1a',
@@ -1589,7 +1589,7 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
             key={i}
             style={{
               minWidth: isMobile ? 160 : 200,
-              background: '#ffffff',
+              background: '#f8f9fa',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: isMobile ? 12 : 16,
               padding: isMobile ? 16 : 20,
@@ -1646,7 +1646,7 @@ function ContributionTenants({ isMobile }: { isMobile: boolean }) {
 function HistorySection({ isMobile }: { isMobile: boolean }) {
   return (
     <div style={{
-      background: '#ffffff',
+      background: '#f8f9fa',
       border: '1px solid rgba(0,0,0,0.08)',
       borderRadius: isMobile ? 16 : 24,
       padding: isMobile ? 20 : 28,
@@ -1791,7 +1791,7 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
         marginBottom: isMobile ? 40 : 48,
       }}>
         <div style={{
-          background: '#ffffff',
+          background: '#f8f9fa',
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
@@ -1805,7 +1805,7 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
           </p>
         </div>
         <div style={{
-          background: '#ffffff',
+          background: '#f8f9fa',
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: isMobile ? 16 : 24,
           padding: isMobile ? 20 : 28,
