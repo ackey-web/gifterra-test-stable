@@ -125,9 +125,9 @@ export function MypagePage() {
       <div style={{
         position: 'relative',
         zIndex: 1,
-        maxWidth: isMobile ? '100%' : 1400,
+        maxWidth: isMobile ? '100%' : 600,
         margin: '0 auto',
-        padding: isMobile ? '16px' : '40px',
+        padding: isMobile ? '16px' : '24px',
       }}>
         {/* [A] ヘッダー */}
         <Header
@@ -269,12 +269,12 @@ function FlowModeContent({ isMobile, tenantRank }: { isMobile: boolean; tenantRa
 
   return (
     <>
-      {/* 1. 送金・受信（横並び） */}
+      {/* 1. 送金・受信（縦並び） */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-        gap: isMobile ? 16 : 24,
-        marginBottom: isMobile ? 40 : 60,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isMobile ? 16 : 20,
+        marginBottom: isMobile ? 40 : 48,
       }}>
         <SendForm isMobile={isMobile} />
         <ReceiveAddress isMobile={isMobile} />
@@ -1597,10 +1597,10 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
 
       {/* テナント統計カード */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-        gap: isMobile ? 16 : 24,
-        marginBottom: isMobile ? 40 : 60,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isMobile ? 16 : 20,
+        marginBottom: isMobile ? 40 : 48,
       }}>
         <div style={{
           background: 'rgba(255,255,255,0.03)',
