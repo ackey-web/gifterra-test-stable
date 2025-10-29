@@ -11,6 +11,7 @@ import AdminDashboardMobile from "./admin/DashboardMobile";
 import { DownloadPage } from "./pages/DownloadPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
+import { UserProfilePage } from "./pages/UserProfile";
 import ScoreProfilePage from "./pages/score-profile";
 import { SuperAdminPage } from "./pages/SuperAdmin";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
@@ -127,7 +128,7 @@ root.render(
       ) : wantsSuperAdmin ? (
         <SuperAdminPage />
       ) : wantsUserProfile ? (
-        <ScoreProfilePage />
+        <UserProfilePage />
       ) : wantsAdminMobile ? (
         <TenantProvider>
           <AdminDashboardMobile />
