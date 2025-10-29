@@ -22,16 +22,16 @@ import {
 // メインページコンポーネント
 // ========================================
 
-export default function ScoreProfilePage() {
+export default function ScoreProfilePage({ userId: propsUserId }: { userId?: string } = {}) {
   const connectedAddress = useAddress();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'rankings' | 'tenants'>('overview');
 
-  // URLパラメータまたは接続アドレスからユーザーIDを取得
+  // URLパラメータまたは接続アドレスからユーザーIDを取得（props優先）
   const userIdFromQuery = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('userId') || undefined;
   }, []);
-  const userId = userIdFromQuery || connectedAddress;
+  const userId = propsUserId || userIdFromQuery || connectedAddress;
   const isOwnProfile = !userIdFromQuery || userIdFromQuery === connectedAddress;
 
   // データ取得

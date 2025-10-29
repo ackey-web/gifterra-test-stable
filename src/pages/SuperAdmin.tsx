@@ -12,7 +12,7 @@ import { formatTokenAmount } from '../utils/userProfile';
 import { GIFTERRA_FACTORY_ABI, TOKEN, TNHT_TOKEN } from '../contract';
 
 // ユーザープロフィールプレビュー用のインポート
-import { UserProfilePage } from './UserProfile';
+import ScoreProfilePage from './score-profile';
 
 // スコア管理ページのインポート
 import { ScoreParametersPage, TokenAxisPage, SystemMonitoringPage } from '../admin/score';
@@ -501,7 +501,7 @@ function UserPreviewTabSimple() {
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         {previewAddress ? (
-          <UserProfilePage address={previewAddress} />
+          <ScoreProfilePage userId={previewAddress} />
         ) : (
           <div style={{
             minHeight: 500,
