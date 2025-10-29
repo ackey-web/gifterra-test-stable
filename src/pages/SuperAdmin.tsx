@@ -154,7 +154,7 @@ export function SuperAdminPage() {
 
         {/* タブコンテンツ */}
         {activeTab === 'dashboard' && <DashboardTab />}
-        {activeTab === 'user-preview' && <UserPreviewTab />}
+        {activeTab === 'user-preview' && <UserPreviewTabSimple />}
         {activeTab === 'tenants' && <TenantsTab />}
         {activeTab === 'revenue' && <RevenueTab />}
         {activeTab === 'score-parameters' && <ScoreParametersPage />}
@@ -423,321 +423,42 @@ function DashboardTab() {
 /**
  * ユーザープレビュータブ（既存機能）
  */
-function UserPreviewTab() {
-  const connectedAddress = useAddress();
-
-  // プレビュー設定
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('mock');
-  const [presetName, setPresetName] = useState<PresetName>('intermediate');
-  const [customAddress, setCustomAddress] = useState('');
-  const [customRank, setCustomRank] = useState<RankName>('Silver');
-  const [customPoints, setCustomPoints] = useState('3000');
-
-  // プレビュー用アドレスを決定
-  const previewAddress = useMemo(() => {
-    if (presetName === 'custom' && customAddress) {
-      return customAddress;
-    }
-    return connectedAddress || '0x0000000000000000000000000000000000000000';
-  }, [presetName, customAddress, connectedAddress]);
-
-  // 実データ取得
-  const { profile: realProfile, isLoading: isLoadingReal } = useUserProfile(
-    previewMode === 'real' ? previewAddress : undefined
-  );
-
-  // モックデータ生成
-  const mockProfile = useMemo((): UserProfile | null => {
-    if (previewMode !== 'mock') return null;
-
-    if (presetName === 'custom') {
-      return generateMockUserProfile({
-        address: previewAddress,
-        rank: customRank,
-        contributionPoints: BigInt(customPoints || '0'),
-        totalTipsSent: BigInt(customPoints || '0'),
-        totalTipsReceived: BigInt(Math.floor(parseInt(customPoints || '0') / 2)),
-        purchaseCount: Math.floor(parseInt(customPoints || '0') / 500),
-        rewardClaimedCount: Math.floor(parseInt(customPoints || '0') / 100),
-        activityCount: Math.min(50, Math.floor(parseInt(customPoints || '0') / 100)),
-        sbtCount: ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'].indexOf(customRank) + 1,
-      });
-    }
-
-    const presetFn = MOCK_PROFILE_PRESETS[presetName as keyof typeof MOCK_PROFILE_PRESETS];
-    return presetFn ? presetFn(previewAddress) : null;
-  }, [previewMode, presetName, previewAddress, customRank, customPoints]);
-
-  // プレビュー対象のプロフィール
-  const profile = previewMode === 'real' ? realProfile : mockProfile;
-
+// UserPreviewTab is temporarily disabled due to BigInt errors
+// Will be re-enabled after fixing the issues
+function UserPreviewTabSimple() {
   return (
     <div style={{
-      display: 'grid',
-      gridTemplateColumns: '350px 1fr',
-      gap: 24,
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 16,
+      padding: 60,
+      textAlign: 'center',
+      color: '#fff',
+      minHeight: 400,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
     }}>
-      {/* 左側: コントロール */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* プレビューモード選択 */}
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          padding: 20,
-          color: '#fff',
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>
-            📊 プレビューモード
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: 12,
-              background: previewMode === 'mock' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${previewMode === 'mock' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}>
-              <input
-                type="radio"
-                name="previewMode"
-                value="mock"
-                checked={previewMode === 'mock'}
-                onChange={() => setPreviewMode('mock')}
-              />
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>🎨 モックデータ</div>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>テスト用のダミーデータ</div>
-              </div>
-            </label>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: 12,
-              background: previewMode === 'real' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${previewMode === 'real' ? 'rgba(102, 126, 234, 0.5)' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}>
-              <input
-                type="radio"
-                name="previewMode"
-                value="real"
-                checked={previewMode === 'real'}
-                onChange={() => setPreviewMode('real')}
-              />
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>🔗 実データ</div>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>コントラクトから取得</div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* プリセット選択 */}
-        {previewMode === 'mock' && (
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12,
-            padding: 20,
-            color: '#fff',
-          }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>⚡ プリセット</h3>
-            <select
-              value={presetName}
-              onChange={(e) => setPresetName(e.target.value as PresetName)}
-              style={{
-                width: '100%',
-                padding: 12,
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 14,
-              }}
-            >
-              <option value="beginner">🥉 初心者 (Bronze)</option>
-              <option value="intermediate">🥈 中級者 (Silver)</option>
-              <option value="advanced">🥇 上級者 (Gold)</option>
-              <option value="expert">💎 エキスパート (Platinum)</option>
-              <option value="legend">👑 レジェンド (Diamond)</option>
-              <option value="custom">⚙️ カスタム</option>
-            </select>
-
-            {/* カスタム設定 */}
-            {presetName === 'custom' && (
-              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>ランク</label>
-                  <select
-                    value={customRank}
-                    onChange={(e) => setCustomRank(e.target.value as RankName)}
-                    style={{
-                      width: '100%',
-                      padding: 8,
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: 6,
-                      color: '#fff',
-                      fontSize: 13,
-                    }}
-                  >
-                    <option value="Bronze">🥉 Bronze</option>
-                    <option value="Silver">🥈 Silver</option>
-                    <option value="Gold">🥇 Gold</option>
-                    <option value="Platinum">💎 Platinum</option>
-                    <option value="Diamond">👑 Diamond</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>貢献度ポイント</label>
-                  <input
-                    type="number"
-                    value={customPoints}
-                    onChange={(e) => setCustomPoints(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: 8,
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: 6,
-                      color: '#fff',
-                      fontSize: 13,
-                    }}
-                    placeholder="3000"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* アドレス入力 */}
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
-          padding: 20,
-          color: '#fff',
-        }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700 }}>🔍 プレビュー対象</h3>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.8 }}>ウォレットアドレス</label>
-            <input
-              type="text"
-              value={customAddress}
-              onChange={(e) => {
-                setCustomAddress(e.target.value);
-                if (e.target.value && presetName !== 'custom') {
-                  setPresetName('custom');
-                }
-              }}
-              placeholder={connectedAddress || '0x...'}
-              style={{
-                width: '100%',
-                padding: 10,
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 13,
-                fontFamily: 'monospace',
-              }}
-            />
-          </div>
-          <button
-            onClick={() => {
-              setCustomAddress(connectedAddress || '');
-              setPresetName('custom');
-            }}
-            style={{
-              width: '100%',
-              padding: 10,
-              background: 'rgba(102, 126, 234, 0.2)',
-              border: '1px solid rgba(102, 126, 234, 0.5)',
-              borderRadius: 8,
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            接続中のウォレットを使用
-          </button>
-        </div>
-      </div>
-
-      {/* 右側: リッチなマイページプレビュー */}
-      <div>
-        {isLoadingReal && previewMode === 'real' ? (
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 16,
-            padding: 60,
-            textAlign: 'center',
-            color: '#fff',
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-            <div style={{ fontSize: 18 }}>プロフィールを読み込み中...</div>
-          </div>
-        ) : previewAddress ? (
-          <div style={{
-            background: '#0a0a0f',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 16,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: 16,
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(102, 126, 234, 0.1)',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}>
-              <span>👁️ プレビュー:</span>
-              <span style={{ opacity: 0.7, fontSize: 12, fontFamily: 'monospace' }}>
-                {shortenAddress(previewAddress)}
-              </span>
-              <span style={{
-                marginLeft: 'auto',
-                padding: '4px 12px',
-                background: previewMode === 'real' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)',
-                border: `1px solid ${previewMode === 'real' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(251, 191, 36, 0.5)'}`,
-                borderRadius: 999,
-                fontSize: 11,
-                fontWeight: 700,
-              }}>
-                {previewMode === 'real' ? '🔗 実データ' : '🎨 モック'}
-              </span>
-            </div>
-            <UserProfilePreview address={previewAddress} mode={previewMode} presetName={presetName} />
-          </div>
-        ) : (
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 16,
-            padding: 60,
-            textAlign: 'center',
-            color: '#fff',
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
-            <div style={{ fontSize: 18, marginBottom: 8 }}>アドレスを選択してください</div>
-            <div style={{ fontSize: 14, opacity: 0.7 }}>
-              プリセットを選択するか、カスタムアドレスを入力してください
-            </div>
-          </div>
-        )}
+      <div style={{ fontSize: 64, marginBottom: 24 }}>🔧</div>
+      <h2 style={{ margin: '0 0 16px 0', fontSize: 24, fontWeight: 800 }}>メンテナンス中</h2>
+      <p style={{ fontSize: 16, opacity: 0.8, margin: 0, maxWidth: 500 }}>
+        ユーザープロフィールプレビュー機能は現在メンテナンス中です。
+        <br />
+        BigIntエラーの修正後に再度有効化されます。
+      </p>
+      <div style={{
+        marginTop: 32,
+        padding: 16,
+        background: 'rgba(251, 191, 36, 0.1)',
+        border: '1px solid rgba(251, 191, 36, 0.3)',
+        borderRadius: 12,
+        fontSize: 14,
+        maxWidth: 500,
+      }}>
+        <strong>他のタブは正常に動作しています</strong>
+        <br />
+        ダッシュボード、テナント管理、収益管理などをご利用ください。
       </div>
     </div>
   );
