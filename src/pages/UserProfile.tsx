@@ -23,7 +23,8 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
   const profile = mockProfile || realProfile;
   const activities = mockActivities || realActivities || [];
 
-  if (isLoading) {
+  // モックデータがある場合はローディング・エラーをスキップ
+  if (!mockProfile && isLoading) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -41,7 +42,7 @@ export function UserProfilePage({ address: propsAddress, mockProfile, mockActivi
     );
   }
 
-  if (isError || !profile) {
+  if (!mockProfile && (isError || !profile)) {
     return (
       <div style={{
         minHeight: '100vh',
