@@ -165,6 +165,68 @@ export const LoginPage: React.FC = () => {
           </ul>
         </div>
 
+        {/* 手数料の説明 */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+          gap: 12,
+          marginBottom: 20,
+        }}>
+          {/* Google認証 */}
+          <div style={{
+            padding: isMobile ? "14px" : "16px",
+            background: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+            border: "2px solid #10b981",
+            borderRadius: 12,
+          }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13,
+              fontWeight: 700,
+              color: "#065f46",
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}>
+              <span style={{ fontSize: 16 }}>🔐</span>
+              Google認証
+            </div>
+            <div style={{ fontSize: isMobile ? 11 : 12, color: "#047857", lineHeight: 1.6 }}>
+              ✓ 手数料完全無料
+              <br />
+              ✓ すぐに始められる
+            </div>
+          </div>
+
+          {/* ウォレット接続 */}
+          <div style={{
+            padding: isMobile ? "14px" : "16px",
+            background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+            border: "2px solid #f59e0b",
+            borderRadius: 12,
+          }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13,
+              fontWeight: 700,
+              color: "#92400e",
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}>
+              <span style={{ fontSize: 16 }}>👛</span>
+              ウォレット接続
+            </div>
+            <div style={{ fontSize: isMobile ? 11 : 12, color: "#b45309", lineHeight: 1.6 }}>
+              ※ ブロックチェーン手数料は自己負担
+              <br />
+              <span style={{ fontSize: 10, color: "#78350f" }}>
+                （Polygon: 約0.01〜0.05円/回）
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* 接続ボタン */}
         <div style={{ marginBottom: 16 }}>
           <ConnectWallet
@@ -174,7 +236,7 @@ export const LoginPage: React.FC = () => {
             modalTitleIconUrl=""
             welcomeScreen={{
               title: "Gifterraへようこそ",
-              subtitle: "Web3でコミュニティに報酬を贈ろう",
+              subtitle: "応援が循環するWeb3コミュニティ",
               img: {
                 src: "/gifterra-logo.png",
                 width: 150,
