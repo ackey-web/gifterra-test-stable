@@ -287,7 +287,7 @@ export const LoginPage: React.FC = () => {
             style={{
               fontSize: 12,
               color: "#a0aec0",
-              margin: "0 0 8px 0",
+              margin: "0 0 16px 0",
             }}
           >
             ウォレットを持っていない方は初回ログイン時は自動的にウォレットが生成されます
@@ -296,7 +296,17 @@ export const LoginPage: React.FC = () => {
             style={{
               fontSize: 12,
               color: "#718096",
-              margin: "0 0 8px 0",
+              margin: "0 0 4px 0",
+              fontWeight: 500,
+            }}
+          >
+            Powered by GIFTERRA.
+          </p>
+          <p
+            style={{
+              fontSize: 12,
+              color: "#718096",
+              margin: "0 0 12px 0",
               fontWeight: 500,
             }}
           >
