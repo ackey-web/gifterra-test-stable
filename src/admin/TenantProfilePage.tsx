@@ -1,11 +1,12 @@
 // src/admin/TenantProfilePage.tsx
 import { useState, useEffect } from 'react';
+import { uploadImage, deleteFileFromUrl } from '../lib/supabase';
 
 interface TenantProfile {
   tenantId: string;
   tenantName: string;
   description: string;
-  thumbnail: string;
+  thumbnail: string; // Supabase URL
 }
 
 export default function TenantProfilePage() {
@@ -16,8 +17,10 @@ export default function TenantProfilePage() {
     thumbnail: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // ローカルストレージから読み込み
   useEffect(() => {
@@ -45,17 +48,20 @@ export default function TenantProfilePage() {
       return;
     }
 
-    // Base64に変換してプレビュー表示
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      setImagePreview(base64);
-      setProfile(prev => ({ ...prev, thumbnail: base64 }));
-    };
-    reader.readAsDataURL(file);
+    // ファイル形式チェック
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+      setMessage({ type: 'error', text: 'JPG、PNG、WebP形式の画像を選択してください' });
+      return;
+    }
+
+    // プレビュー表示用にFileオブジェクトからURLを作成
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+    setSelectedFile(file);
+    setMessage(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // バリデーション
     if (!profile.tenantName.trim()) {
       setMessage({ type: 'error', text: 'テナント名を入力してください' });
@@ -73,16 +79,57 @@ export default function TenantProfilePage() {
     }
 
     setIsSaving(true);
+    setIsUploading(true);
     setMessage(null);
 
     try {
-      // ローカルストレージに保存
-      localStorage.setItem('tenant_profile', JSON.stringify(profile));
+      let thumbnailUrl = profile.thumbnail;
+
+      // 新しい画像が選択されている場合、Supabaseにアップロード
+      if (selectedFile) {
+        setMessage({ type: 'success', text: '画像をアップロード中...' });
+
+        // 古い画像がある場合は削除
+        if (profile.thumbnail) {
+          await deleteFileFromUrl(profile.thumbnail);
+        }
+
+        // 新しい画像をアップロード
+        const uploadedUrl = await uploadImage(selectedFile, 'PUBLIC');
+        if (uploadedUrl) {
+          thumbnailUrl = uploadedUrl;
+        } else {
+          throw new Error('画像のアップロードに失敗しました');
+        }
+
+        setSelectedFile(null);
+      }
+
+      // プロフィールデータを更新
+      const updatedProfile = {
+        ...profile,
+        thumbnail: thumbnailUrl,
+      };
+
+      // localStorageに保存（URLのみ）
+      localStorage.setItem('tenant_profile', JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
+
+      // プレビューを更新
+      if (thumbnailUrl) {
+        setImagePreview(thumbnailUrl);
+      }
+
       setMessage({ type: 'success', text: 'テナントプロフィールを保存しました' });
     } catch (error) {
-      setMessage({ type: 'error', text: '保存に失敗しました' });
+      console.error('保存エラー:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '保存に失敗しました'
+      });
     } finally {
       setIsSaving(false);
+      setIsUploading(false);
     }
   };
 
@@ -277,6 +324,7 @@ export default function TenantProfilePage() {
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleImageChange}
+            disabled={isUploading}
             style={{
               display: 'block',
               marginBottom: 8,
@@ -284,26 +332,31 @@ export default function TenantProfilePage() {
           />
           <p style={{ margin: '8px 0 0 0', fontSize: 12, color: '#9ca3af' }}>
             推奨: 400x400px、2MB以下、JPG/PNG/WebP
+            {selectedFile && (
+              <span style={{ color: '#10b981', fontWeight: 600, marginLeft: 8 }}>
+                ✓ 選択済み: {selectedFile.name}
+              </span>
+            )}
           </p>
         </div>
 
         {/* 保存ボタン */}
         <button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || isUploading}
           style={{
             width: '100%',
             padding: '14px',
-            background: isSaving ? '#9ca3af' : '#10b981',
+            background: isSaving || isUploading ? '#9ca3af' : '#10b981',
             border: 'none',
             borderRadius: 8,
             color: '#ffffff',
             fontSize: 16,
             fontWeight: 700,
-            cursor: isSaving ? 'not-allowed' : 'pointer',
+            cursor: isSaving || isUploading ? 'not-allowed' : 'pointer',
           }}
         >
-          {isSaving ? '保存中...' : '💾 保存する'}
+          {isUploading ? '📤 アップロード中...' : isSaving ? '💾 保存中...' : '💾 保存する'}
         </button>
       </div>
     </div>
