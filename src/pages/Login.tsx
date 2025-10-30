@@ -74,10 +74,10 @@ export const LoginPage: React.FC = () => {
           />
           <p
             style={{
-              fontSize: isMobile ? 16 : 18,
+              fontSize: isMobile ? 14 : 15,
               color: "#2d3748",
               margin: 0,
-              lineHeight: 1.8,
+              lineHeight: 1.6,
               fontWeight: 500,
             }}
           >

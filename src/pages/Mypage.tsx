@@ -191,9 +191,6 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
   tenantRank: TenantRank;
 }) {
   const disconnect = useDisconnect();
-  const address = useAddress();
-  const chainId = useChainId();
-  const network = useNetwork();
 
   // R3（承認済みテナント）のみトグル表示
   const showToggle = tenantRank === 'R3';
@@ -206,24 +203,13 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
     }
   };
 
-  // チェーン名を取得
-  const getChainName = (chainId: number | undefined) => {
-    if (!chainId) return '未接続';
-    if (chainId === 80002) return 'Polygon Amoy (Testnet)';
-    if (chainId === 137) return 'Polygon';
-    return `Chain ID: ${chainId}`;
-  };
-
   return (
-    <div>
-      {/* 上部：ロゴとボタン */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: isMobile ? 12 : 16,
-        padding: isMobile ? '8px 0' : '12px 0',
-      }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: isMobile ? '8px 0' : '12px 0',
+    }}>
       {/* 左：ロゴ画像 */}
       <img
         src="/GIFTERRA.sidelogo.png"
@@ -332,55 +318,71 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
           ログアウト
         </button>
       </div>
+    </div>
+  );
+}
+
+// ========================================
+// ウォレット接続情報コンポーネント
+// ========================================
+function WalletConnectionInfo({ isMobile }: { isMobile: boolean }) {
+  const address = useAddress();
+  const chainId = useChainId();
+
+  // チェーン名を取得
+  const getChainName = (chainId: number | undefined) => {
+    if (!chainId) return '未接続';
+    if (chainId === 80002) return 'Polygon Amoy (Testnet)';
+    if (chainId === 137) return 'Polygon';
+    return `Chain ID: ${chainId}`;
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      gap: isMobile ? 8 : 12,
+      marginBottom: isMobile ? 16 : 20,
+    }}>
+      {/* ウォレット接続ボタン */}
+      <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <ConnectWallet
+          theme="dark"
+          btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'ウォレット接続'}
+          style={{
+            width: '100%',
+            height: isMobile ? 40 : 44,
+            borderRadius: 8,
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: 600,
+          }}
+        />
       </div>
 
-      {/* 下部：ウォレット情報とチェーン表示 */}
+      {/* チェーン表示 */}
       <div style={{
+        flex: isMobile ? 'none' : 1,
+        padding: isMobile ? '10px 12px' : '12px 16px',
+        background: 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 8,
         display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: isMobile ? 8 : 12,
-        marginTop: 12,
+        alignItems: 'center',
+        gap: 8,
       }}>
-        {/* ウォレット接続ボタン */}
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
-          <ConnectWallet
-            theme="dark"
-            btnTitle={address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'ウォレット接続'}
-            style={{
-              width: '100%',
-              height: isMobile ? 40 : 44,
-              borderRadius: 8,
-              fontSize: isMobile ? 12 : 14,
-              fontWeight: 600,
-            }}
-          />
-        </div>
-
-        {/* チェーン表示 */}
         <div style={{
-          flex: isMobile ? 'none' : 1,
-          padding: isMobile ? '10px 12px' : '12px 16px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 8,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: chainId === 80002 ? '#10b981' : '#f59e0b',
+        }} />
+        <span style={{
+          color: '#e0e0e0',
+          fontSize: isMobile ? 12 : 14,
+          fontWeight: 500,
         }}>
-          <div style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: chainId === 80002 ? '#10b981' : '#f59e0b',
-          }} />
-          <span style={{
-            color: '#e0e0e0',
-            fontSize: isMobile ? 12 : 14,
-            fontWeight: 500,
-          }}>
-            {getChainName(chainId)}
-          </span>
-        </div>
+          {getChainName(chainId)}
+        </span>
       </div>
     </div>
   );
@@ -395,6 +397,9 @@ function FlowModeContent({ isMobile, tenantRank }: { isMobile: boolean; tenantRa
 
   return (
     <>
+      {/* 0. ウォレット接続情報（送金カードの上） */}
+      <WalletConnectionInfo isMobile={isMobile} />
+
       {/* 1. 送金・受信（縦並び） */}
       <div style={{
         display: 'flex',
