@@ -907,13 +907,21 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
   onClose: () => void;
   onSelectTenant: (tenant: any) => void;
 }) {
-  // TODO: 実データから取得
-  const tenants = [
-    { id: 1, name: 'カフェX', icon: '🏪', walletAddress: '0x1234...5678', kodomi: 2000, rank: 'Silver' },
-    { id: 2, name: 'アーティストY', icon: '🎨', walletAddress: '0xabcd...ef01', kodomi: 1500, rank: 'Bronze' },
-    { id: 3, name: 'ショップZ', icon: '☕', walletAddress: '0x9876...5432', kodomi: 1734, rank: 'Bronze' },
-    { id: 4, name: 'クリエイターA', icon: '🎭', walletAddress: '0xfedc...ba98', kodomi: 3200, rank: 'Gold' },
-  ];
+  const [tenants, setTenants] = useState<any[]>([]);
+
+  // localStorageからフォロー中のテナント一覧を読み込み
+  useEffect(() => {
+    const saved = localStorage.getItem('followed_tenants');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setTenants(parsed);
+      } catch (error) {
+        console.error('Failed to parse followed tenants:', error);
+        setTenants([]);
+      }
+    }
+  }, []);
 
   return (
     <div
@@ -975,10 +983,21 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 12 }}>
-          {tenants.map((tenant) => (
-            <button
-              key={tenant.id}
-              onClick={() => onSelectTenant(tenant)}
+          {tenants.length === 0 ? (
+            <div style={{
+              padding: isMobile ? 16 : 20,
+              textAlign: 'center',
+              opacity: 0.6,
+              color: '#ffffff',
+              fontSize: isMobile ? 14 : 15,
+            }}>
+              テナントをフォローすると、ここに表示されます
+            </div>
+          ) : (
+            tenants.map((tenant) => (
+              <button
+                key={tenant.tenantId}
+                onClick={() => onSelectTenant(tenant)}
               style={{
                 background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 border: '1px solid rgba(0,0,0,0.08)',
@@ -992,17 +1011,43 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = '#e9ecef';
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
                 e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
             >
-              <div style={{ fontSize: 32 }}>{tenant.icon}</div>
+              {tenant.thumbnail ? (
+                <img
+                  src={tenant.thumbnail}
+                  alt={tenant.name}
+                  style={{
+                    width: isMobile ? 48 : 56,
+                    height: isMobile ? 48 : 56,
+                    borderRadius: 8,
+                    objectFit: 'cover',
+                    border: '2px solid rgba(255,255,255,0.2)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: isMobile ? 48 : 56,
+                  height: isMobile ? 48 : 56,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 28,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                }}>
+                  {tenant.icon}
+                </div>
+              )}
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={{
                   fontSize: isMobile ? 14 : 16,
@@ -1023,17 +1068,18 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
               </div>
               <div style={{
                 padding: '4px 10px',
-                background: 'rgba(192, 192, 192, 0.2)',
-                border: '1px solid rgba(192, 192, 192, 0.3)',
+                background: 'rgba(255, 215, 0, 0.2)',
+                border: '1px solid rgba(255, 215, 0, 0.4)',
                 borderRadius: 999,
                 fontSize: isMobile ? 10 : 11,
                 fontWeight: 600,
-                color: '#ffffff',
+                color: '#ffd700',
               }}>
                 {tenant.rank}
               </div>
             </button>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -1576,81 +1622,973 @@ function OverallKodomiTank({ isMobile }: { isMobile: boolean }) {
 
 // 4. 貢献先テナント別カード
 function ContributionTenants({ isMobile }: { isMobile: boolean }) {
-  // TODO: 実データ
-  const tenants = [
-    { name: 'カフェX', kodomi: 2000, rank: 'Silver', sbtCount: 2, icon: '🏪' },
-    { name: 'アーティストY', kodomi: 1500, rank: 'Bronze', sbtCount: 1, icon: '🎨' },
-    { name: 'ショップZ', kodomi: 1734, rank: 'Bronze', sbtCount: 3, icon: '☕' },
-  ];
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [followedTenants, setFollowedTenants] = useState<any[]>([]);
+
+  // localStorageからフォロー中のテナントを読み込み
+  useEffect(() => {
+    const saved = localStorage.getItem('followed_tenants');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setFollowedTenants(parsed);
+      } catch (error) {
+        console.error('Failed to parse followed tenants:', error);
+        setFollowedTenants([]);
+      }
+    } else {
+      // 初期データ（デモ用）
+      const initialTenants = [
+        { tenantId: 'TN001', name: 'カフェX', kodomi: 2000, rank: 'Silver', sbtCount: 2, icon: '🏪', thumbnail: '', description: 'コーヒーとスイーツのお店', walletAddress: '0x1234...5678' },
+        { tenantId: 'TN002', name: 'アーティストY', kodomi: 1500, rank: 'Bronze', sbtCount: 1, icon: '🎨', thumbnail: '', description: 'デジタルアート作品を展開', walletAddress: '0xabcd...ef01' },
+        { tenantId: 'TN003', name: 'ショップZ', kodomi: 1734, rank: 'Bronze', sbtCount: 3, icon: '☕', thumbnail: '', description: 'こだわりのコーヒー豆専門店', walletAddress: '0x9876...5432' },
+      ];
+      setFollowedTenants(initialTenants);
+      localStorage.setItem('followed_tenants', JSON.stringify(initialTenants));
+    }
+  }, []);
+
+  // テナントを追加
+  const handleAddTenant = (tenant: any) => {
+    // 重複チェック
+    const isDuplicate = followedTenants.some(t => t.tenantId === tenant.tenantId);
+    if (isDuplicate) {
+      alert('このテナントは既にフォローしています');
+      return;
+    }
+
+    const updatedTenants = [...followedTenants, tenant];
+    setFollowedTenants(updatedTenants);
+    localStorage.setItem('followed_tenants', JSON.stringify(updatedTenants));
+  };
+
+  // テナントを削除
+  const handleRemoveTenant = (tenantId: string) => {
+    if (confirm('このテナントのフォローを解除しますか？')) {
+      const updatedTenants = followedTenants.filter(t => t.tenantId !== tenantId);
+      setFollowedTenants(updatedTenants);
+      localStorage.setItem('followed_tenants', JSON.stringify(updatedTenants));
+    }
+  };
 
   return (
-    <div style={{ marginBottom: isMobile ? 40 : 60 }}>
-      <h2 style={{
-        margin: '0 0 20px 0',
-        fontSize: isMobile ? 18 : 22,
-        fontWeight: 700,
-      }}>
-        貢献先テナント
-      </h2>
-      <div style={{
-        display: 'flex',
-        gap: isMobile ? 12 : 16,
-        overflowX: 'auto',
-        paddingBottom: 8,
-      }}>
-        {tenants.map((tenant, i) => (
-          <div
-            key={i}
+    <>
+      <div style={{ marginBottom: isMobile ? 40 : 60 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+        }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: isMobile ? 18 : 22,
+            fontWeight: 700,
+          }}>
+            貢献先テナント
+          </h2>
+          <button
+            onClick={() => setShowAddModal(true)}
             style={{
-              minWidth: isMobile ? 160 : 200,
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-              border: '1px solid rgba(0,0,0,0.08)',
-              borderRadius: isMobile ? 12 : 16,
-              padding: isMobile ? 16 : 20,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              padding: isMobile ? '8px 14px' : '10px 18px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#ffffff',
+              fontSize: isMobile ? 13 : 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
             }}
           >
-            <div style={{ fontSize: 32, marginBottom: 12 }}>{tenant.icon}</div>
-            <h3 style={{
-              margin: '0 0 12px 0',
-              fontSize: isMobile ? 14 : 16,
-              fontWeight: 700,
-            }}>
-              {tenant.name}
-            </h3>
+            ➕ テナント追加
+          </button>
+        </div>
+        <div style={{
+          display: 'flex',
+          gap: isMobile ? 12 : 16,
+          overflowX: 'auto',
+          paddingBottom: 8,
+        }}>
+          {followedTenants.map((tenant, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'relative',
+                minWidth: isMobile ? 160 : 200,
+              }}
+            >
+              <button
+                onClick={() => setSelectedTenant(tenant)}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: isMobile ? 12 : 16,
+                  padding: isMobile ? 16 : 20,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                }}
+              >
+              {tenant.thumbnail ? (
+                <img
+                  src={tenant.thumbnail}
+                  alt={tenant.name}
+                  style={{
+                    width: '100%',
+                    height: isMobile ? 120 : 140,
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '100%',
+                  height: isMobile ? 120 : 140,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 48,
+                  marginBottom: 12,
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                }}>
+                  {tenant.icon}
+                </div>
+              )}
+              <h3 style={{
+                margin: '0 0 12px 0',
+                fontSize: isMobile ? 14 : 16,
+                fontWeight: 700,
+                textAlign: 'left',
+                color: '#ffffff',
+              }}>
+                {tenant.name}
+              </h3>
+              <div style={{
+                fontSize: isMobile ? 20 : 24,
+                fontWeight: 900,
+                marginBottom: 4,
+                textAlign: 'left',
+                color: '#ffffff',
+              }}>
+                {tenant.kodomi.toLocaleString()}
+              </div>
+              <div style={{
+                fontSize: isMobile ? 11 : 12,
+                opacity: 0.6,
+                marginBottom: 12,
+                textAlign: 'left',
+                color: '#ffffff',
+              }}>
+                pt
+              </div>
+              <div style={{
+                padding: '4px 12px',
+                background: 'rgba(255, 215, 0, 0.2)',
+                border: '1px solid rgba(255, 215, 0, 0.4)',
+                borderRadius: 999,
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: 600,
+                marginBottom: 8,
+                display: 'inline-block',
+                color: '#ffd700',
+              }}>
+                {tenant.rank}
+              </div>
+              <div style={{
+                fontSize: isMobile ? 11 : 12,
+                opacity: 0.6,
+                textAlign: 'left',
+                color: '#ffffff',
+              }}>
+                SBT: {tenant.sbtCount}個
+              </div>
+              </button>
+
+              {/* 削除ボタン */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTenant(tenant.tenantId);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  width: 28,
+                  height: 28,
+                  background: 'rgba(239, 68, 68, 0.9)',
+                  border: 'none',
+                  borderRadius: 6,
+                  color: '#ffffff',
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                title="フォロー解除"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* テナント詳細モーダル */}
+      {selectedTenant && (
+        <TenantDetailModal
+          isMobile={isMobile}
+          tenant={selectedTenant}
+          onClose={() => setSelectedTenant(null)}
+        />
+      )}
+
+      {/* テナント追加モーダル */}
+      {showAddModal && (
+        <AddTenantModal
+          isMobile={isMobile}
+          onClose={() => setShowAddModal(false)}
+          onAddTenant={handleAddTenant}
+        />
+      )}
+    </>
+  );
+}
+
+// テナント詳細モーダル
+function TenantDetailModal({ isMobile, tenant, onClose }: {
+  isMobile: boolean;
+  tenant: any;
+  onClose: () => void;
+}) {
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    alert(`${label}をコピーしました`);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.8)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 16 : 24,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #1a1a24 0%, #2d2d3d 100%)',
+          borderRadius: isMobile ? 16 : 24,
+          padding: isMobile ? 24 : 32,
+          maxWidth: isMobile ? '100%' : 600,
+          width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ヘッダー */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: isMobile ? 20 : 24,
+        }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: isMobile ? 20 : 24,
+            fontWeight: 700,
+            color: '#EAF2FF',
+          }}>
+            テナント詳細
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: 24,
+              width: 36,
+              height: 36,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* サムネイル */}
+        {tenant.thumbnail ? (
+          <img
+            src={tenant.thumbnail}
+            alt={tenant.name}
+            style={{
+              width: '100%',
+              height: isMobile ? 200 : 300,
+              objectFit: 'cover',
+              borderRadius: 12,
+              marginBottom: 20,
+              border: '2px solid rgba(255,255,255,0.2)',
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: isMobile ? 200 : 300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 80,
+            marginBottom: 20,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 12,
+            border: '2px solid rgba(255,255,255,0.2)',
+          }}>
+            {tenant.icon}
+          </div>
+        )}
+
+        {/* テナント名 */}
+        <h2 style={{
+          margin: '0 0 12px 0',
+          fontSize: isMobile ? 24 : 28,
+          fontWeight: 700,
+          color: '#EAF2FF',
+        }}>
+          {tenant.name}
+        </h2>
+
+        {/* ランク */}
+        <div style={{
+          display: 'inline-block',
+          padding: '6px 16px',
+          background: 'rgba(255, 215, 0, 0.2)',
+          border: '1px solid rgba(255, 215, 0, 0.4)',
+          borderRadius: 999,
+          fontSize: isMobile ? 13 : 14,
+          fontWeight: 600,
+          marginBottom: 20,
+          color: '#ffd700',
+        }}>
+          🏆 {tenant.rank}
+        </div>
+
+        {/* 説明 */}
+        {tenant.description && (
+          <div style={{
+            marginBottom: 24,
+            padding: isMobile ? 16 : 20,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}>
             <div style={{
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: 900,
-              marginBottom: 4,
+              fontSize: isMobile ? 13 : 14,
+              fontWeight: 600,
+              marginBottom: 8,
+              color: '#EAF2FF',
+              opacity: 0.7,
             }}>
-              {tenant.kodomi.toLocaleString()}
+              説明
+            </div>
+            <div style={{
+              fontSize: isMobile ? 14 : 15,
+              lineHeight: 1.6,
+              color: '#EAF2FF',
+            }}>
+              {tenant.description}
+            </div>
+          </div>
+        )}
+
+        {/* 統計情報 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: 12,
+          marginBottom: 24,
+        }}>
+          <div style={{
+            padding: isMobile ? 16 : 20,
+            background: 'rgba(102, 126, 234, 0.1)',
+            border: '1px solid rgba(102, 126, 234, 0.2)',
+            borderRadius: 12,
+          }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13,
+              opacity: 0.7,
+              marginBottom: 4,
+              color: '#EAF2FF',
+            }}>
+              kodomi
+            </div>
+            <div style={{
+              fontSize: isMobile ? 24 : 28,
+              fontWeight: 900,
+              color: '#667eea',
+            }}>
+              {tenant.kodomi?.toLocaleString() || 0}
             </div>
             <div style={{
               fontSize: isMobile ? 11 : 12,
-              opacity: 0.6,
-              marginBottom: 12,
+              opacity: 0.5,
+              color: '#EAF2FF',
             }}>
               pt
             </div>
+          </div>
+          <div style={{
+            padding: isMobile ? 16 : 20,
+            background: 'rgba(118, 75, 162, 0.1)',
+            border: '1px solid rgba(118, 75, 162, 0.2)',
+            borderRadius: 12,
+          }}>
             <div style={{
-              padding: '4px 12px',
-              background: 'rgba(192, 192, 192, 0.2)',
-              border: '1px solid rgba(192, 192, 192, 0.3)',
-              borderRadius: 999,
-              fontSize: isMobile ? 11 : 12,
-              fontWeight: 600,
-              marginBottom: 8,
+              fontSize: isMobile ? 12 : 13,
+              opacity: 0.7,
+              marginBottom: 4,
+              color: '#EAF2FF',
             }}>
-              {tenant.rank}
+              保有SBT
+            </div>
+            <div style={{
+              fontSize: isMobile ? 24 : 28,
+              fontWeight: 900,
+              color: '#764ba2',
+            }}>
+              {tenant.sbtCount || 0}
             </div>
             <div style={{
               fontSize: isMobile ? 11 : 12,
-              opacity: 0.6,
+              opacity: 0.5,
+              color: '#EAF2FF',
             }}>
-              SBT: {tenant.sbtCount}個
+              個
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* テナントID */}
+        <div style={{
+          marginBottom: 16,
+          padding: isMobile ? 16 : 20,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <div style={{
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            marginBottom: 8,
+            color: '#EAF2FF',
+            opacity: 0.7,
+          }}>
+            テナントID
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{
+              flex: 1,
+              fontSize: isMobile ? 13 : 14,
+              fontFamily: 'monospace',
+              color: '#EAF2FF',
+              wordBreak: 'break-all',
+            }}>
+              {tenant.tenantId}
+            </div>
+            <button
+              onClick={() => copyToClipboard(tenant.tenantId, 'テナントID')}
+              style={{
+                padding: '8px 12px',
+                background: 'rgba(102, 126, 234, 0.2)',
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                borderRadius: 6,
+                color: '#667eea',
+                fontSize: isMobile ? 12 : 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              📋 コピー
+            </button>
+          </div>
+        </div>
+
+        {/* ウォレットアドレス */}
+        <div style={{
+          marginBottom: 24,
+          padding: isMobile ? 16 : 20,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <div style={{
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            marginBottom: 8,
+            color: '#EAF2FF',
+            opacity: 0.7,
+          }}>
+            ウォレットアドレス
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{
+              flex: 1,
+              fontSize: isMobile ? 13 : 14,
+              fontFamily: 'monospace',
+              color: '#EAF2FF',
+              wordBreak: 'break-all',
+            }}>
+              {tenant.walletAddress}
+            </div>
+            <button
+              onClick={() => copyToClipboard(tenant.walletAddress, 'アドレス')}
+              style={{
+                padding: '8px 12px',
+                background: 'rgba(102, 126, 234, 0.2)',
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                borderRadius: 6,
+                color: '#667eea',
+                fontSize: isMobile ? 12 : 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              📋 コピー
+            </button>
+          </div>
+        </div>
+
+        {/* 閉じるボタン */}
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%',
+            padding: isMobile ? 14 : 16,
+            background: 'rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 12,
+            color: '#EAF2FF',
+            fontSize: isMobile ? 15 : 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+          }}
+        >
+          閉じる
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// テナント追加モーダル
+function AddTenantModal({ isMobile, onClose, onAddTenant }: {
+  isMobile: boolean;
+  onClose: () => void;
+  onAddTenant: (tenantId: string) => void;
+}) {
+  const [tenantId, setTenantId] = useState('');
+  const [error, setError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [previewTenant, setPreviewTenant] = useState<any>(null);
+
+  // テナントIDで検索（実際にはAPIやlocalStorageから取得）
+  const searchTenant = async () => {
+    if (!tenantId.trim()) {
+      setError('テナントIDを入力してください');
+      return;
+    }
+
+    setIsSearching(true);
+    setError('');
+    setPreviewTenant(null);
+
+    // TODO: 実際にはAPIから取得
+    // 今はモックデータで検索
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // localStorageから検索
+    const savedProfile = localStorage.getItem('tenant_profile');
+    if (savedProfile) {
+      const profile = JSON.parse(savedProfile);
+      if (profile.tenantId === tenantId.trim()) {
+        setPreviewTenant({
+          tenantId: profile.tenantId,
+          name: profile.tenantName,
+          description: profile.description,
+          thumbnail: profile.thumbnail,
+          icon: '🏪',
+          walletAddress: '0x1234...5678', // TODO: 実際のアドレスを取得
+          kodomi: 0,
+          rank: 'Bronze',
+          sbtCount: 0,
+        });
+        setIsSearching(false);
+        return;
+      }
+    }
+
+    // モックデータで検索
+    const mockTenants: any = {
+      'TN001': { tenantId: 'TN001', name: 'カフェX', icon: '🏪', thumbnail: '', walletAddress: '0x1234...5678', kodomi: 2000, rank: 'Silver', description: 'コーヒーとスイーツのお店', sbtCount: 2 },
+      'TN002': { tenantId: 'TN002', name: 'アーティストY', icon: '🎨', thumbnail: '', walletAddress: '0xabcd...ef01', kodomi: 1500, rank: 'Bronze', description: 'デジタルアート作品を展開', sbtCount: 1 },
+      'TN003': { tenantId: 'TN003', name: 'ショップZ', icon: '☕', thumbnail: '', walletAddress: '0x9876...5432', kodomi: 1734, rank: 'Bronze', description: 'こだわりのコーヒー豆専門店', sbtCount: 3 },
+      'TN004': { tenantId: 'TN004', name: 'クリエイターA', icon: '🎭', thumbnail: '', walletAddress: '0xfedc...ba98', kodomi: 3200, rank: 'Gold', description: '音楽とアートのクリエイター', sbtCount: 4 },
+    };
+
+    const found = mockTenants[tenantId.trim()];
+    if (found) {
+      setPreviewTenant(found);
+    } else {
+      setError('テナントが見つかりませんでした');
+    }
+
+    setIsSearching(false);
+  };
+
+  const handleAdd = () => {
+    if (previewTenant) {
+      onAddTenant(previewTenant);
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.8)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 16 : 24,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #1a1a24 0%, #2d2d3d 100%)',
+          borderRadius: isMobile ? 16 : 24,
+          padding: isMobile ? 24 : 32,
+          maxWidth: isMobile ? '100%' : 600,
+          width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ヘッダー */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: isMobile ? 20 : 24,
+        }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: isMobile ? 20 : 24,
+            fontWeight: 700,
+            color: '#EAF2FF',
+          }}>
+            テナントを追加
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 8,
+              color: '#EAF2FF',
+              fontSize: 24,
+              width: 36,
+              height: 36,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* 説明 */}
+        <p style={{
+          margin: '0 0 20px 0',
+          fontSize: isMobile ? 14 : 15,
+          opacity: 0.7,
+          color: '#EAF2FF',
+          lineHeight: 1.6,
+        }}>
+          フォローしたいテナントのIDを入力してください。
+        </p>
+
+        {/* テナントID入力 */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{
+            display: 'block',
+            fontSize: isMobile ? 13 : 14,
+            fontWeight: 600,
+            marginBottom: 8,
+            color: '#EAF2FF',
+          }}>
+            テナントID
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              value={tenantId}
+              onChange={(e) => {
+                setTenantId(e.target.value);
+                setError('');
+                setPreviewTenant(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  searchTenant();
+                }
+              }}
+              placeholder="例: TN001"
+              style={{
+                flex: 1,
+                padding: isMobile ? '10px 12px' : '12px 14px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                borderRadius: 8,
+                color: '#EAF2FF',
+                fontSize: isMobile ? 14 : 15,
+              }}
+            />
+            <button
+              onClick={searchTenant}
+              disabled={isSearching}
+              style={{
+                padding: isMobile ? '10px 16px' : '12px 20px',
+                background: isSearching ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.5)',
+                border: '1px solid rgba(102, 126, 234, 0.5)',
+                borderRadius: 8,
+                color: '#EAF2FF',
+                fontSize: isMobile ? 14 : 15,
+                fontWeight: 600,
+                cursor: isSearching ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {isSearching ? '検索中...' : '🔍 検索'}
+            </button>
+          </div>
+        </div>
+
+        {/* エラーメッセージ */}
+        {error && (
+          <div style={{
+            padding: isMobile ? '10px 12px' : '12px 16px',
+            marginBottom: 20,
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 8,
+            color: '#ef4444',
+            fontSize: isMobile ? 13 : 14,
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* プレビュー */}
+        {previewTenant && (
+          <div style={{
+            marginBottom: 24,
+            padding: isMobile ? 16 : 20,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 12,
+          }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13,
+              fontWeight: 600,
+              marginBottom: 12,
+              color: '#EAF2FF',
+              opacity: 0.7,
+            }}>
+              プレビュー
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {previewTenant.thumbnail ? (
+                <img
+                  src={previewTenant.thumbnail}
+                  alt={previewTenant.name}
+                  style={{
+                    width: isMobile ? 60 : 72,
+                    height: isMobile ? 60 : 72,
+                    borderRadius: 8,
+                    objectFit: 'cover',
+                    border: '2px solid rgba(255,255,255,0.2)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: isMobile ? 60 : 72,
+                  height: isMobile ? 60 : 72,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 32,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                }}>
+                  {previewTenant.icon}
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: isMobile ? 16 : 18,
+                  fontWeight: 700,
+                  marginBottom: 4,
+                  color: '#EAF2FF',
+                }}>
+                  {previewTenant.name}
+                </div>
+                <div style={{
+                  fontSize: isMobile ? 12 : 13,
+                  opacity: 0.6,
+                  marginBottom: 4,
+                  fontFamily: 'monospace',
+                  color: '#EAF2FF',
+                }}>
+                  {previewTenant.tenantId}
+                </div>
+                {previewTenant.description && (
+                  <div style={{
+                    fontSize: isMobile ? 12 : 13,
+                    opacity: 0.7,
+                    color: '#EAF2FF',
+                  }}>
+                    {previewTenant.description}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ボタン */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: isMobile ? 14 : 16,
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 12,
+              color: '#EAF2FF',
+              fontSize: isMobile ? 15 : 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={!previewTenant}
+            style={{
+              flex: 1,
+              padding: isMobile ? 14 : 16,
+              background: previewTenant ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: 12,
+              color: '#ffffff',
+              fontSize: isMobile ? 15 : 16,
+              fontWeight: 700,
+              cursor: previewTenant ? 'pointer' : 'not-allowed',
+              opacity: previewTenant ? 1 : 0.5,
+            }}
+          >
+            追加する
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1792,10 +2730,148 @@ function LockCard({ isMobile }: { isMobile: boolean }) {
 // [C] Tenantモードコンテンツ
 // ========================================
 function TenantModeContent({ isMobile }: { isMobile: boolean }) {
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+
+  // TODO: 実データから取得（複数テナントを運営している場合）
+  const myTenants = [
+    { tenantId: 'TN001', name: '本店カフェX', icon: '🏪', thumbnail: '', kodomi: 2000, rank: 'Silver', description: '本店のカフェです', walletAddress: '0x1234...5678', sbtCount: 5, totalReceived: 50000 },
+    { tenantId: 'TN005', name: '2号店カフェX新宿', icon: '🏪', thumbnail: '', kodomi: 1200, rank: 'Bronze', description: '新宿2号店', walletAddress: '0xabcd...ef01', sbtCount: 3, totalReceived: 25000 },
+  ];
+
   return (
     <>
       {/* 受取タンク */}
       <ReceiveTank isMobile={isMobile} />
+
+      {/* テナント一覧 */}
+      <div style={{ marginBottom: isMobile ? 40 : 60 }}>
+        <h2 style={{
+          margin: '0 0 20px 0',
+          fontSize: isMobile ? 18 : 22,
+          fontWeight: 700,
+        }}>
+          管理中のテナント
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: isMobile ? 12 : 16,
+        }}>
+          {myTenants.map((tenant, i) => (
+            <button
+              key={i}
+              onClick={() => setSelectedTenant(tenant)}
+              style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: isMobile ? 12 : 16,
+                padding: isMobile ? 16 : 20,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                textAlign: 'left',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.3)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+              }}
+            >
+              {tenant.thumbnail ? (
+                <img
+                  src={tenant.thumbnail}
+                  alt={tenant.name}
+                  style={{
+                    width: '100%',
+                    height: isMobile ? 140 : 160,
+                    objectFit: 'cover',
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '100%',
+                  height: isMobile ? 140 : 160,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 56,
+                  marginBottom: 16,
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                }}>
+                  {tenant.icon}
+                </div>
+              )}
+              <h3 style={{
+                margin: '0 0 8px 0',
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: 700,
+                color: '#ffffff',
+              }}>
+                {tenant.name}
+              </h3>
+              <div style={{
+                fontSize: isMobile ? 12 : 13,
+                opacity: 0.7,
+                marginBottom: 12,
+                fontFamily: 'monospace',
+                color: '#ffffff',
+              }}>
+                {tenant.tenantId}
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 8,
+              }}>
+                <div>
+                  <div style={{
+                    fontSize: isMobile ? 11 : 12,
+                    opacity: 0.6,
+                    marginBottom: 2,
+                    color: '#ffffff',
+                  }}>
+                    総受取
+                  </div>
+                  <div style={{
+                    fontSize: isMobile ? 18 : 20,
+                    fontWeight: 900,
+                    color: '#ffffff',
+                  }}>
+                    {tenant.totalReceived?.toLocaleString() || 0}
+                  </div>
+                  <div style={{
+                    fontSize: isMobile ? 10 : 11,
+                    opacity: 0.5,
+                    color: '#ffffff',
+                  }}>
+                    JPYC
+                  </div>
+                </div>
+                <div style={{
+                  padding: '6px 14px',
+                  background: 'rgba(255, 215, 0, 0.2)',
+                  border: '1px solid rgba(255, 215, 0, 0.4)',
+                  borderRadius: 999,
+                  fontSize: isMobile ? 11 : 12,
+                  fontWeight: 600,
+                  color: '#ffd700',
+                }}>
+                  {tenant.rank}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* テナント統計カード */}
       <div style={{
@@ -1811,10 +2887,10 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
           padding: isMobile ? 20 : 28,
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700, color: '#ffffff' }}>
             キャンペーン稼働状況
           </h3>
-          <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6 }}>
+          <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6, color: '#ffffff' }}>
             詳細はAdminで確認
           </p>
         </div>
@@ -1825,14 +2901,23 @@ function TenantModeContent({ isMobile }: { isMobile: boolean }) {
           padding: isMobile ? 20 : 28,
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700 }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: isMobile ? 16 : 18, fontWeight: 700, color: '#ffffff' }}>
             サポーター動向
           </h3>
-          <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6 }}>
+          <p style={{ fontSize: isMobile ? 13 : 14, opacity: 0.6, color: '#ffffff' }}>
             詳細はAdminで確認
           </p>
         </div>
       </div>
+
+      {/* テナント詳細モーダル */}
+      {selectedTenant && (
+        <TenantDetailModal
+          isMobile={isMobile}
+          tenant={selectedTenant}
+          onClose={() => setSelectedTenant(null)}
+        />
+      )}
     </>
   );
 }
