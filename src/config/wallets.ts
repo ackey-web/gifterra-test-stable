@@ -131,6 +131,8 @@ export const supportedWallets = [
     },
     create: (options?: any) =>
       new EmbeddedWallet({
+        chain: getActiveChain(),
+        clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || "779fcfff75c8b7ed91ea029f8783fd8e",
         auth: {
           options: ["email", "google"],
         },
