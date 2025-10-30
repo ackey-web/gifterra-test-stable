@@ -29,6 +29,7 @@ import { useTenant } from "./contexts/TenantContext";
 import AdminLayout from "./components/AdminLayout";
 import type { PageType } from "./components/AdminSidebar";
 import FlagNFTManagementPage from "./components/FlagNFTManagementPage";
+import TenantProfilePage from "./TenantProfilePage";
 
 /* ---------- Types & Helpers ---------- */
 type Period = "day" | "week" | "month" | "all";
@@ -2382,7 +2383,7 @@ export default function AdminDashboard() {
       ) : currentPage === "initial-setup" ? (
         <InitialSetupPage />
       ) : currentPage === "tenant-management" ? (
-        <TenantManagementPage />
+        <TenantProfilePage />
       ) : (
         <>
           {/* 期間タブ（⚡ パフォーマンス情報付き） */}

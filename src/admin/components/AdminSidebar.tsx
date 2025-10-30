@@ -53,7 +53,7 @@ const MENU_GROUPS: MenuGroup[] = [
     icon: "⚙️",
     items: [
       { id: "initial-setup", label: "初期設定", icon: "⚙️", color: "#6b7280" },
-      // { id: "tenant-management", label: "テナント管理", icon: "🏢", color: "#7c2d12" },
+      { id: "tenant-management", label: "テナント管理", icon: "🏢", color: "#7c2d12" },
     ]
   }
 ];
