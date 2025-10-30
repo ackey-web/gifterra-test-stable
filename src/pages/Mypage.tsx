@@ -1627,35 +1627,247 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
 // 2. 受取アドレス
 function ReceiveAddress({ isMobile }: { isMobile: boolean }) {
+  const address = useAddress();
+  const [showModal, setShowModal] = useState(false);
+  const [qrDataURL, setQrDataURL] = useState<string>('');
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // QRコード生成（動的インポート）
+  const generateQR = async (text: string) => {
+    try {
+      const QRCode = (await import('qrcode')).default;
+      const dataURL = await QRCode.toDataURL(text, {
+        width: 600, // 高解像度で生成
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      });
+      setQrDataURL(dataURL);
+    } catch (err) {
+      console.error('QRコード生成エラー:', err);
+    }
+  };
+
+  // モーダルを開く
+  const handleOpen = async () => {
+    if (!address) {
+      alert('ウォレットが接続されていません');
+      return;
+    }
+    await generateQR(address);
+    setShowModal(true);
+  };
+
+  // アドレスをコピー
+  const handleCopy = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('コピーエラー:', err);
+      alert('コピーに失敗しました');
+    }
+  };
+
+  // QRコードをダウンロード
+  const handleDownload = () => {
+    if (!qrDataURL) return;
+    const link = document.createElement('a');
+    link.download = `gifterra-address-${address?.slice(0, 6)}.png`;
+    link.href = qrDataURL;
+    link.click();
+  };
+
   return (
-    <div style={{
-      background: '#ffffff',
-      border: '2px solid rgba(59, 130, 246, 0.2)',
-      borderRadius: isMobile ? 16 : 24,
-      padding: isMobile ? 20 : 28,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-    }}>
-      <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#1a1a1a' }}>
-        受取アドレス
-      </h2>
-      <p style={{ fontSize: isMobile ? 13 : 14, color: '#4a5568', margin: '0 0 16px 0' }}>
-        接続後にQR/コピー可能
-      </p>
-      <button style={{
-        width: '100%',
-        padding: isMobile ? '14px' : '16px',
-        background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
-        border: 'none',
-        borderRadius: 12,
-        color: '#ffffff',
-        fontSize: isMobile ? 15 : 16,
-        fontWeight: 700,
-        cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+    <>
+      <div style={{
+        background: '#ffffff',
+        border: '2px solid rgba(59, 130, 246, 0.2)',
+        borderRadius: isMobile ? 16 : 24,
+        padding: isMobile ? 20 : 28,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
       }}>
-        接続する
-      </button>
-    </div>
+        <h2 style={{ margin: '0 0 16px 0', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#1a1a1a' }}>
+          受取アドレス
+        </h2>
+        <p style={{ fontSize: isMobile ? 13 : 14, color: '#4a5568', margin: '0 0 16px 0' }}>
+          {address ? 'QR/コピーで共有' : 'ウォレットを接続してください'}
+        </p>
+        <button
+          onClick={handleOpen}
+          disabled={!address}
+          style={{
+            width: '100%',
+            padding: isMobile ? '14px' : '16px',
+            background: address
+              ? 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)'
+              : '#cccccc',
+            border: 'none',
+            borderRadius: 12,
+            color: '#ffffff',
+            fontSize: isMobile ? 15 : 16,
+            fontWeight: 700,
+            cursor: address ? 'pointer' : 'not-allowed',
+            boxShadow: address ? '0 4px 12px rgba(102, 126, 234, 0.3)' : 'none',
+            opacity: address ? 1 : 0.6,
+          }}
+        >
+          {address ? '受取アドレスを表示' : 'ウォレット未接続'}
+        </button>
+      </div>
+
+      {/* QRコード表示モーダル */}
+      {showModal && address && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20,
+        }}
+        onClick={() => setShowModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: isMobile ? 20 : 28,
+              padding: isMobile ? 28 : 40,
+              maxWidth: isMobile ? '90%' : 480,
+              width: '100%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 閉じるボタン */}
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                width: 36,
+                height: 36,
+                background: 'rgba(0,0,0,0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                fontSize: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ×
+            </button>
+
+            <h2 style={{
+              margin: '0 0 24px 0',
+              fontSize: isMobile ? 20 : 24,
+              fontWeight: 700,
+              color: '#1a1a1a',
+              textAlign: 'center',
+            }}>
+              受取アドレス
+            </h2>
+
+            {/* QRコード */}
+            {qrDataURL && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginBottom: 24,
+              }}>
+                <div style={{
+                  padding: 16,
+                  background: '#ffffff',
+                  border: '3px solid #667eea',
+                  borderRadius: 16,
+                  boxShadow: '0 8px 24px rgba(102, 126, 234, 0.2)',
+                }}>
+                  <img
+                    src={qrDataURL}
+                    alt="QR Code"
+                    style={{
+                      width: isMobile ? 320 : 320,
+                      height: isMobile ? 320 : 320,
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* アドレス表示 */}
+            <div style={{
+              padding: isMobile ? '12px 14px' : '14px 16px',
+              background: '#f7fafc',
+              border: '2px solid #e2e8f0',
+              borderRadius: 12,
+              marginBottom: 20,
+              wordBreak: 'break-all',
+              fontSize: isMobile ? 13 : 14,
+              fontFamily: 'monospace',
+              color: '#1a1a1a',
+              textAlign: 'center',
+            }}>
+              {address}
+            </div>
+
+            {/* ボタン */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              flexDirection: isMobile ? 'column' : 'row',
+            }}>
+              <button
+                onClick={handleCopy}
+                style={{
+                  flex: 1,
+                  padding: isMobile ? '14px' : '16px',
+                  background: copySuccess ? '#10b981' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#ffffff',
+                  fontSize: isMobile ? 14 : 15,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {copySuccess ? '✓ コピーしました！' : '📋 アドレスをコピー'}
+              </button>
+
+              <button
+                onClick={handleDownload}
+                style={{
+                  flex: 1,
+                  padding: isMobile ? '14px' : '16px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#ffffff',
+                  fontSize: isMobile ? 14 : 15,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                }}
+              >
+                💾 QRコードを保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
