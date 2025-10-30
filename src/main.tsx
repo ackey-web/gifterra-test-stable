@@ -13,10 +13,13 @@ import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import ClaimHistory from "./pages/ClaimHistory";
 import { UserProfilePage } from "./pages/UserProfile";
 import { MypagePage } from "./pages/Mypage";
+import { LoginPage } from "./pages/Login";
 import ScoreProfilePage from "./pages/score-profile";
 import { SuperAdminPage } from "./pages/SuperAdmin";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { TenantProvider } from "./admin/contexts/TenantContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { supportedWallets } from "./config/wallets";
 
 // =============================
@@ -71,6 +74,7 @@ const getDeviceType = () => {
 const uiParam = new URLSearchParams(location.search).get("ui");
 const path = location.pathname;
 
+const wantsLogin = path.includes("/login") || uiParam === "login";
 const wantsAdmin = path.includes("/admin") || uiParam === "admin";
 const wantsTip = path.includes("/tip") || uiParam === "tip";
 const wantsContent = path.includes("/content") || uiParam === "content";
@@ -121,33 +125,39 @@ root.render(
       theme="dark"
       autoSwitch={true}
     >
-      {wantsDownload ? (
-        <DownloadPage />
-      ) : wantsPurchases ? (
-        <MyPurchasesPage />
-      ) : wantsClaimHistory ? (
-        <ClaimHistory />
-      ) : wantsSuperAdmin ? (
-        <SuperAdminPage />
-      ) : wantsMypage ? (
-        <MypagePage />
-      ) : wantsUserProfile ? (
-        <UserProfilePage />
-      ) : wantsAdminMobile ? (
-        <TenantProvider>
-          <AdminDashboardMobile />
-        </TenantProvider>
-      ) : wantsAdmin ? (
-        <TenantProvider>
-          <AdminDashboard />
-        </TenantProvider>
-      ) : wantsTip ? (
-        <TipApp />
-      ) : wantsContent ? (
-        <VendingApp />
-      ) : (
-        <RewardApp />
-      )}
+      <AuthProvider>
+        {wantsLogin ? (
+          <LoginPage />
+        ) : wantsDownload ? (
+          <DownloadPage />
+        ) : wantsPurchases ? (
+          <MyPurchasesPage />
+        ) : wantsClaimHistory ? (
+          <ClaimHistory />
+        ) : wantsSuperAdmin ? (
+          <SuperAdminPage />
+        ) : wantsMypage ? (
+          <ProtectedRoute>
+            <MypagePage />
+          </ProtectedRoute>
+        ) : wantsUserProfile ? (
+          <UserProfilePage />
+        ) : wantsAdminMobile ? (
+          <TenantProvider>
+            <AdminDashboardMobile />
+          </TenantProvider>
+        ) : wantsAdmin ? (
+          <TenantProvider>
+            <AdminDashboard />
+          </TenantProvider>
+        ) : wantsTip ? (
+          <TipApp />
+        ) : wantsContent ? (
+          <VendingApp />
+        ) : (
+          <RewardApp />
+        )}
+      </AuthProvider>
     </ThirdwebProvider>
   </React.StrictMode>
 );

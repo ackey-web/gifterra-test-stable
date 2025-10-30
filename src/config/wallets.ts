@@ -53,11 +53,13 @@ function getSmartWalletConfig(): SmartWalletConfig {
 /**
  * スマートウォレットの有効/無効を制御するフラグ
  *
- * 環境変数で制御可能:
- * - true: スマートウォレット有効（ガスレス体験）
- * - false: 従来のウォレットのみ
+ * 初期段階ではコスト削減のため無効化
+ * 将来的にアップグレード可能
+ *
+ * - true: スマートウォレット有効（Thirdweb有料プラン必要）
+ * - false: 従来のウォレットのみ（無料）
  */
-const ENABLE_SMART_WALLET = import.meta.env.VITE_ENABLE_SMART_WALLET !== "false";
+const ENABLE_SMART_WALLET = false; // Thirdweb有料プランが必要なため初期は無効化
 
 /**
  * スマートウォレット用のパーソナルウォレット設定
@@ -120,14 +122,21 @@ export const supportedWallets = [
     create: (options?: any) => new CoinbaseWallet(options),
   },
 
-  // Embedded Wallet（スマートウォレット無効時のフォールバック）
+  // Embedded Wallet（Google/Email認証で通常ウォレット生成）
   {
     id: "embedded",
     meta: {
-      name: "Email Wallet",
+      name: "Google / Email ログイン",
       iconURL: "ipfs://QmeAJVqn17aDNQhjEU3kcWVZCFBrfta8LzaDGkS8Egdiyk/embedded.svg",
     },
-    create: (options?: any) => new EmbeddedWallet(options),
+    create: (options?: any) =>
+      new EmbeddedWallet({
+        auth: {
+          options: ["email", "google"],
+        },
+        ...options,
+      }),
+    recommended: true, // スマートウォレット無効時は推奨
   },
 ];
 

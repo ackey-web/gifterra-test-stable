@@ -55,49 +55,49 @@ export interface GasSponsorRule {
  * ユーザー獲得とUX向上を最優先
  */
 export const PHASE_1_RULES: GasSponsorRule[] = [
-  // 新規ユーザー: 最初の5txは無条件で無料
+  // 新規ユーザー: 最初の3txは無条件で無料（5tx → 3txに削減してコスト削減）
   {
     operation: '*',
     sponsor: 'platform',
     conditions: {
       newUserOnly: true,
-      firstTransactionsCount: 5,
+      firstTransactionsCount: 3,
     },
     priority: 100, // 最優先
   },
 
-  // Tip送信: 1000 JPYC以下は無料
+  // Tip送信: 500 JPYC以下は無料（1000 JPYC → 500 JPYCに削減）
   {
     operation: 'tip',
     sponsor: 'platform',
     conditions: {
-      maxAmount: '1000000000000000000000', // 1000 JPYC
-      maxPerDay: 10, // 1日10回まで
+      maxAmount: '500000000000000000000', // 500 JPYC（1000 JPYCから削減）
+      maxPerDay: 5, // 1日5回まで（10回から削減）
     },
     priority: 90,
   },
 
-  // Reward受取: 常に無料
+  // Reward受取: 常に無料（ユーザー体験維持のため継続）
   {
     operation: 'claimReward',
     sponsor: 'platform',
     priority: 90,
   },
 
-  // SBT mint: 常に無料
+  // SBT mint: 常に無料（エンゲージメント維持のため継続）
   {
     operation: 'mintSBT',
     sponsor: 'platform',
     priority: 90,
   },
 
-  // GIFT HUBでの特典配布: 100 JPYC以下は無料
+  // GIFT HUBでの特典配布: 50 JPYC以下は無料（100 JPYC → 50 JPYCに削減）
   {
     operation: 'purchaseFromHub',
     sponsor: 'platform',
     conditions: {
-      maxAmount: '100000000000000000000', // 100 JPYC
-      maxPerDay: 5,
+      maxAmount: '50000000000000000000', // 50 JPYC（100 JPYCから削減）
+      maxPerDay: 3, // 1日3回まで（5回から削減）
     },
     priority: 80,
   },
@@ -117,24 +117,24 @@ export const PHASE_1_RULES: GasSponsorRule[] = [
  * テナントの売上から一部を自動控除してガスプールに充当
  */
 export const PHASE_2_RULES: GasSponsorRule[] = [
-  // 新規ユーザー: 最初の5txは無条件で無料（プラットフォーム負担）
+  // 新規ユーザー: 最初の3txは無条件で無料（プラットフォーム負担、5tx → 3txに削減）
   {
     operation: '*',
     sponsor: 'platform',
     conditions: {
       newUserOnly: true,
-      firstTransactionsCount: 5,
+      firstTransactionsCount: 3,
     },
     priority: 100,
   },
 
-  // Tip送信: プラットフォーム負担（コミュニティ活性化のため）
+  // Tip送信: プラットフォーム負担（コミュニティ活性化のため、500 JPYCに削減）
   {
     operation: 'tip',
     sponsor: 'platform',
     conditions: {
-      maxAmount: '1000000000000000000000', // 1000 JPYC
-      maxPerDay: 10,
+      maxAmount: '500000000000000000000', // 500 JPYC（1000 JPYCから削減）
+      maxPerDay: 5, // 1日5回まで（10回から削減）
     },
     priority: 90,
   },

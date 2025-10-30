@@ -2,7 +2,11 @@
 // GIFTERRAマイページ - 送受信ツール（Flowモード）+ テナント運用（Tenantモード）
 
 import { useState, useEffect } from 'react';
+import { useDisconnect, useSigner, useAddress } from '@thirdweb-dev/react';
+import { ethers } from 'ethers';
 import { QRScanner } from '../components/QRScanner';
+import { sendTokenGasless } from '../lib/gelatoRelay';
+import { JPYC_TOKEN, TNHT_TOKEN } from '../contract';
 
 type ViewMode = 'flow' | 'tenant';
 
@@ -171,8 +175,18 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
   isMobile: boolean;
   tenantRank: TenantRank;
 }) {
+  const disconnect = useDisconnect();
+
   // R3（承認済みテナント）のみトグル表示
   const showToggle = tenantRank === 'R3';
+
+  const handleLogout = async () => {
+    if (window.confirm('ログアウトしますか？')) {
+      await disconnect();
+      localStorage.removeItem('gifterra_auth');
+      window.location.href = '/login';
+    }
+  };
 
   return (
     <div style={{
@@ -236,7 +250,7 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
         </div>
       )}
 
-      {/* 右：設定・シェア・Admin */}
+      {/* 右：設定・シェア・Admin・ログアウト */}
       <div style={{ display: 'flex', gap: isMobile ? 8 : 12, alignItems: 'center' }}>
         {viewMode === 'tenant' && (
           <button style={{
@@ -266,6 +280,28 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
           justifyContent: 'center',
         }}>
           ⚙️
+        </button>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: isMobile ? '6px 12px' : '8px 16px',
+            background: 'rgba(220, 38, 38, 0.15)',
+            border: '1px solid rgba(220, 38, 38, 0.3)',
+            borderRadius: 8,
+            color: '#FCA5A5',
+            fontSize: isMobile ? 11 : 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(220, 38, 38, 0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)';
+          }}
+        >
+          ログアウト
         </button>
       </div>
     </div>
@@ -312,6 +348,8 @@ type SendMode = 'simple' | 'tenant' | 'bulk';
 
 // 1. 送金フォーム
 function SendForm({ isMobile }: { isMobile: boolean }) {
+  const signer = useSigner();
+  const userAddress = useAddress();
   const [selectedToken, setSelectedToken] = useState<'JPYC' | 'NHT'>('JPYC');
   const [sendMode, setSendMode] = useState<SendMode | null>(null); // null = 未選択
   const [showModeModal, setShowModeModal] = useState(false);
@@ -321,6 +359,7 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const tokenInfo = {
     JPYC: {
@@ -346,6 +385,58 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
     setSelectedTenant(tenant);
     setAddress(tenant.walletAddress);
     setShowTenantModal(false);
+  };
+
+  // ガスレス送金処理
+  const handleSend = async () => {
+    if (!signer || !userAddress) {
+      alert('ウォレットが接続されていません');
+      return;
+    }
+
+    if (!address || !amount) {
+      alert('宛先アドレスと数量を入力してください');
+      return;
+    }
+
+    // アドレス検証
+    if (!ethers.utils.isAddress(address)) {
+      alert('無効なアドレスです');
+      return;
+    }
+
+    try {
+      setIsSending(true);
+
+      // トークンアドレスを取得
+      const tokenAddress = selectedToken === 'JPYC' ? JPYC_TOKEN.ADDRESS : TNHT_TOKEN.ADDRESS;
+
+      // 数量をwei単位に変換
+      const amountWei = ethers.utils.parseUnits(amount, 18).toString();
+
+      // Gelato Relayでガスレス送金
+      const taskId = await sendTokenGasless(
+        signer,
+        tokenAddress,
+        address,
+        amountWei
+      );
+
+      alert(`✅ 送金リクエストを受け付けました！\n\nタスクID: ${taskId}\n\nガスレス送金が完了するまでお待ちください。`);
+
+      // フォームをリセット
+      setAddress('');
+      setAmount('');
+      setMessage('');
+      setSendMode(null);
+      setSelectedTenant(null);
+
+    } catch (error: any) {
+      console.error('送金エラー:', error);
+      alert(`❌ 送金に失敗しました\n\nエラー: ${error.message || '不明なエラー'}`);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // 一括送金モードの場合は専用UIを表示
@@ -688,21 +779,26 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         </button>
       ) : (
         <button
+          onClick={handleSend}
+          disabled={isSending || !address || !amount}
           style={{
             width: '100%',
             padding: isMobile ? '12px' : '14px',
-            background: `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
+            background: isSending || !address || !amount
+              ? '#cccccc'
+              : `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
             border: 'none',
             borderRadius: 12,
             color: '#fff',
             fontSize: isMobile ? 14 : 15,
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: isSending || !address || !amount ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s',
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            opacity: isSending || !address || !amount ? 0.6 : 1,
           }}
         >
-          送金する
+          {isSending ? '送金中...' : '送金する（ガスレス）'}
         </button>
       )}
 
@@ -1093,9 +1189,12 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
   setSelectedToken: (token: 'JPYC' | 'NHT') => void;
   onChangeMode: () => void;
 }) {
+  const signer = useSigner();
+  const userAddress = useAddress();
   const [recipients, setRecipients] = useState([
     { id: 1, address: '', amount: '' },
   ]);
+  const [isSending, setIsSending] = useState(false);
 
   const tokenInfo = {
     JPYC: {
@@ -1137,6 +1236,63 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
     const amount = parseFloat(r.amount) || 0;
     return sum + amount;
   }, 0);
+
+  // ガスレス一括送金処理
+  const handleBulkSend = async () => {
+    if (!signer || !userAddress) {
+      alert('ウォレットが接続されていません');
+      return;
+    }
+
+    // バリデーション
+    const invalidRecipients = recipients.filter(r => !r.address || !r.amount);
+    if (invalidRecipients.length > 0) {
+      alert('全ての受取人のアドレスと数量を入力してください');
+      return;
+    }
+
+    // アドレス検証
+    for (const recipient of recipients) {
+      if (!ethers.utils.isAddress(recipient.address)) {
+        alert(`無効なアドレス: ${recipient.address}`);
+        return;
+      }
+    }
+
+    try {
+      setIsSending(true);
+
+      // トークンアドレスを取得
+      const tokenAddress = selectedToken === 'JPYC' ? JPYC_TOKEN.ADDRESS : TNHT_TOKEN.ADDRESS;
+
+      const taskIds: string[] = [];
+
+      // 各受取人に送金
+      for (const recipient of recipients) {
+        const amountWei = ethers.utils.parseUnits(recipient.amount, 18).toString();
+
+        const taskId = await sendTokenGasless(
+          signer,
+          tokenAddress,
+          recipient.address,
+          amountWei
+        );
+
+        taskIds.push(taskId);
+      }
+
+      alert(`✅ ${recipients.length}件の送金リクエストを受け付けました！\n\nタスクID:\n${taskIds.join('\n')}\n\nガスレス送金が完了するまでお待ちください。`);
+
+      // フォームをリセット
+      setRecipients([{ id: 1, address: '', amount: '' }]);
+
+    } catch (error: any) {
+      console.error('一括送金エラー:', error);
+      alert(`❌ 一括送金に失敗しました\n\nエラー: ${error.message || '不明なエラー'}`);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div style={{
@@ -1366,21 +1522,26 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
 
       {/* 送金ボタン */}
       <button
+        onClick={handleBulkSend}
+        disabled={isSending || recipients.some(r => !r.address || !r.amount)}
         style={{
           width: '100%',
           padding: isMobile ? '12px' : '14px',
-          background: `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
+          background: isSending || recipients.some(r => !r.address || !r.amount)
+            ? '#cccccc'
+            : `linear-gradient(135deg, ${currentToken.color} 0%, ${currentToken.color}dd 100%)`,
           border: 'none',
           borderRadius: 12,
           color: '#fff',
           fontSize: isMobile ? 14 : 15,
           fontWeight: 600,
-          cursor: 'pointer',
+          cursor: isSending || recipients.some(r => !r.address || !r.amount) ? 'not-allowed' : 'pointer',
           transition: 'all 0.2s',
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          opacity: isSending || recipients.some(r => !r.address || !r.amount) ? 0.6 : 1,
         }}
       >
-        一括送金する
+        {isSending ? '送金中...' : '一括送金する（ガスレス）'}
       </button>
     </div>
   );
