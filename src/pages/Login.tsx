@@ -50,7 +50,7 @@ export const LoginPage: React.FC = () => {
         style={{
           background: "rgba(255, 255, 255, 0.98)",
           borderRadius: 24,
-          padding: isMobile ? "32px 24px" : "48px 40px",
+          padding: isMobile ? "24px 20px" : "32px 36px",
           maxWidth: 480,
           width: "100%",
           boxShadow: "0 8px 16px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.15), 0 24px 48px rgba(2, 187, 209, 0.2)",
@@ -61,14 +61,14 @@ export const LoginPage: React.FC = () => {
         }}
       >
         {/* ロゴとキャッチコピー */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <img
             src="/gifterra-logo.png"
             alt="GIFTERRA"
             style={{
-              width: isMobile ? 180 : 220,
+              width: isMobile ? 160 : 200,
               height: "auto",
-              margin: "0 auto 24px",
+              margin: "0 auto 16px",
               display: "block",
             }}
           />
@@ -126,8 +126,8 @@ export const LoginPage: React.FC = () => {
         {/* 説明セクション */}
         <div
           style={{
-            marginBottom: 32,
-            padding: 20,
+            marginBottom: 20,
+            padding: 16,
             background: "#f7fafc",
             borderRadius: 12,
             border: "1px solid #e2e8f0",
@@ -166,7 +166,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* 接続ボタン */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 16 }}>
           <ConnectWallet
             theme="dark"
             btnTitle="ログイン / ウォレット接続"
@@ -202,59 +202,59 @@ export const LoginPage: React.FC = () => {
           style={{
             display: "grid",
             gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-            gap: 12,
-            marginTop: 24,
+            gap: 8,
+            marginTop: 0,
           }}
         >
           <div
             style={{
-              padding: 16,
+              padding: 12,
               background: "#f0f4ff",
-              borderRadius: 12,
+              borderRadius: 10,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>⚡️</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#4a5568" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>⚡️</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#4a5568" }}>
               ガスレス送金
             </div>
           </div>
           <div
             style={{
-              padding: 16,
+              padding: 12,
               background: "#f0fff4",
-              borderRadius: 12,
+              borderRadius: 10,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🔒</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#4a5568" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>🔒</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#4a5568" }}>
               セキュア認証
             </div>
           </div>
           <div
             style={{
-              padding: 16,
+              padding: 12,
               background: "#fffaf0",
-              borderRadius: 12,
+              borderRadius: 10,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🎯</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#4a5568" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>🎯</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#4a5568" }}>
               簡単操作
             </div>
           </div>
           <div
             style={{
-              padding: 16,
+              padding: 12,
               background: "#fef2f2",
-              borderRadius: 12,
+              borderRadius: 10,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🌐</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#4a5568" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>🌐</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#4a5568" }}>
               Web3対応
             </div>
           </div>
@@ -263,8 +263,8 @@ export const LoginPage: React.FC = () => {
         {/* フッター */}
         <div
           style={{
-            marginTop: 32,
-            paddingTop: 24,
+            marginTop: 20,
+            paddingTop: 16,
             borderTop: "1px solid #e2e8f0",
             textAlign: "center",
           }}
