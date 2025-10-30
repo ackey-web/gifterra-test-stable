@@ -290,16 +290,26 @@ export const LoginPage: React.FC = () => {
               margin: "0 0 8px 0",
             }}
           >
-            初回ログイン時は自動的にウォレットが生成されます
+            ウォレットを持っていない方は初回ログイン時は自動的にウォレットが生成されます
           </p>
           <p
             style={{
               fontSize: 12,
+              color: "#718096",
+              margin: "0 0 8px 0",
+              fontWeight: 500,
+            }}
+          >
+            Presented by METATRON.
+          </p>
+          <p
+            style={{
+              fontSize: 11,
               color: "#a0aec0",
               margin: 0,
             }}
           >
-            © 2024 Gifterra. All rights reserved.
+            特願2025-120883
           </p>
         </div>
       </div>
