@@ -110,7 +110,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ThirdwebProvider
-      clientId={import.meta.env.VITE_THIRDWEB_CLIENT_ID || "779fcfff75c8b7ed91ea029f8783fd8e"}
+      clientId={import.meta.env.VITE_THIRDWEB_CLIENT_ID || "3e4c63f9a07ad8ed962ba1691be8fe2b"}
       supportedChains={[polygonAmoy]}
       activeChain={polygonAmoy}
       supportedWallets={supportedWallets}
