@@ -2,12 +2,14 @@
 // ハイブリッドウォレット設定: スマートウォレット + 外部ウォレット
 
 import {
-  MetaMaskWallet,
-  CoinbaseWallet,
   SmartWallet,
   type SmartWalletConfig,
 } from "@thirdweb-dev/wallets";
-import { embeddedWallet } from "@thirdweb-dev/react";
+import {
+  embeddedWallet,
+  metamaskWallet,
+  coinbaseWallet,
+} from "@thirdweb-dev/react";
 import { PolygonAmoyTestnet, Polygon } from "@thirdweb-dev/chains";
 import { getNetworkEnv } from "./tokens";
 
@@ -103,24 +105,12 @@ export const supportedWallets = [
     : []),
 
   // MetaMask（直接接続）
-  {
-    id: "metamask",
-    meta: {
-      name: "MetaMask",
-      iconURL: "ipfs://QmZZHcw7zcXursywnLDAyY6Hfxzqop5GKgwoq8NB9jjrkN/metamask.svg",
-    },
-    create: (options?: any) => new MetaMaskWallet(options),
-  },
+  metamaskWallet({
+    recommended: true,
+  }),
 
   // Coinbase Wallet
-  {
-    id: "coinbase",
-    meta: {
-      name: "Coinbase Wallet",
-      iconURL: "ipfs://QmcJBHopbwfJcLqJpX2xEufSS84aLbF7bHavYhaXUcrLaH/coinbase.svg",
-    },
-    create: (options?: any) => new CoinbaseWallet(options),
-  },
+  coinbaseWallet(),
 
   // Embedded Wallet（Google/Email認証で通常ウォレット生成）
   embeddedWallet({
