@@ -5,9 +5,9 @@ import {
   MetaMaskWallet,
   CoinbaseWallet,
   SmartWallet,
-  EmbeddedWallet,
   type SmartWalletConfig,
 } from "@thirdweb-dev/wallets";
+import { embeddedWallet } from "@thirdweb-dev/react";
 import { PolygonAmoyTestnet, Polygon } from "@thirdweb-dev/chains";
 import { getNetworkEnv } from "./tokens";
 
@@ -123,23 +123,12 @@ export const supportedWallets = [
   },
 
   // Embedded Wallet（Google/Email認証で通常ウォレット生成）
-  {
-    id: "embedded",
-    meta: {
-      name: "Google / Email ログイン",
-      iconURL: "ipfs://QmeAJVqn17aDNQhjEU3kcWVZCFBrfta8LzaDGkS8Egdiyk/embedded.svg",
+  embeddedWallet({
+    auth: {
+      options: ["email", "google"],
     },
-    create: (options?: any) =>
-      new EmbeddedWallet({
-        chain: getActiveChain(),
-        clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || "3e4c63f9a07ad8ed962ba1691be8fe2b",
-        auth: {
-          options: ["email", "google"],
-        },
-        ...options,
-      }),
     recommended: true, // スマートウォレット無効時は推奨
-  },
+  }),
 ];
 
 /**
