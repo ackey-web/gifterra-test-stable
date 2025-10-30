@@ -163,20 +163,6 @@ export const LoginPage: React.FC = () => {
               GoogleアカウントやEmailでウォレットを自動生成
             </li>
           </ul>
-          <div
-            style={{
-              marginTop: 16,
-              padding: 12,
-              background: "#d1fae5",
-              border: "1px solid #10b981",
-              borderRadius: 8,
-              fontSize: 13,
-              color: "#065f46",
-              lineHeight: 1.6,
-            }}
-          >
-            ✨ トランザクション時のガス代は運営が負担
-          </div>
         </div>
 
         {/* 接続ボタン */}
@@ -283,15 +269,6 @@ export const LoginPage: React.FC = () => {
             textAlign: "center",
           }}
         >
-          <p
-            style={{
-              fontSize: 12,
-              color: "#a0aec0",
-              margin: "0 0 16px 0",
-            }}
-          >
-            ウォレットを持っていない方は初回ログイン時は自動的にウォレットが生成されます
-          </p>
           <p
             style={{
               fontSize: 12,
