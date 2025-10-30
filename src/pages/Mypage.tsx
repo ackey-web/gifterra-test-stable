@@ -6,7 +6,7 @@ import { useDisconnect, useSigner, useAddress, ConnectWallet, useChainId, useNet
 import { ethers } from 'ethers';
 import { QRScanner } from '../components/QRScanner';
 import { sendTokenGasless } from '../lib/gelatoRelay';
-import { JPYC_TOKEN, TNHT_TOKEN } from '../contract';
+import { JPYC_TOKEN, TNHT_TOKEN, SBT_CONTRACT, CONTRACT_ABI, ERC20_MIN_ABI } from '../contract';
 
 type ViewMode = 'flow' | 'tenant';
 
@@ -137,13 +137,18 @@ export function MypagePage() {
       }} />
 
       {/* メインコンテンツ */}
-      {/* [A] ヘッダー - 黒背景（600px幅） */}
+      {/* [A] ヘッダー - ガラスモーフィズム */}
       <div style={{
         maxWidth: isMobile ? '100%' : 600,
-        margin: '0 auto 16px',
-        background: 'rgba(0, 0, 0, 0.85)',
-        paddingTop: isMobile ? '8px' : '12px',
-        paddingBottom: isMobile ? '8px' : '12px',
+        margin: isMobile ? '0 16px 16px' : '0 auto 20px',
+        background: 'rgba(255, 255, 255, 0.12)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: isMobile ? 16 : 20,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        paddingTop: isMobile ? '12px' : '16px',
+        paddingBottom: isMobile ? '12px' : '16px',
         paddingLeft: isMobile ? '16px' : '24px',
         paddingRight: isMobile ? '16px' : '24px',
       }}>
@@ -429,7 +434,7 @@ type SendMode = 'simple' | 'tenant' | 'bulk';
 function SendForm({ isMobile }: { isMobile: boolean }) {
   const signer = useSigner();
   const userAddress = useAddress();
-  const [selectedToken, setSelectedToken] = useState<'JPYC' | 'NHT'>('JPYC');
+  const selectedToken = 'JPYC'; // JPYCのみに固定
   const [sendMode, setSendMode] = useState<SendMode | null>(null); // null = 未選択
   const [showModeModal, setShowModeModal] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
@@ -441,23 +446,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
   const [isSending, setIsSending] = useState(false);
 
   const tokenInfo = {
-    JPYC: {
-      name: 'JPYC',
-      symbol: 'JPYC',
-      description: 'ステーブルコイン',
-      detail: '日本円と同価値、送金ツールとして利用',
-      color: '#667eea',
-    },
-    NHT: {
-      name: 'NHT',
-      symbol: 'NHT',
-      description: 'ユーティリティトークン',
-      detail: 'GIFTERRAエコシステムで流通',
-      color: '#764ba2',
-    },
+    name: 'JPYC',
+    symbol: 'JPYC',
+    description: 'ステーブルコイン',
+    detail: '日本円と同価値、送金ツールとして利用',
+    color: '#667eea',
   };
 
-  const currentToken = tokenInfo[selectedToken];
+  const currentToken = tokenInfo;
 
   // テナント選択時の処理
   const handleTenantSelect = (tenant: any) => {
@@ -491,17 +487,56 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
       const tokenAddress = selectedToken === 'JPYC' ? JPYC_TOKEN.ADDRESS : TNHT_TOKEN.ADDRESS;
 
       // 数量をwei単位に変換
-      const amountWei = ethers.utils.parseUnits(amount, 18).toString();
+      const amountWei = ethers.utils.parseUnits(amount, 18);
 
-      // Gelato Relayでガスレス送金
-      const taskId = await sendTokenGasless(
-        signer,
-        tokenAddress,
-        address,
-        amountWei
-      );
+      // テナントチップモードの場合は従来のコントラクトを使用
+      if (sendMode === 'tenant') {
+        // 1. トークンコントラクトを準備
+        const tokenContract = new ethers.Contract(
+          tokenAddress,
+          ERC20_MIN_ABI,
+          signer
+        );
 
-      alert(`✅ 送金リクエストを受け付けました！\n\nタスクID: ${taskId}\n\nガスレス送金が完了するまでお待ちください。`);
+        // 2. SBTコントラクトにapprove
+        console.log('Approving token...');
+        const approveTx = await tokenContract.approve(
+          SBT_CONTRACT.ADDRESS,
+          amountWei
+        );
+        await approveTx.wait();
+        console.log('Token approved');
+
+        // 3. SBTコントラクトのtip関数を呼び出し（kodomiポイント加算 + SBT自動ミント）
+        const sbtContract = new ethers.Contract(
+          SBT_CONTRACT.ADDRESS,
+          CONTRACT_ABI,
+          signer
+        );
+
+        console.log('Calling tip function...');
+        const tipTx = await sbtContract.tip(amountWei);
+        const receipt = await tipTx.wait();
+        console.log('Tip transaction confirmed:', receipt);
+
+        alert(
+          `✅ テナントチップ送金が完了しました！\n\n` +
+          `送金先: ${selectedTenant?.name || 'テナント'}\n` +
+          `数量: ${amount} ${selectedToken}\n\n` +
+          `🎁 kodomiポイントが加算されました！\n` +
+          `累積ポイントに応じてSBTが自動ミントされます。`
+        );
+      } else {
+        // シンプル送金モードはGelato Relayでガスレス送金
+        const taskId = await sendTokenGasless(
+          signer,
+          tokenAddress,
+          address,
+          amountWei.toString()
+        );
+
+        alert(`✅ 送金リクエストを受け付けました！\n\nタスクID: ${taskId}\n\nガスレス送金が完了するまでお待ちください。`);
+      }
 
       // フォームをリセット
       setAddress('');
@@ -523,8 +558,6 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
     return (
       <BulkSendForm
         isMobile={isMobile}
-        selectedToken={selectedToken}
-        setSelectedToken={setSelectedToken}
         onChangeMode={() => setSendMode(null)}
       />
     );
@@ -542,60 +575,12 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
         送金
       </h2>
 
-      {/* トークン選択タブ */}
-      <div style={{
-        display: 'flex',
-        gap: 8,
-        marginBottom: 16,
-        background: '#f3f4f6',
-        borderRadius: 12,
-        padding: 4,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      }}>
-        <button
-          onClick={() => setSelectedToken('JPYC')}
-          style={{
-            flex: 1,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? '#ffffff' : 'rgba(102, 126, 234, 0.2)',
-            border: selectedToken === 'JPYC' ? '2px solid #667eea' : '1px solid rgba(102, 126, 234, 0.3)',
-            borderRadius: 8,
-            color: selectedToken === 'JPYC' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: selectedToken === 'JPYC' ? 700 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: selectedToken === 'JPYC' ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          JPYC
-        </button>
-        <button
-          onClick={() => setSelectedToken('NHT')}
-          style={{
-            flex: 1,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? '#ffffff' : 'rgba(118, 75, 162, 0.2)',
-            border: selectedToken === 'NHT' ? '2px solid #764ba2' : '1px solid rgba(118, 75, 162, 0.3)',
-            borderRadius: 8,
-            color: selectedToken === 'NHT' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: selectedToken === 'NHT' ? 700 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: selectedToken === 'NHT' ? '0 4px 12px rgba(118, 75, 162, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          NHT
-        </button>
-      </div>
-
-      {/* トークン説明 */}
+      {/* 対応トークン表示（JPYC固定） */}
       <div style={{
         marginBottom: 20,
         padding: isMobile ? '12px' : '14px',
-        background: `${currentToken.color}20`,
-        border: `2px solid ${currentToken.color}`,
+        background: 'rgba(102, 126, 234, 0.12)',
+        border: '2px solid #667eea',
         borderRadius: 8,
       }}>
         <div style={{
@@ -604,14 +589,14 @@ function SendForm({ isMobile }: { isMobile: boolean }) {
           marginBottom: 4,
           color: '#1a1a1a',
         }}>
-          {currentToken.description}
+          💴 対応トークン: JPYC (ステーブルコイン)
         </div>
         <div style={{
           fontSize: isMobile ? 12 : 13,
           color: '#1a1a1a',
           fontWeight: 500,
         }}>
-          {currentToken.detail}
+          日本円と同価値、送金ツールとして利用
         </div>
       </div>
 
@@ -940,18 +925,18 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
       features: ['自由なアドレス入力', 'kodomi記録なし', 'メッセージ任意'],
     },
     {
-      id: 'tenant' as SendMode,
-      icon: '🎁',
-      title: 'テナントへチップ',
-      description: 'テナントを選んで応援',
-      features: ['テナント一覧から選択', 'kodomi記録される', 'メッセージ推奨'],
-    },
-    {
       id: 'bulk' as SendMode,
       icon: '📤',
       title: '一括送金',
       description: '複数人へ同時に送金',
       features: ['複数アドレス対応', 'シンプルな操作', '効率的な送金'],
+    },
+    {
+      id: 'tenant' as SendMode,
+      icon: '🎁',
+      title: 'テナントへチップ',
+      description: 'テナントを選んで応援',
+      features: ['テナント一覧から選択', 'kodomi記録される', 'メッセージ推奨'],
     },
   ];
 
@@ -1021,23 +1006,25 @@ function SendModeModal({ isMobile, onClose, onSelectMode }: {
               onClick={() => onSelectMode(mode.id)}
               style={{
                 background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                border: '1px solid rgba(0,0,0,0.08)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
                 borderRadius: isMobile ? 12 : 16,
                 padding: isMobile ? 16 : 20,
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.2s',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.background = '#e9ecef';
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #2563eb 0%, #60a5fa 100%)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.background = '#ffffff';
-                e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)';
+                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               <div style={{ fontSize: 32, marginBottom: 12 }}>{mode.icon}</div>
@@ -1262,37 +1249,27 @@ function TenantSelectModal({ isMobile, onClose, onSelectTenant }: {
 }
 
 // 一括送金フォーム
-function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode }: {
+function BulkSendForm({ isMobile, onChangeMode }: {
   isMobile: boolean;
-  selectedToken: 'JPYC' | 'NHT';
-  setSelectedToken: (token: 'JPYC' | 'NHT') => void;
   onChangeMode: () => void;
 }) {
   const signer = useSigner();
   const userAddress = useAddress();
+  const selectedToken = 'JPYC'; // JPYCのみに固定
   const [recipients, setRecipients] = useState([
     { id: 1, address: '', amount: '' },
   ]);
   const [isSending, setIsSending] = useState(false);
 
   const tokenInfo = {
-    JPYC: {
-      name: 'JPYC',
-      symbol: 'JPYC',
-      description: 'ステーブルコイン',
-      detail: '日本円と同価値、送金ツールとして利用',
-      color: '#667eea',
-    },
-    NHT: {
-      name: 'NHT',
-      symbol: 'NHT',
-      description: 'ユーティリティトークン',
-      detail: 'GIFTERRAエコシステムで流通',
-      color: '#764ba2',
-    },
+    name: 'JPYC',
+    symbol: 'JPYC',
+    description: 'ステーブルコイン',
+    detail: '日本円と同価値、送金ツールとして利用',
+    color: '#667eea',
   };
 
-  const currentToken = tokenInfo[selectedToken];
+  const currentToken = tokenInfo;
 
   const addRecipient = () => {
     const newId = Math.max(...recipients.map(r => r.id)) + 1;
@@ -1401,60 +1378,12 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
         </button>
       </div>
 
-      {/* トークン選択タブ */}
-      <div style={{
-        display: 'flex',
-        gap: 8,
-        marginBottom: 16,
-        background: '#f3f4f6',
-        borderRadius: 12,
-        padding: 4,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      }}>
-        <button
-          onClick={() => setSelectedToken('JPYC')}
-          style={{
-            flex: 1,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'JPYC' ? '#ffffff' : 'rgba(102, 126, 234, 0.2)',
-            border: selectedToken === 'JPYC' ? '2px solid #667eea' : '1px solid rgba(102, 126, 234, 0.3)',
-            borderRadius: 8,
-            color: selectedToken === 'JPYC' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: selectedToken === 'JPYC' ? 700 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: selectedToken === 'JPYC' ? '0 4px 12px rgba(102, 126, 234, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          JPYC
-        </button>
-        <button
-          onClick={() => setSelectedToken('NHT')}
-          style={{
-            flex: 1,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            background: selectedToken === 'NHT' ? '#ffffff' : 'rgba(118, 75, 162, 0.2)',
-            border: selectedToken === 'NHT' ? '2px solid #764ba2' : '1px solid rgba(118, 75, 162, 0.3)',
-            borderRadius: 8,
-            color: selectedToken === 'NHT' ? '#1a1a1a' : 'rgba(255, 255, 255, 0.5)',
-            fontSize: isMobile ? 13 : 14,
-            fontWeight: selectedToken === 'NHT' ? 700 : 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: selectedToken === 'NHT' ? '0 4px 12px rgba(118, 75, 162, 0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          NHT
-        </button>
-      </div>
-
-      {/* トークン説明 */}
+      {/* 対応トークン表示（JPYC固定） */}
       <div style={{
         marginBottom: 20,
         padding: isMobile ? '12px' : '14px',
-        background: `${currentToken.color}20`,
-        border: `2px solid ${currentToken.color}`,
+        background: 'rgba(102, 126, 234, 0.12)',
+        border: '2px solid #667eea',
         borderRadius: 8,
       }}>
         <div style={{
@@ -1463,14 +1392,14 @@ function BulkSendForm({ isMobile, selectedToken, setSelectedToken, onChangeMode 
           marginBottom: 4,
           color: '#1a1a1a',
         }}>
-          {currentToken.description}
+          💴 対応トークン: JPYC (ステーブルコイン)
         </div>
         <div style={{
           fontSize: isMobile ? 12 : 13,
           color: '#1a1a1a',
           fontWeight: 500,
         }}>
-          {currentToken.detail}
+          日本円と同価値、送金ツールとして利用
         </div>
       </div>
 
