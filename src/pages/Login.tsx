@@ -38,7 +38,7 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        background: "linear-gradient(135deg, #02bbd1 0%, #0197a8 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -53,51 +53,37 @@ export const LoginPage: React.FC = () => {
           padding: isMobile ? "32px 24px" : "48px 40px",
           maxWidth: 480,
           width: "100%",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          boxShadow: "0 8px 16px rgba(0,0,0,0.1), 0 16px 32px rgba(0,0,0,0.15), 0 24px 48px rgba(2, 187, 209, 0.2)",
           backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.5)",
+          transform: "translateY(0)",
+          transition: "all 0.3s ease",
         }}
       >
-        {/* ロゴとタイトル */}
+        {/* ロゴとキャッチコピー */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div
+          <img
+            src="/gifterra-logo.png"
+            alt="GIFTERRA"
             style={{
-              width: 80,
-              height: 80,
-              margin: "0 auto 20px",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 36,
-              boxShadow: "0 8px 24px rgba(102, 126, 234, 0.4)",
+              width: isMobile ? 180 : 220,
+              height: "auto",
+              margin: "0 auto 24px",
+              display: "block",
             }}
-          >
-            🎁
-          </div>
-          <h1
-            style={{
-              fontSize: isMobile ? 28 : 32,
-              fontWeight: 700,
-              color: "#1a202c",
-              margin: "0 0 8px 0",
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            Gifterra
-          </h1>
+          />
           <p
             style={{
-              fontSize: 15,
-              color: "#718096",
+              fontSize: isMobile ? 16 : 18,
+              color: "#2d3748",
               margin: 0,
-              lineHeight: 1.6,
+              lineHeight: 1.8,
+              fontWeight: 500,
             }}
           >
-            Web3コミュニティ報酬プラットフォーム
+            GIFTERRAにようこそ
+            <br />
+            まずは無料の送受信から。応援が"残る"体験へ。
           </p>
         </div>
 
@@ -118,7 +104,7 @@ export const LoginPage: React.FC = () => {
                 width: 24,
                 height: 24,
                 border: "3px solid #e2e8f0",
-                borderTop: "3px solid #667eea",
+                borderTop: "3px solid #02bbd1",
                 borderRadius: "50%",
                 animation: "spin 1s linear infinite",
               }}
@@ -189,7 +175,7 @@ export const LoginPage: React.FC = () => {
               lineHeight: 1.6,
             }}
           >
-            ✨ トランザクション時のガス代は無料（月1000件まで）
+            ✨ トランザクション時のガス代は運営が負担
           </div>
         </div>
 
