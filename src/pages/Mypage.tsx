@@ -137,25 +137,22 @@ export function MypagePage() {
       }} />
 
       {/* メインコンテンツ */}
-      {/* [A] ヘッダー - 黒背景 */}
+      {/* [A] ヘッダー - 黒背景（600px幅） */}
       <div style={{
+        maxWidth: isMobile ? '100%' : 600,
+        margin: '0 auto 16px',
         background: 'rgba(0, 0, 0, 0.85)',
-        paddingTop: isMobile ? '16px' : '24px',
-        paddingBottom: isMobile ? '16px' : '24px',
-        marginBottom: isMobile ? '16px' : '24px',
+        paddingTop: isMobile ? '8px' : '12px',
+        paddingBottom: isMobile ? '8px' : '12px',
+        paddingLeft: isMobile ? '16px' : '24px',
+        paddingRight: isMobile ? '16px' : '24px',
       }}>
-        <div style={{
-          maxWidth: isMobile ? '100%' : 600,
-          margin: '0 auto',
-          padding: isMobile ? '0 16px' : '0 24px',
-        }}>
-          <Header
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            isMobile={isMobile}
-            tenantRank={tenantRank}
-          />
-        </div>
+        <Header
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          isMobile={isMobile}
+          tenantRank={tenantRank}
+        />
       </div>
 
       {/* [B] メインコンテンツエリア */}
@@ -208,14 +205,13 @@ function Header({ viewMode, setViewMode, isMobile, tenantRank }: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: isMobile ? '8px 0' : '12px 0',
     }}>
       {/* 左：ロゴ画像 */}
       <img
         src="/GIFTERRA.sidelogo.png"
         alt="GIFTERRA"
         style={{
-          height: isMobile ? 60 : 120,
+          height: isMobile ? 40 : 70,
           opacity: 1,
         }}
       />
