@@ -181,15 +181,15 @@ export const LoginPage: React.FC = () => {
             style={{
               marginTop: 16,
               padding: 12,
-              background: "#fff3cd",
-              border: "1px solid #ffc107",
+              background: "#d1fae5",
+              border: "1px solid #10b981",
               borderRadius: 8,
               fontSize: 13,
-              color: "#856404",
+              color: "#065f46",
               lineHeight: 1.6,
             }}
           >
-            ⚠️ トランザクション時のガス代（手数料）はユーザー負担となります
+            ✨ トランザクション時のガス代は無料（月1000件まで）
           </div>
         </div>
 
@@ -242,9 +242,9 @@ export const LoginPage: React.FC = () => {
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🔑</div>
+            <div style={{ fontSize: 24, marginBottom: 8 }}>⚡️</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#4a5568" }}>
-              SNS認証対応
+              ガスレス送金
             </div>
           </div>
           <div
