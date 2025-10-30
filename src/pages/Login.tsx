@@ -83,7 +83,7 @@ export const LoginPage: React.FC = () => {
           >
             GIFTERRAにようこそ
             <br />
-            まずは無料の送受信から。応援が"残る"体験へ。
+            まずは無料の送受信から。応援が "循環" する体験へ。
           </p>
         </div>
 
