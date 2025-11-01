@@ -4,13 +4,26 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      buffer: 'buffer/',
+    },
+  },
+  define: {
+    global: 'globalThis',
+  },
   optimizeDeps: {
-    include: [],
+    include: ['@privy-io/react-auth'],
     esbuildOptions: {
       target: 'es2020'
     }
   },
   server: {
+    headers: {
+      // Thirdweb embeddedWallet (Google OAuth) のために COOP を最大限緩和
+      'Cross-Origin-Opener-Policy': 'unsafe-none',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
     proxy: {
       // API リクエストを Vercel 開発サーバー（3001）にプロキシ
       '/api': {
@@ -34,6 +47,8 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           // ThirdWeb関連（大きなライブラリ）
           thirdweb: ['@thirdweb-dev/react', '@thirdweb-dev/sdk'],
+          // Privy認証関連
+          privy: ['@privy-io/react-auth'],
         }
       }
     }
