@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       buffer: 'buffer/',
     },
+    dedupe: ['@privy-io/react-auth'],
   },
   define: {
     global: 'globalThis',
@@ -42,13 +43,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // 大きなライブラリを別チャンクに分割してパフォーマンス向上
-        manualChunks: {
-          // React関連
-          vendor: ['react', 'react-dom'],
-          // ThirdWeb関連（大きなライブラリ）
-          thirdweb: ['@thirdweb-dev/react', '@thirdweb-dev/sdk'],
-          // Privy認証関連
-          privy: ['@privy-io/react-auth'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('@thirdweb-dev')) {
+              return 'thirdweb';
+            }
+            if (id.includes('@privy-io/react-auth')) {
+              return 'privy';
+            }
+          }
         }
       }
     }
