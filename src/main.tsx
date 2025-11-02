@@ -5,6 +5,7 @@ import "./index.css";
 import { Buffer } from "buffer";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { ReceivePage } from "./pages/ReceivePage";
+import { MypageMinimal } from "./pages/MypageMinimal";
 
 // Polyfill Buffer for browser environment (required for Web3 libraries)
 window.Buffer = window.Buffer || Buffer;
@@ -13,6 +14,7 @@ window.Buffer = window.Buffer || Buffer;
 const path = location.pathname;
 const wantsReceive = path.includes("/receive");
 const wantsAdmin = path.includes("/admin");
+const wantsMypage = path.includes("/mypage");
 
 // =============================
 // ReactDOM ルート作成
@@ -68,6 +70,8 @@ root.render(
     >
       {wantsReceive ? (
         <ReceivePage />
+      ) : wantsMypage ? (
+        <MypageMinimal />
       ) : wantsAdmin ? (
         <div style={{
           display: 'flex',
