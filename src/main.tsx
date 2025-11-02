@@ -5,7 +5,7 @@ import "./index.css";
 import { Buffer } from "buffer";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { ReceivePage } from "./pages/ReceivePage";
-import { MypageMinimal } from "./pages/MypageMinimal";
+import { MypageWithSend } from "./pages/MypageWithSend";
 
 // Polyfill Buffer for browser environment (required for Web3 libraries)
 window.Buffer = window.Buffer || Buffer;
@@ -71,7 +71,7 @@ root.render(
       {wantsReceive ? (
         <ReceivePage />
       ) : wantsMypage ? (
-        <MypageMinimal />
+        <MypageWithSend />
       ) : wantsAdmin ? (
         <div style={{
           display: 'flex',
