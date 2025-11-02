@@ -9,6 +9,9 @@ import { useTransactionHistory } from '../hooks/useTransactionHistory';
 import { QRScannerSimple } from '../components/QRScannerSimple';
 import { JPYC_TOKEN, ERC20_MIN_ABI } from '../contract';
 
+// 送金タイプ定義
+type SendMode = 'simple' | 'bulk' | 'tenant';
+
 export function MypageWithSend() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets } = useWallets();
@@ -16,6 +19,8 @@ export function MypageWithSend() {
   const [address, setAddress] = useState<string | undefined>(undefined);
 
   // 送金関連の状態
+  const [showSendModeModal, setShowSendModeModal] = useState(false);
+  const [sendMode, setSendMode] = useState<SendMode | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [sendTo, setSendTo] = useState('');
@@ -310,7 +315,7 @@ export function MypageWithSend() {
               🔄 残高を更新
             </button>
             <button
-              onClick={() => setShowSendModal(true)}
+              onClick={() => setShowSendModeModal(true)}
               style={{
                 flex: 1,
                 padding: '12px',
@@ -324,7 +329,7 @@ export function MypageWithSend() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
-              💸 JPYC送金
+              💸 送金タイプを選択
             </button>
           </div>
         </div>
@@ -408,6 +413,157 @@ export function MypageWithSend() {
           <div>Produced by <strong>METATRON</strong></div>
         </div>
       </div>
+
+      {/* 送金タイプ選択モーダル */}
+      {showSendModeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '600px',
+            width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: '#1a1a1a',
+              marginBottom: 8,
+              textAlign: 'center',
+            }}>
+              💸 送金タイプを選択
+            </h2>
+            <p style={{
+              fontSize: 14,
+              color: '#718096',
+              textAlign: 'center',
+              marginBottom: 24,
+            }}>
+              送金方法を選んでください
+            </p>
+
+            <div style={{ display: 'grid', gap: '16px', marginBottom: 24 }}>
+              {/* シンプル送金 */}
+              <button
+                onClick={() => {
+                  setSendMode('simple');
+                  setShowSendModeModal(false);
+                  setShowSendModal(true);
+                }}
+                style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                }}
+              >
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+                  シンプル送金
+                </div>
+                <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>
+                  個人アドレスへ自由に送金
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                  • 自由なアドレス入力<br />
+                  • kodomi記録なし<br />
+                  • メッセージ任意
+                </div>
+              </button>
+
+              {/* 一括送金 */}
+              <button
+                onClick={() => {
+                  alert('一括送金機能は次のフェーズで実装予定です');
+                }}
+                style={{
+                  padding: '20px',
+                  background: '#e2e8f0',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#718096',
+                  cursor: 'not-allowed',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📤</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+                  一括送金（準備中）
+                </div>
+                <div style={{ fontSize: 14, marginBottom: 8 }}>
+                  複数人へ同時に送金
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  • 複数アドレス対応<br />
+                  • シンプルな操作<br />
+                  • 効率的な送金
+                </div>
+              </button>
+
+              {/* テナントへチップ */}
+              <button
+                onClick={() => {
+                  alert('テナントチップ機能は次のフェーズで実装予定です');
+                }}
+                style={{
+                  padding: '20px',
+                  background: '#e2e8f0',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#718096',
+                  cursor: 'not-allowed',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+                  テナントへチップ（準備中）
+                </div>
+                <div style={{ fontSize: 14, marginBottom: 8 }}>
+                  テナントを選んで応援
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  • テナント一覧から選択<br />
+                  • kodomi（貢献熱量ポイント）が記録される<br />
+                  • 各テナントごとの特典配布が受けられる<br />
+                  • メッセージ推奨
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowSendModeModal(false)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: '#e2e8f0',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#2d3748',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 送金モーダル */}
       {showSendModal && (
