@@ -1,0 +1,66 @@
+{
+  // ========================================
+  // GIFTERRA VSCode Settings（最適化版）
+  // ========================================
+
+  // ====== TypeScript（開発に必要な機能は有効化）======
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+
+  // ====== 監視・検索・表示の除外（巨大フォルダ）======
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.next/**": true,
+    "**/.vercel/**": true,
+    "**/.turbo/**": true,
+    "**/.cache/**": true,
+    "**/android/**": true,
+    "**/ios/**": true,
+    "**/coverage/**": true,
+    "**/*.log": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.next": true,
+    "**/.vercel": true,
+    "**/.turbo": true,
+    "**/android": true,
+    "**/ios": true,
+    "**/*.log": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.cache": true,
+    "**/coverage": true
+  },
+  "files.exclude": {
+    "**/.git": false,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.cache": true,
+    "**/.turbo": true,
+    "**/*.tsbuildinfo": true
+  },
+
+  // ====== エディタ設定 ======
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // ====== Git ======
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": false,
+  "search.followSymlinks": false
+}
