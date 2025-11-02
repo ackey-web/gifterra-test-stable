@@ -12,6 +12,7 @@ window.Buffer = window.Buffer || Buffer;
 // URL判定
 const path = location.pathname;
 const wantsReceive = path.includes("/receive");
+const wantsAdmin = path.includes("/admin");
 
 // =============================
 // ReactDOM ルート作成
@@ -67,6 +68,38 @@ root.render(
     >
       {wantsReceive ? (
         <ReceivePage />
+      ) : wantsAdmin ? (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+          color: 'white',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐 Admin Panel</h1>
+            <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
+              管理画面ルーティング準備完了
+            </p>
+            <p style={{ fontSize: '0.9rem', marginTop: '2rem', opacity: 0.7 }}>
+              Phase 2e: Admin routing restored
+            </p>
+            <div style={{
+              marginTop: '2rem',
+              padding: '1rem',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              fontSize: '0.85rem'
+            }}>
+              <p>実際の管理画面コンポーネントは将来のフェーズで統合予定</p>
+              <p style={{ marginTop: '0.5rem', opacity: 0.8 }}>
+                Dashboard.tsx, VendingDashboardNew.tsx など
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <div style={{
           display: 'flex',
