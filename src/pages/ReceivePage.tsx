@@ -2,7 +2,9 @@
 import { useEffect, useState } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from 'ethers';
+import QRCode from 'qrcode.react';
 import { useTransactionHistory } from '../hooks/useTransactionHistory';
+import { useTokenBalances } from '../hooks/useTokenBalances';
 
 export function ReceivePage() {
   const { ready, authenticated, login, user } = usePrivy();
@@ -10,6 +12,11 @@ export function ReceivePage() {
   const [address, setAddress] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [newReceiveNotification, setNewReceiveNotification] = useState<{
+    show: boolean;
+    amount: string;
+    token: string;
+  }>({ show: false, amount: '', token: '' });
 
   // Privyウォレットからアドレスを取得
   useEffect(() => {
@@ -39,6 +46,37 @@ export function ReceivePage() {
 
   // トランザクション履歴を取得
   const { transactions, loading: historyLoading } = useTransactionHistory(address);
+
+  // リアルタイム残高表示
+  const { balances, loading: balancesLoading } = useTokenBalances(address);
+
+  // 受取通知機能 - トランザクション履歴の変化を監視
+  useEffect(() => {
+    if (!transactions || transactions.length === 0) return;
+
+    const latestReceive = transactions.find(tx => tx.type === 'receive');
+    if (!latestReceive) return;
+
+    // LocalStorageに最後に通知したトランザクションハッシュを保存
+    const lastNotifiedTx = localStorage.getItem('lastNotifiedReceiveTx');
+
+    if (lastNotifiedTx !== latestReceive.hash) {
+      // 新しい受取があった場合、通知を表示
+      setNewReceiveNotification({
+        show: true,
+        amount: parseFloat(latestReceive.value).toFixed(4),
+        token: latestReceive.tokenSymbol,
+      });
+
+      // LocalStorageを更新
+      localStorage.setItem('lastNotifiedReceiveTx', latestReceive.hash);
+
+      // 5秒後に通知を非表示
+      setTimeout(() => {
+        setNewReceiveNotification({ show: false, amount: '', token: '' });
+      }, 5000);
+    }
+  }, [transactions]);
 
   useEffect(() => {
     // モバイル判定
@@ -143,7 +181,39 @@ export function ReceivePage() {
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       padding: '20px',
+      position: 'relative',
     }}>
+      {/* 受取通知 */}
+      {newReceiveNotification.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: '#ffffff',
+          padding: isMobile ? '16px 20px' : '20px 24px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          zIndex: 9999,
+          animation: 'slideIn 0.3s ease-out',
+          maxWidth: isMobile ? '280px' : '320px',
+        }}>
+          <div style={{
+            fontSize: isMobile ? 18 : 20,
+            fontWeight: 700,
+            marginBottom: '8px',
+          }}>
+            📥 受取完了！
+          </div>
+          <div style={{
+            fontSize: isMobile ? 16 : 18,
+            fontWeight: 600,
+          }}>
+            +{newReceiveNotification.amount} {newReceiveNotification.token}
+          </div>
+        </div>
+      )}
+
       <div style={{
         background: '#ffffff',
         borderRadius: '24px',
@@ -174,32 +244,73 @@ export function ReceivePage() {
           </p>
         </div>
 
-        {/* QRコード（プレースホルダー） */}
+        {/* リアルタイム残高表示 */}
+        <div style={{
+          background: '#f0fdf4',
+          borderRadius: '16px',
+          padding: isMobile ? '16px' : '20px',
+          marginBottom: '24px',
+          border: '2px solid #10b981',
+        }}>
+          <h2 style={{
+            fontSize: isMobile ? 16 : 18,
+            fontWeight: 700,
+            color: '#1a1a1a',
+            marginBottom: '12px',
+          }}>
+            💰 リアルタイム残高
+          </h2>
+          {balancesLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#718096' }}>
+              読込中...
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {balances.map((balance) => (
+                <div
+                  key={balance.symbol}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid #d1fae5',
+                  }}
+                >
+                  <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 600, color: '#059669' }}>
+                    {balance.symbol}
+                  </span>
+                  <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 600, color: '#1a1a1a' }}>
+                    {balance.balance}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* QRコード */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
           marginBottom: '32px',
         }}>
           <div style={{
-            width: isMobile ? 200 : 256,
-            height: isMobile ? 200 : 256,
+            padding: '16px',
             background: '#ffffff',
             border: '4px solid #10b981',
             borderRadius: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: 'inline-block',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           }}>
-            <div style={{
-              textAlign: 'center',
-              color: '#718096',
-              fontSize: 14,
-              padding: '20px',
-            }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📱</div>
-              <p>QRコード表示には<br />qrcode.react<br />パッケージが必要です</p>
-            </div>
+            <QRCode
+              value={address}
+              size={isMobile ? 200 : 256}
+              level="H"
+              includeMargin={false}
+            />
           </div>
         </div>
 
