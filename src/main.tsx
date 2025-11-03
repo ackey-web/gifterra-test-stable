@@ -10,8 +10,12 @@ import { MypageWithSend } from "./pages/MypageWithSend";
 // Polyfill Buffer for browser environment (required for Web3 libraries)
 window.Buffer = window.Buffer || Buffer;
 
+// Feature flags
+const ENABLE_LEGACY_UI = import.meta.env.VITE_ENABLE_LEGACY_UI !== 'false';
+
 // URL判定
 const path = location.pathname;
+const wantsLegacy = path.includes("/legacy");
 const wantsReceive = path.includes("/receive");
 const wantsAdmin = path.includes("/admin");
 const wantsMypage = path.includes("/mypage");
@@ -68,7 +72,51 @@ root.render(
         },
       }}
     >
-      {wantsReceive ? (
+      {wantsLegacy && ENABLE_LEGACY_UI ? (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          color: 'white',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>📜 Legacy UI</h1>
+            <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
+              旧UIは読み取り専用モードで保存されています
+            </p>
+            <p style={{ fontSize: '0.9rem', marginTop: '2rem', opacity: 0.7 }}>
+              Phase 1: Isolated /legacy route (Read-only reference)
+            </p>
+            <div style={{
+              marginTop: '2rem',
+              padding: '1rem',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              fontSize: '0.85rem'
+            }}>
+              <p>旧UIコンポーネントは変更せず、参照用として保持</p>
+              <p style={{ marginTop: '0.5rem', opacity: 0.8 }}>
+                Mypage.tsx, Dashboard.tsx などはそのまま残存
+              </p>
+              <p style={{ marginTop: '1rem' }}>
+                <a
+                  href="/"
+                  style={{
+                    color: 'white',
+                    textDecoration: 'underline',
+                    opacity: 0.9
+                  }}
+                >
+                  新UIに戻る →
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : wantsReceive ? (
         <ReceivePage />
       ) : wantsMypage ? (
         <MypageWithSend />
