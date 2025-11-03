@@ -8,6 +8,8 @@ import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useTransactionHistory } from '../hooks/useTransactionHistory';
 import { QRScannerSimple } from '../components/QRScannerSimple';
 import { JPYC_TOKEN, ERC20_MIN_ABI } from '../contract';
+import { analyzeSentiment } from '../lib/ai_analysis';
+import { saveTipMessageToSupabase } from '../lib/saveTipMessage';
 
 // 送金タイプ定義
 type SendMode = 'simple' | 'bulk' | 'tenant';
@@ -208,9 +210,36 @@ export function MypageWithSend() {
       await tx.wait();
       console.log('Transaction confirmed');
 
+      // kodomi記録（メッセージがある場合のみ）
+      let kodomiRecorded = false;
+      if (sendMessage && sendMessage.trim()) {
+        try {
+          console.log('Recording kodomi message...');
+
+          // AI感情分析
+          const sentiment = await analyzeSentiment(sendMessage);
+          console.log('Sentiment analysis:', sentiment);
+
+          // Supabaseにメッセージとsentimentを保存
+          await saveTipMessageToSupabase(
+            tx.hash,
+            address, // ユーザーアドレス
+            sendMessage,
+            sentiment
+          );
+
+          console.log('Kodomi message recorded successfully');
+          kodomiRecorded = true;
+        } catch (error) {
+          console.error('Failed to record kodomi message:', error);
+          // エラーでも送金は成功しているので続行
+        }
+      }
+
       setSendSuccess(true);
       setSendTo('');
       setSendAmount('');
+      setSendMessage(''); // メッセージもリセット
 
       // 残高を更新
       setTimeout(() => {
