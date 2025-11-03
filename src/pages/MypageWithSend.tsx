@@ -57,6 +57,16 @@ interface Recipient {
   amount: string;
 }
 
+// テナント情報の型定義
+interface Tenant {
+  tenantId: string;
+  name: string;
+  icon: string;
+  thumbnail?: string;
+  walletAddress: string;
+  rank?: string;
+}
+
 export function MypageWithSend() {
   const { ready, authenticated, login, logout, user } = usePrivy();
   const { wallets } = useWallets();
@@ -70,6 +80,7 @@ export function MypageWithSend() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [sendTo, setSendTo] = useState('');
   const [sendAmount, setSendAmount] = useState('');
+  const [sendMessage, setSendMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState(false);
@@ -79,6 +90,11 @@ export function MypageWithSend() {
     { id: 1, address: '', amount: '' },
   ]);
   const [nextRecipientId, setNextRecipientId] = useState(2);
+
+  // テナント送金用の状態
+  const [showTenantModal, setShowTenantModal] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
 
   // Privyウォレットからsignerを取得
   useEffect(() => {
@@ -115,6 +131,28 @@ export function MypageWithSend() {
 
   // トランザクション履歴を取得
   const { transactions, loading: historyLoading } = useTransactionHistory(address);
+
+  // LocalStorageからフォロー中のテナント一覧を読み込み
+  useEffect(() => {
+    const saved = localStorage.getItem('followed_tenants');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setTenants(parsed);
+      } catch (error) {
+        console.error('Failed to parse followed tenants:', error);
+        setTenants([]);
+      }
+    }
+  }, []);
+
+  // テナント選択時の処理
+  const handleTenantSelect = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setSendTo(tenant.walletAddress);
+    setShowTenantModal(false);
+    setShowSendModal(true);
+  };
 
   // JPYC送金処理
   const handleSend = async () => {
@@ -692,26 +730,29 @@ export function MypageWithSend() {
               {/* テナントへチップ */}
               <button
                 onClick={() => {
-                  alert('テナントチップ機能は次のフェーズで実装予定です');
+                  setSendMode('tenant');
+                  setShowSendModeModal(false);
+                  setShowTenantModal(true);
                 }}
                 style={{
                   padding: '20px',
-                  background: '#e2e8f0',
-                  border: 'none',
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 193, 7, 0.15) 100%)',
+                  border: '2px solid rgba(255, 215, 0, 0.5)',
                   borderRadius: '12px',
-                  color: '#718096',
-                  cursor: 'not-allowed',
+                  color: '#92400e',
+                  cursor: 'pointer',
                   textAlign: 'left',
+                  boxShadow: '0 4px 12px rgba(255,193,7,0.2)',
                 }}
               >
                 <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
                 <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-                  テナントへチップ（準備中）
+                  テナントへチップ
                 </div>
-                <div style={{ fontSize: 14, marginBottom: 8 }}>
+                <div style={{ fontSize: 14, marginBottom: 8, opacity: 0.9 }}>
                   テナントを選んで応援
                 </div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
                   • テナント一覧から選択<br />
                   • kodomi（貢献熱量ポイント）が記録される<br />
                   • 各テナントごとの特典配布が受けられる<br />
@@ -1178,6 +1219,332 @@ export function MypageWithSend() {
           onClose={() => setShowQRScanner(false)}
           placeholder="送金先アドレスを入力"
         />
+      )}
+
+      {/* テナント選択モーダル */}
+      {showTenantModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: '#1a1a1a',
+              marginBottom: 8,
+              textAlign: 'center',
+            }}>
+              🎁 テナントを選択
+            </h2>
+            <p style={{
+              fontSize: 14,
+              color: '#718096',
+              textAlign: 'center',
+              marginBottom: 24,
+            }}>
+              チップを送りたいテナントを選んでください
+            </p>
+
+            {tenants.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: '#718096',
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📭</div>
+                <p>フォロー中のテナントがありません</p>
+                <p style={{ fontSize: 13, marginTop: 8 }}>
+                  テナントをフォローすると、ここに表示されます
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '12px', marginBottom: 24 }}>
+                {tenants.map((tenant) => (
+                  <button
+                    key={tenant.tenantId}
+                    onClick={() => handleTenantSelect(tenant)}
+                    style={{
+                      padding: '16px',
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      border: '2px solid #fbbf24',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ fontSize: 32 }}>{tenant.icon || '🏪'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: '#92400e',
+                        marginBottom: 4,
+                      }}>
+                        {tenant.name}
+                      </div>
+                      {tenant.rank && (
+                        <div style={{
+                          fontSize: 12,
+                          color: '#78350f',
+                          opacity: 0.8,
+                        }}>
+                          ランク: {tenant.rank}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setShowTenantModal(false);
+                if (!selectedTenant) {
+                  setSendMode(null);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: '#e2e8f0',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#2d3748',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* テナントチップ送金モーダル */}
+      {showSendModal && sendMode === 'tenant' && selectedTenant && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <h2 style={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: '#1a1a1a',
+              marginBottom: 16,
+              textAlign: 'center',
+            }}>
+              🎁 {selectedTenant.icon} {selectedTenant.name}へチップ
+            </h2>
+
+            {sendSuccess ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                <p style={{ fontSize: 18, color: '#059669', fontWeight: 600 }}>
+                  チップ送金が完了しました！
+                </p>
+                <p style={{ fontSize: 14, color: '#78350f', marginTop: 12 }}>
+                  kodomiポイントが記録されました
+                </p>
+              </div>
+            ) : (
+              <>
+                <div style={{
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  borderRadius: '8px',
+                  marginBottom: 16,
+                  fontSize: 13,
+                  color: '#92400e',
+                }}>
+                  <div>💡 メッセージを書くとkodomi算出に有利になります</div>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#2d3748',
+                    marginBottom: 8,
+                  }}>
+                    宛先（自動入力済み）
+                  </label>
+                  <div style={{
+                    padding: '12px',
+                    background: '#f7fafc',
+                    borderRadius: '8px',
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: '#64748b',
+                    wordBreak: 'break-all',
+                  }}>
+                    {selectedTenant.walletAddress}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#2d3748',
+                    marginBottom: 8,
+                  }}>
+                    金額（JPYC）
+                  </label>
+                  <input
+                    type="number"
+                    value={sendAmount}
+                    onChange={(e) => setSendAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: 14,
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      outline: 'none',
+                    }}
+                  />
+                  <p style={{
+                    fontSize: 12,
+                    color: '#718096',
+                    marginTop: 4,
+                  }}>
+                    残高: {balances.jpyc.formatted} JPYC
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#2d3748',
+                    marginBottom: 8,
+                  }}>
+                    メッセージ（任意）
+                  </label>
+                  <textarea
+                    value={sendMessage}
+                    onChange={(e) => setSendMessage(e.target.value)}
+                    placeholder="応援メッセージを入力..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: 14,
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
+                  />
+                </div>
+
+                {sendError && (
+                  <div style={{
+                    padding: '12px',
+                    background: '#fee2e2',
+                    border: '1px solid #ef4444',
+                    borderRadius: '8px',
+                    color: '#991b1b',
+                    fontSize: 14,
+                    marginBottom: 16,
+                  }}>
+                    {sendError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    onClick={() => {
+                      setShowSendModal(false);
+                      setSendMode(null);
+                      setSelectedTenant(null);
+                      setSendAmount('');
+                      setSendMessage('');
+                      setSendError(null);
+                    }}
+                    disabled={sending}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      background: '#e2e8f0',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#2d3748',
+                      fontSize: 16,
+                      fontWeight: 600,
+                      cursor: sending ? 'not-allowed' : 'pointer',
+                      opacity: sending ? 0.5 : 1,
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSend}
+                    disabled={sending}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      background: sending ? '#9ca3af' : 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: 16,
+                      fontWeight: 600,
+                      cursor: sending ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    {sending ? '送金中...' : 'チップを送る'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
